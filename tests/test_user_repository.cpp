@@ -1,94 +1,143 @@
 #include "repositories/user_repository.h"
-#include "db/database.h"
+#include "utils/hash.h"
 #include "models/user.h"
 #include <iostream>
 #include <cassert>
+#include <memory>
 
-void test_user_repository_creation() {
-    // Use in-memory database for testing
-    sohbet::Database db(":memory:");
-    sohbet::UserRepository repo(db);
-    
-    // Migrate database
+void testUserRepositoryMigration() {
+    std::cout << "Testing UserRepository migration..." << std::endl;
+
+    auto db = std::make_shared<sohbet::db::Database>(":memory:");
+    assert(db->isOpen());
+
+    sohbet::repositories::UserRepository repo(db);
     assert(repo.migrate());
-    
+
+    std::cout << "Migration test passed!" << std::endl;
+}
+
+void testUserCreationAndRetrieval() {
+    std::cout << "Testing User creation and retrieval..." << std::endl;
+
+    auto db = std::make_shared<sohbet::db::Database>(":memory:");
+    assert(db->isOpen());
+
+    sohbet::repositories::UserRepository repo(db);
+    assert(repo.migrate());
+
     // Create test user
-    sohbet::User user("test_student", "student@university.edu");
+    sohbet::User user;
+    user.setUsername("test_user");
+    user.setEmail("test@example.com");
+    user.setPasswordHash(sohbet::utils::Hash::generateSaltedHash("testpassword"));
     user.setUniversity("Test University");
     user.setDepartment("Computer Science");
-    user.setEnrollmentYear(2023);
-    user.setPrimaryLanguage("Turkish");
-    
-    auto created_user = repo.create(user, "TestPassword123");
-    assert(created_user.has_value());
-    assert(created_user.value().getId().has_value());
-    assert(created_user.value().getUsername() == "test_student");
-    
-    std::cout << "User repository creation test passed!" << std::endl;
-}
+    user.setEnrollmentYear(2022);
+    user.setPrimaryLanguage("English");
+    user.setAdditionalLanguages({"Turkish", "German"});
 
-void test_user_repository_find() {
-    sohbet::Database db(":memory:");
-    sohbet::UserRepository repo(db);
-    repo.migrate();
-    
-    // Create test user
-    sohbet::User user("jane_student", "jane@test.edu");
-    auto created_user = repo.create(user, "SecurePass456");
-    assert(created_user.has_value());
-    
-    // Find by username
-    auto found_by_username = repo.findByUsername("jane_student");
-    assert(found_by_username.has_value());
-    assert(found_by_username.value().getEmail() == "jane@test.edu");
-    
-    // Find by email
-    auto found_by_email = repo.findByEmail("jane@test.edu");
+    // Save user
+    assert(repo.createUser(user));
+    assert(user.getId().has_value());
+    assert(user.getId().value() > 0);
+
+    // Retrieve by username
+    auto found_user = repo.findByUsername("test_user");
+    assert(found_user.has_value());
+    assert(found_user->getUsername() == "test_user");
+    assert(found_user->getEmail() == "test@example.com");
+    assert(found_user->getUniversity() == "Test University");
+    assert(found_user->getDepartment() == "Computer Science");
+    assert(found_user->getEnrollmentYear() == 2022);
+    assert(found_user->getPrimaryLanguage() == "English");
+
+    // Check additional languages
+    const auto& langs = found_user->getAdditionalLanguages();
+    assert(langs.size() == 2);
+    assert(langs[0] == "Turkish");
+    assert(langs[1] == "German");
+
+    // Retrieve by email
+    auto found_by_email = repo.findByEmail("test@example.com");
     assert(found_by_email.has_value());
-    assert(found_by_email.value().getUsername() == "jane_student");
-    
-    // Test non-existent user
-    auto not_found = repo.findByUsername("nonexistent");
-    assert(!not_found.has_value());
-    
-    std::cout << "User repository find test passed!" << std::endl;
+    assert(found_by_email->getUsername() == "test_user");
+
+    // Retrieve by ID
+    auto found_by_id = repo.findById(user.getId().value());
+    assert(found_by_id.has_value());
+    assert(found_by_id->getUsername() == "test_user");
+
+    std::cout << "User creation and retrieval test passed!" << std::endl;
 }
 
-void test_user_repository_uniqueness() {
-    sohbet::Database db(":memory:");
-    sohbet::UserRepository repo(db);
-    repo.migrate();
-    
+void testUniqueConstraints() {
+    std::cout << "Testing unique constraints..." << std::endl;
+
+    auto db = std::make_shared<sohbet::db::Database>(":memory:");
+    assert(db->isOpen());
+
+    sohbet::repositories::UserRepository repo(db);
+    assert(repo.migrate());
+
     // Create first user
-    sohbet::User user1("unique_user", "unique@test.edu");
-    auto created1 = repo.create(user1, "password123");
-    assert(created1.has_value());
-    
+    sohbet::User user1;
+    user1.setUsername("unique_user");
+    user1.setEmail("unique@example.com");
+    user1.setPasswordHash("hash1");
+    assert(repo.createUser(user1));
+
     // Try to create user with same username
-    sohbet::User user2("unique_user", "different@test.edu");
-    auto created2 = repo.create(user2, "password456");
-    assert(!created2.has_value()); // Should fail due to username conflict
-    
+    sohbet::User user2;
+    user2.setUsername("unique_user"); // Same username
+    user2.setEmail("different@example.com");
+    user2.setPasswordHash("hash2");
+    assert(!repo.createUser(user2)); // Should fail due to unique constraint
+
     // Try to create user with same email
-    sohbet::User user3("different_user", "unique@test.edu");
-    auto created3 = repo.create(user3, "password789");
-    assert(!created3.has_value()); // Should fail due to email conflict
-    
+    sohbet::User user3;
+    user3.setUsername("different_user");
+    user3.setEmail("unique@example.com"); // Same email
+    user3.setPasswordHash("hash3");
+    assert(!repo.createUser(user3)); // Should fail due to unique constraint
+
     // Check existence methods
     assert(repo.usernameExists("unique_user"));
     assert(!repo.usernameExists("nonexistent_user"));
-    assert(repo.emailExists("unique@test.edu"));
-    assert(!repo.emailExists("nonexistent@test.edu"));
-    
-    std::cout << "User repository uniqueness test passed!" << std::endl;
+    assert(repo.emailExists("unique@example.com"));
+    assert(!repo.emailExists("nonexistent@example.com"));
+
+    std::cout << "Unique constraints test passed!" << std::endl;
+}
+
+void testPasswordHashing() {
+    std::cout << "Testing password hashing..." << std::endl;
+
+    std::string password = "testpassword123";
+    std::string salted_hash = sohbet::utils::Hash::generateSaltedHash(password);
+
+    assert(!salted_hash.empty());
+    assert(salted_hash.find(':') != std::string::npos);
+
+    // Verify correct password
+    assert(sohbet::utils::Hash::verifySaltedHash(password, salted_hash));
+
+    // Verify incorrect password
+    assert(!sohbet::utils::Hash::verifySaltedHash("wrongpassword", salted_hash));
+
+    std::cout << "Password hashing test passed!" << std::endl;
 }
 
 int main() {
+    std::cout << "Running UserRepository tests..." << std::endl;
+
     try {
-        test_user_repository_creation();
-        test_user_repository_find();
-        test_user_repository_uniqueness();
-        std::cout << "All user repository tests passed!" << std::endl;
+        testUserRepositoryMigration();
+        testUserCreationAndRetrieval();
+        testUniqueConstraints();
+        testPasswordHashing();
+
+        std::cout << "\nAll UserRepository tests passed!" << std::endl;
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "Test failed: " << e.what() << std::endl;

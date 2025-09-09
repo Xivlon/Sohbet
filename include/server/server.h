@@ -1,37 +1,91 @@
 #pragma once
+
 #include "db/database.h"
 #include "repositories/user_repository.h"
 #include <memory>
 #include <string>
 
 namespace sohbet {
+namespace server {
 
-class AcademicSocialServer {
-public:
-    AcademicSocialServer(const std::string& db_path = "academic.db");
-    ~AcademicSocialServer() = default;
+/**
+ * HTTP Response structure
+ */
+struct HttpResponse {
+    int status_code;
+    std::string content_type;
+    std::string body;
     
-    // Initialize server and database
-    bool initialize();
-    
-    // Start server (simplified for this implementation)
-    void run(int port = 8080);
-    
-    // HTTP request handlers
-    std::string handleStatusRequest();
-    std::string handleUsersDemoRequest();
-    std::string handleUserRegistration(const std::string& request_body);
-    std::string handleLogin(const std::string& request_body);
-    std::string handleGetUser(const std::string& username);
-
-private:
-    std::unique_ptr<Database> db_;
-    std::unique_ptr<UserRepository> user_repository_;
-    
-    // Helper methods
-    std::string jsonError(const std::string& message, int code = 400);
-    bool validateUsername(const std::string& username);
-    bool validateEmail(const std::string& email);
+    HttpResponse(int code, const std::string& type, const std::string& content)
+        : status_code(code), content_type(type), body(content) {}
 };
 
+/**
+ * HTTP Request structure (simplified)
+ */
+struct HttpRequest {
+    std::string method;
+    std::string path;
+    std::string body;
+    
+    HttpRequest(const std::string& m, const std::string& p, const std::string& b)
+        : method(m), path(p), body(b) {}
+};
+
+/**
+ * Academic Social Server
+ * Simple HTTP server for the academic social platform
+ */
+class AcademicSocialServer {
+public:
+    /**
+     * Constructor
+     * @param port Port to listen on
+     * @param db_path Path to SQLite database file
+     */
+    AcademicSocialServer(int port = 8080, const std::string& db_path = "academic.db");
+    
+    /**
+     * Destructor
+     */
+    ~AcademicSocialServer() = default;
+    
+    /**
+     * Initialize the server (setup database, run migrations)
+     * @return true if successful, false otherwise
+     */
+    bool initialize();
+    
+    /**
+     * Start the server (blocking call)
+     * @return true if server started successfully
+     */
+    bool start();
+    
+    /**
+     * Process HTTP request (for testing/simulation)
+     * @param request HTTP request to process
+     * @return HTTP response
+     */
+    HttpResponse handleRequest(const HttpRequest& request);
+
+private:
+    int port_;
+    std::shared_ptr<db::Database> database_;
+    std::shared_ptr<repositories::UserRepository> user_repository_;
+    
+    // Route handlers
+    HttpResponse handleStatus(const HttpRequest& request);
+    HttpResponse handleUsersDemo(const HttpRequest& request);
+    HttpResponse handleCreateUser(const HttpRequest& request);
+    HttpResponse handleNotFound(const HttpRequest& request);
+    
+    // Helper methods
+    HttpResponse createJsonResponse(int status_code, const std::string& json);
+    HttpResponse createErrorResponse(int status_code, const std::string& message);
+    std::string extractJsonField(const std::string& json, const std::string& field);
+    bool validateUserRegistration(const std::string& username, const std::string& email, const std::string& password, std::string& error);
+};
+
+} // namespace server
 } // namespace sohbet

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <vector>
 #include <optional>
@@ -7,6 +8,7 @@ namespace sohbet {
 
 class User {
 public:
+    // Constructors
     User() = default;
     User(const std::string& username, const std::string& email);
 
@@ -37,6 +39,11 @@ public:
     // JSON serialization (excludes password hash)
     std::string toJson() const;
     static User fromJson(const std::string& json);
+
+    // Validation helpers
+    static bool isValidUsername(const std::string& username);
+    static bool isValidEmail(const std::string& email);
+    static bool isValidPassword(const std::string& password);
 
 private:
     std::optional<int> id_;

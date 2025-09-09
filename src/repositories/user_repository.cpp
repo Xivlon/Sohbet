@@ -1,19 +1,24 @@
 #include "repositories/user_repository.h"
 #include "utils/hash.h"
-#include <sqlite3.h>
+#include <sstream>
+#include <iostream>
 
 namespace sohbet {
+namespace repositories {
 
-UserRepository::UserRepository(Database& db) : db_(db) {}
+UserRepository::UserRepository(std::shared_ptr<db::Database> database)
+    : database_(database) {}
 
+// Run migrations (create users table)
 bool UserRepository::migrate() {
-    const std::string create_table_sql = R"(
+    if (!database_ || !database_->isOpen()) return false;
+
+    const std::string sql = R"(
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            password_salt TEXT,
             university TEXT,
             department TEXT,
             enrollment_year INTEGER,
@@ -22,152 +27,153 @@ bool UserRepository::migrate() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     )";
-    
-    return db_.execute(create_table_sql);
+
+    return database_->execute(sql);
 }
 
-std::optional<User> UserRepository::create(const User& user, const std::string& password) {
-    // Hash the password
-    std::string password_hash = utils::hash_password(password);
-    
-    const std::string insert_sql = R"(
-        INSERT INTO users (username, email, password_hash, password_salt, university, department, enrollment_year, primary_language)
-        VALUES (?, ?, ?, '', ?, ?, ?, ?)
+// Create a new user
+bool UserRepository::createUser(User& user) {
+    if (!database_ || !database_->isOpen()) return false;
+
+    const std::string sql = R"(
+        INSERT INTO users (username, email, password_hash, university, department, 
+                          enrollment_year, primary_language, additional_languages)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     )";
-    
-    sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(db_.getHandle(), insert_sql.c_str(), -1, &stmt, nullptr);
-    if (rc != SQLITE_OK) {
-        return std::nullopt;
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return false;
+
+    // Hash the password securely
+    std::string hashed_password = utils::hash_password(user.getPasswordHash());
+    user.setPasswordHash(hashed_password);
+
+    // Convert additional languages vector to comma-separated string
+    std::string additional_langs;
+    for (size_t i = 0; i < user.getAdditionalLanguages().size(); ++i) {
+        additional_langs += user.getAdditionalLanguages()[i];
+        if (i < user.getAdditionalLanguages().size() - 1) additional_langs += ",";
     }
-    
-    sqlite3_bind_text(stmt, 1, user.getUsername().c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, user.getEmail().c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 3, password_hash.c_str(), -1, SQLITE_STATIC);
-    
-    if (user.getUniversity().has_value()) {
-        sqlite3_bind_text(stmt, 4, user.getUniversity().value().c_str(), -1, SQLITE_STATIC);
-    } else {
-        sqlite3_bind_null(stmt, 4);
+
+    stmt.bindText(1, user.getUsername());
+    stmt.bindText(2, user.getEmail());
+    stmt.bindText(3, hashed_password);
+    stmt.bindText(4, user.getUniversity());
+    stmt.bindText(5, user.getDepartment());
+    stmt.bindText(6, user.getEnrollmentYear().has_value() ? std::to_string(user.getEnrollmentYear().value()) : "");
+    stmt.bindText(7, user.getPrimaryLanguage());
+    stmt.bindText(8, additional_langs);
+
+    int result = stmt.step();
+    if (result == SQLITE_DONE) {
+        user.setId(static_cast<int>(database_->lastInsertRowId()));
+        return true;
     }
-    
-    if (user.getDepartment().has_value()) {
-        sqlite3_bind_text(stmt, 5, user.getDepartment().value().c_str(), -1, SQLITE_STATIC);
-    } else {
-        sqlite3_bind_null(stmt, 5);
-    }
-    
-    if (user.getEnrollmentYear().has_value()) {
-        sqlite3_bind_int(stmt, 6, user.getEnrollmentYear().value());
-    } else {
-        sqlite3_bind_null(stmt, 6);
-    }
-    
-    if (user.getPrimaryLanguage().has_value()) {
-        sqlite3_bind_text(stmt, 7, user.getPrimaryLanguage().value().c_str(), -1, SQLITE_STATIC);
-    } else {
-        sqlite3_bind_null(stmt, 7);
-    }
-    
-    rc = sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
-    
-    if (rc != SQLITE_DONE) {
-        return std::nullopt;
-    }
-    
-    // Return the created user with ID
-    int user_id = sqlite3_last_insert_rowid(db_.getHandle());
-    User created_user = user;
-    created_user.setId(user_id);
-    created_user.setPasswordHash(password_hash);
-    
-    return created_user;
+
+    return false;
 }
 
+// Find user by username
 std::optional<User> UserRepository::findByUsername(const std::string& username) {
-    const std::string select_sql = R"(
-        SELECT id, username, email, password_hash, university, department, enrollment_year, primary_language
+    if (!database_ || !database_->isOpen()) return std::nullopt;
+
+    const std::string sql = R"(
+        SELECT id, username, email, password_hash, university, department,
+               enrollment_year, primary_language, additional_languages
         FROM users WHERE username = ?
     )";
-    
-    sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(db_.getHandle(), select_sql.c_str(), -1, &stmt, nullptr);
-    if (rc != SQLITE_OK) {
-        return std::nullopt;
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return std::nullopt;
+
+    stmt.bindText(1, username);
+    if (stmt.step() == SQLITE_ROW) {
+        return userFromStatement(stmt);
     }
-    
-    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
-    
-    rc = sqlite3_step(stmt);
-    if (rc == SQLITE_ROW) {
-        User user = userFromStatement(stmt);
-        sqlite3_finalize(stmt);
-        return user;
-    }
-    
-    sqlite3_finalize(stmt);
+
     return std::nullopt;
 }
 
+// Find user by email
 std::optional<User> UserRepository::findByEmail(const std::string& email) {
-    const std::string select_sql = R"(
-        SELECT id, username, email, password_hash, university, department, enrollment_year, primary_language
+    if (!database_ || !database_->isOpen()) return std::nullopt;
+
+    const std::string sql = R"(
+        SELECT id, username, email, password_hash, university, department,
+               enrollment_year, primary_language, additional_languages
         FROM users WHERE email = ?
     )";
-    
-    sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(db_.getHandle(), select_sql.c_str(), -1, &stmt, nullptr);
-    if (rc != SQLITE_OK) {
-        return std::nullopt;
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return std::nullopt;
+
+    stmt.bindText(1, email);
+    if (stmt.step() == SQLITE_ROW) {
+        return userFromStatement(stmt);
     }
-    
-    sqlite3_bind_text(stmt, 1, email.c_str(), -1, SQLITE_STATIC);
-    
-    rc = sqlite3_step(stmt);
-    if (rc == SQLITE_ROW) {
-        User user = userFromStatement(stmt);
-        sqlite3_finalize(stmt);
-        return user;
-    }
-    
-    sqlite3_finalize(stmt);
+
     return std::nullopt;
 }
 
+// Find user by ID
+std::optional<User> UserRepository::findById(int id) {
+    if (!database_ || !database_->isOpen()) return std::nullopt;
+
+    const std::string sql = R"(
+        SELECT id, username, email, password_hash, university, department,
+               enrollment_year, primary_language, additional_languages
+        FROM users WHERE id = ?
+    )";
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return std::nullopt;
+
+    stmt.bindInt(1, id);
+    if (stmt.step() == SQLITE_ROW) {
+        return userFromStatement(stmt);
+    }
+
+    return std::nullopt;
+}
+
+// Check if username exists
 bool UserRepository::usernameExists(const std::string& username) {
     return findByUsername(username).has_value();
 }
 
+// Check if email exists
 bool UserRepository::emailExists(const std::string& email) {
     return findByEmail(email).has_value();
 }
 
-User UserRepository::userFromStatement(sqlite3_stmt* stmt) {
+// Build User object from a DB row
+User UserRepository::userFromStatement(db::Statement& stmt) {
     User user;
-    
-    user.setId(sqlite3_column_int(stmt, 0));
-    user.setUsername(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)));
-    user.setEmail(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)));
-    user.setPasswordHash(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3)));
-    
-    if (sqlite3_column_type(stmt, 4) != SQLITE_NULL) {
-        user.setUniversity(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4)));
+    user.setId(stmt.getInt(0));
+    user.setUsername(stmt.getText(1));
+    user.setEmail(stmt.getText(2));
+    user.setPasswordHash(stmt.getText(3));
+    user.setUniversity(stmt.getText(4));
+    user.setDepartment(stmt.getText(5));
+
+    std::string year_str = stmt.getText(6);
+    if (!year_str.empty()) user.setEnrollmentYear(std::stoi(year_str));
+
+    user.setPrimaryLanguage(stmt.getText(7));
+
+    std::string langs_str = stmt.getText(8);
+    if (!langs_str.empty()) {
+        std::vector<std::string> langs;
+        std::stringstream ss(langs_str);
+        std::string lang;
+        while (std::getline(ss, lang, ',')) {
+            if (!lang.empty()) langs.push_back(lang);
+        }
+        user.setAdditionalLanguages(langs);
     }
-    
-    if (sqlite3_column_type(stmt, 5) != SQLITE_NULL) {
-        user.setDepartment(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5)));
-    }
-    
-    if (sqlite3_column_type(stmt, 6) != SQLITE_NULL) {
-        user.setEnrollmentYear(sqlite3_column_int(stmt, 6));
-    }
-    
-    if (sqlite3_column_type(stmt, 7) != SQLITE_NULL) {
-        user.setPrimaryLanguage(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7)));
-    }
-    
+
     return user;
 }
 
+} // namespace repositories
 } // namespace sohbet
