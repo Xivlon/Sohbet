@@ -1,5 +1,0 @@
-workspaceLayout:
-  packages:
-    - 'server'
-    - 'client'
-    - 'shared'
