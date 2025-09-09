@@ -1,0 +1,41 @@
+Start testing: Sep 09 10:56 UTC
+----------------------------------------------------------
+1/2 Testing: test_user
+1/2 Test: test_user
+Command: "/home/runner/work/Sohbet/Sohbet/build/test_user"
+Directory: /home/runner/work/Sohbet/Sohbet/build
+"test_user" start time: Sep 09 10:56 UTC
+Output:
+----------------------------------------------------------
+Serialized JSON: {"id":123,"username":"test_user","email":"test@example.com","university":"Test University","department":"Computer Science","enrollment_year":2023,"primary_language":"English"}
+User JSON serialization test passed!
+User JSON deserialization test passed!
+All user tests passed!
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_user" end time: Sep 09 10:56 UTC
+"test_user" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/2 Testing: test_user_repository
+2/2 Test: test_user_repository
+Command: "/home/runner/work/Sohbet/Sohbet/build/test_user_repository"
+Directory: /home/runner/work/Sohbet/Sohbet/build
+"test_user_repository" start time: Sep 09 10:56 UTC
+Output:
+----------------------------------------------------------
+User repository creation test passed!
+User repository find test passed!
+User repository uniqueness test passed!
+All user repository tests passed!
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_user_repository" end time: Sep 09 10:56 UTC
+"test_user_repository" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Sep 09 10:56 UTC

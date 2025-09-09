@@ -1,0 +1,29 @@
+
+# Consider dependencies only in project.
+set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
+
+# The set of languages for which implicit dependencies are needed:
+set(CMAKE_DEPENDS_LANGUAGES
+  )
+
+# The set of dependency files which are needed:
+set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/runner/work/Sohbet/Sohbet/src/db/database.cpp" "CMakeFiles/sohbet.dir/src/db/database.cpp.o" "gcc" "CMakeFiles/sohbet.dir/src/db/database.cpp.o.d"
+  "/home/runner/work/Sohbet/Sohbet/src/main.cpp" "CMakeFiles/sohbet.dir/src/main.cpp.o" "gcc" "CMakeFiles/sohbet.dir/src/main.cpp.o.d"
+  "/home/runner/work/Sohbet/Sohbet/src/models/user.cpp" "CMakeFiles/sohbet.dir/src/models/user.cpp.o" "gcc" "CMakeFiles/sohbet.dir/src/models/user.cpp.o.d"
+  "/home/runner/work/Sohbet/Sohbet/src/repositories/user_repository.cpp" "CMakeFiles/sohbet.dir/src/repositories/user_repository.cpp.o" "gcc" "CMakeFiles/sohbet.dir/src/repositories/user_repository.cpp.o.d"
+  "/home/runner/work/Sohbet/Sohbet/src/server/server.cpp" "CMakeFiles/sohbet.dir/src/server/server.cpp.o" "gcc" "CMakeFiles/sohbet.dir/src/server/server.cpp.o.d"
+  "/home/runner/work/Sohbet/Sohbet/src/utils/hash.cpp" "CMakeFiles/sohbet.dir/src/utils/hash.cpp.o" "gcc" "CMakeFiles/sohbet.dir/src/utils/hash.cpp.o.d"
+  "" "sohbet" "gcc" "CMakeFiles/sohbet.dir/link.d"
+  )
+
+# Targets to which this target links which contain Fortran sources.
+set(CMAKE_Fortran_TARGET_LINKED_INFO_FILES
+  )
+
+# Targets to which this target links which contain Fortran sources.
+set(CMAKE_Fortran_TARGET_FORWARD_LINKED_INFO_FILES
+  )
+
+# Fortran module output directory.
+set(CMAKE_Fortran_TARGET_MODULE_DIR "")
