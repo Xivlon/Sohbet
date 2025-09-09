@@ -1,4 +1,5 @@
 #include "utils/hash.h"
+#include "security/bcrypt_wrapper.h"
 #include <functional>
 #include <random>
 #include <iomanip>
@@ -7,10 +8,24 @@
 namespace sohbet {
 namespace utils {
 
-// PLACEHOLDER IMPLEMENTATION - NOT SECURE
-// This will be replaced with bcrypt
+// Main API functions - now using bcrypt
+std::string hash_password(const std::string& password) {
+    return security::hash_password_bcrypt(password);
+}
 
-std::string generate_salt() {
+bool verify_password(const std::string& password, const std::string& stored_hash) {
+    // First try bcrypt verification
+    if (stored_hash.length() >= 60 && stored_hash[0] == '$') {
+        // Looks like a bcrypt hash
+        return security::verify_password_bcrypt(password, stored_hash);
+    }
+    
+    // Fall back to legacy verification for existing data
+    return verify_password_legacy(password, stored_hash);
+}
+
+// Legacy implementation for backward compatibility (DEPRECATED)
+std::string generate_salt_legacy() {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, 255);
@@ -22,10 +37,9 @@ std::string generate_salt() {
     return oss.str();
 }
 
-std::string hash_password(const std::string& password) {
+std::string hash_password_legacy(const std::string& password) {
     // INSECURE PLACEHOLDER: std::hash with fixed salt
-    // This will be replaced with bcrypt
-    std::string salt = generate_salt();
+    std::string salt = generate_salt_legacy();
     std::hash<std::string> hasher;
     size_t hash_value = hasher(password + salt);
     
@@ -34,9 +48,8 @@ std::string hash_password(const std::string& password) {
     return oss.str();
 }
 
-bool verify_password(const std::string& password, const std::string& stored_hash) {
+bool verify_password_legacy(const std::string& password, const std::string& stored_hash) {
     // INSECURE PLACEHOLDER: extract salt and verify
-    // This will be replaced with bcrypt verification
     size_t separator = stored_hash.find(':');
     if (separator == std::string::npos) {
         return false;

@@ -1,3 +1,0 @@
-test_user 1 0.00408371
-test_user_repository 1 0.00266241
----

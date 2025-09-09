@@ -1,5 +1,7 @@
 #include "server/server.h"
 #include "models/user.h"
+#include "security/jwt.h"
+#include "utils/hash.h"
 #include <iostream>
 #include <regex>
 
@@ -101,13 +103,66 @@ std::string AcademicSocialServer::handleUserRegistration(const std::string& requ
 }
 
 std::string AcademicSocialServer::handleLogin(const std::string& request_body) {
-    // Placeholder for login implementation
-    return jsonError("Login endpoint not yet implemented", 501);
+    try {
+        // Parse username and password from JSON
+        std::regex username_regex("\"username\"\\s*:\\s*\"([^\"]+)\"");
+        std::regex password_regex("\"password\"\\s*:\\s*\"([^\"]+)\"");
+        std::smatch username_match, password_match;
+        
+        if (!std::regex_search(request_body, username_match, username_regex) ||
+            !std::regex_search(request_body, password_match, password_regex)) {
+            return jsonError("Username and password are required", 400);
+        }
+        
+        std::string username = username_match[1].str();
+        std::string password = password_match[1].str();
+        
+        // Find user by username
+        auto user_opt = user_repository_->findByUsername(username);
+        if (!user_opt.has_value()) {
+            return jsonError("Invalid username or password", 401);
+        }
+        
+        User user = user_opt.value();
+        
+        // Verify password using bcrypt
+        if (!utils::verify_password(password, user.getPasswordHash())) {
+            return jsonError("Invalid username or password", 401);
+        }
+        
+        // Generate JWT token
+        std::string token = security::generate_jwt_token(username, user.getId().value());
+        
+        // Return success response with token
+        std::ostringstream response;
+        response << "{";
+        response << "\"token\":\"" << token << "\",";
+        response << "\"user\":" << user.toJson();
+        response << "}";
+        
+        return response.str();
+        
+    } catch (const std::exception& e) {
+        return jsonError("Invalid request format", 400);
+    }
 }
 
 std::string AcademicSocialServer::handleGetUser(const std::string& username) {
-    // Placeholder for user retrieval implementation
-    return jsonError("User retrieval endpoint not yet implemented", 501);
+    try {
+        // Find user by username
+        auto user_opt = user_repository_->findByUsername(username);
+        if (!user_opt.has_value()) {
+            return jsonError("User not found", 404);
+        }
+        
+        User user = user_opt.value();
+        
+        // Return public user profile (password hash is not included in toJson())
+        return user.toJson();
+        
+    } catch (const std::exception& e) {
+        return jsonError("Internal server error", 500);
+    }
 }
 
 std::string AcademicSocialServer::jsonError(const std::string& message, int code) {
