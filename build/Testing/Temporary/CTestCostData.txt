@@ -1,3 +1,0 @@
-UserTest 1 0.00491041
-UserRepositoryTest 1 0.00262078
----

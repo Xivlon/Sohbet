@@ -1,7 +1,0 @@
-/home/runner/work/Sohbet/Sohbet/build/CMakeFiles/sohbet_lib.dir
-/home/runner/work/Sohbet/Sohbet/build/CMakeFiles/sohbet.dir
-/home/runner/work/Sohbet/Sohbet/build/CMakeFiles/test_user.dir
-/home/runner/work/Sohbet/Sohbet/build/CMakeFiles/test_user_repository.dir
-/home/runner/work/Sohbet/Sohbet/build/CMakeFiles/test.dir
-/home/runner/work/Sohbet/Sohbet/build/CMakeFiles/edit_cache.dir
-/home/runner/work/Sohbet/Sohbet/build/CMakeFiles/rebuild_cache.dir

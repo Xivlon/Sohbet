@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/test_user.dir/link.d CMakeFiles/test_user.dir/tests/test_user.cpp.o -o test_user  libsohbet_lib.a /usr/lib/x86_64-linux-gnu/libsqlite3.so
