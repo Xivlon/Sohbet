@@ -43,7 +43,7 @@ public:
      * @param port Port to listen on
      * @param db_path Path to SQLite database file
      */
-    AcademicSocialServer(int port, const std::string& db_path);
+    AcademicSocialServer(int port = 8080, const std::string& db_path = "academic.db");
     
     /**
      * Destructor
@@ -71,7 +71,6 @@ public:
 
 private:
     int port_;
-    std::string db_path_;
     std::shared_ptr<db::Database> database_;
     std::shared_ptr<repositories::UserRepository> user_repository_;
     

@@ -1,4 +1,5 @@
 #include "db/database.h"
+#include <stdexcept>
 #include <iostream>
 
 namespace sohbet {
@@ -7,11 +8,10 @@ namespace db {
 Database::Database(const std::string& db_path) : db_(nullptr), db_path_(db_path) {
     int result = sqlite3_open(db_path.c_str(), &db_);
     if (result != SQLITE_OK) {
-        std::cerr << "Failed to open database: " << sqlite3_errmsg(db_) << std::endl;
-        if (db_) {
-            sqlite3_close(db_);
-            db_ = nullptr;
-        }
+        std::string error = sqlite3_errmsg(db_);
+        if (db_) sqlite3_close(db_);
+        db_ = nullptr;
+        throw std::runtime_error("Failed to open database: " + error);
     }
 }
 
@@ -35,13 +35,13 @@ Database& Database::operator=(Database&& other) noexcept {
 
 bool Database::execute(const std::string& sql) {
     if (!db_) return false;
-    
+
     char* error_msg = nullptr;
     int result = sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, &error_msg);
     
     if (result != SQLITE_OK) {
-        std::cerr << "SQL error: " << error_msg << std::endl;
-        sqlite3_free(error_msg);
+        std::cerr << "SQL error: " << (error_msg ? error_msg : "Unknown") << std::endl;
+        if (error_msg) sqlite3_free(error_msg);
         return false;
     }
     
@@ -50,15 +50,15 @@ bool Database::execute(const std::string& sql) {
 
 sqlite3_stmt* Database::prepare(const std::string& sql) {
     if (!db_) return nullptr;
-    
+
     sqlite3_stmt* stmt = nullptr;
     int result = sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
-    
+
     if (result != SQLITE_OK) {
         std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db_) << std::endl;
         return nullptr;
     }
-    
+
     return stmt;
 }
 
@@ -68,8 +68,7 @@ sqlite3_int64 Database::lastInsertRowId() const {
 }
 
 std::string Database::getLastError() const {
-    if (!db_) return "Database not open";
-    return sqlite3_errmsg(db_);
+    return db_ ? sqlite3_errmsg(db_) : "Database not open";
 }
 
 void Database::close() {
@@ -79,7 +78,9 @@ void Database::close() {
     }
 }
 
-// Statement implementation
+// ===================
+// Statement class
+// ===================
 
 Statement::Statement(Database& db, const std::string& sql) : stmt_(nullptr) {
     stmt_ = db.prepare(sql);

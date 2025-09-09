@@ -12,7 +12,7 @@ void testUserJsonSerialization() {
     user.setEmail("test@example.com");
     user.setUniversity("Test University");
     user.setDepartment("Computer Science");
-    user.setEnrollmentYear(2022);
+    user.setEnrollmentYear(2023);
     user.setPrimaryLanguage("English");
     user.setAdditionalLanguages({"Turkish", "German"});
     user.setPasswordHash("secret_hash"); // Should not appear in JSON
@@ -36,7 +36,7 @@ void testUserJsonSerialization() {
 void testUserValidation() {
     std::cout << "Testing User validation..." << std::endl;
     
-    // Test valid username
+    // Test valid usernames
     assert(sohbet::User::isValidUsername("valid_user123"));
     assert(sohbet::User::isValidUsername("ABC"));
     assert(!sohbet::User::isValidUsername("ab")); // too short
@@ -44,13 +44,13 @@ void testUserValidation() {
     assert(!sohbet::User::isValidUsername("invalid-user")); // contains dash
     assert(!sohbet::User::isValidUsername("invalid user")); // contains space
     
-    // Test valid email
+    // Test valid emails
     assert(sohbet::User::isValidEmail("user@example.com"));
     assert(sohbet::User::isValidEmail("test@test.edu"));
     assert(!sohbet::User::isValidEmail("invalid-email"));
     assert(!sohbet::User::isValidEmail(""));
     
-    // Test valid password
+    // Test valid passwords
     assert(sohbet::User::isValidPassword("password123"));
     assert(sohbet::User::isValidPassword("12345678"));
     assert(!sohbet::User::isValidPassword("short"));

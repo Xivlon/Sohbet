@@ -1,191 +1,345 @@
 # Sohbet
-C++ Academic Social Media Backend
 
-## Overview
-Sohbet is an academic social media backend designed specifically for university students and educational communities. This C++ implementation provides a robust foundation for academic networking, course collaboration, and knowledge sharing.
+A Turkish-centered social media backend written in C++.
 
-## Version: 0.2.0-academic
+## Version 0.2.0-academic
+An academic-oriented backend featuring secure authentication and user management.
 
-### Features
-- **User Registration & Authentication**: Secure user registration with academic profile fields
-- **SQLite Database**: Lightweight persistence layer with RAII wrapper
-- **Academic Profiles**: Support for university, department, enrollment year, and language preferences
-- **RESTful API**: Clean HTTP endpoints for client integration
+---
 
-### Security Notice
-⚠️ **WARNING**: The current implementation uses a placeholder hashing mechanism (std::hash + salt) for passwords. This is **INSECURE** and MUST be replaced with bcrypt or Argon2 before any production deployment.
+## Features
+
+### Phase 1: Foundation & Authentication ✅
+- **User Registration**: `POST /api/users` with validation and uniqueness checks  
+- **Secure Password Hashing**: Production-ready bcrypt implementation (12 rounds)  
+- **User Authentication**: `POST /api/login` with JWT token generation  
+- **User Retrieval**: `GET /api/users/:username` for public profiles  
+- **SQLite Integration**: RAII database wrapper with migrations  
+- **Academic Profile Fields**: `username`, `email`, `university`, `department`, `enrollment_year`, `primary_language`  
+
+### Security Features ✅
+- **bcrypt Password Hashing**: Replaces insecure placeholder implementation  
+- **JWT Authentication**: HS256 signed tokens with expiration  
+- **Password Protection**: No password/hash exposure in API responses  
+- **Input Validation**: Username patterns, email format, password strength  
+
+---
 
 ## API Endpoints
 
-### GET /api/status
-Returns server status and version information.
+### User Registration
+```bash
+POST /api/users
+Content-Type: application/json
 
-**Response (200):**
-```json
 {
-    "status": "ok",
-    "version": "0.2.0-academic",
-    "service": "Sohbet Academic Social Backend"
+  "username": "ali_student",
+  "email": "ali@example.edu", 
+  "password": "StrongPass123",
+  "university": "Istanbul Technical University",
+  "department": "Computer Engineering",
+  "enrollment_year": 2023,
+  "primary_language": "Turkish"
 }
-```
-
-### GET /api/users/demo
-Returns example usage for user registration.
-
-**Response (200):**
-```json
+###Response (201 Created):
 {
-    "message": "User registration endpoint available at POST /api/users",
-    "example": {
-        "username": "ali_student",
-        "email": "ali@example.edu",
-        "password": "StrongPass123",
-        "university": "Istanbul Technical University",
-        "department": "Computer Engineering",
-        "enrollment_year": 2022,
-        "primary_language": "Turkish",
-        "additional_languages": ["English", "German"]
-    }
+  "id": 1,
+  "username": "ali_student",
+  "email": "ali@example.edu",
+  "university": "Istanbul Technical University", 
+  "department": "Computer Engineering",
+  "enrollment_year": 2023,
+  "primary_language": "Turkish"
 }
-```
+###User Login
+POST /api/login
+Content-Type: application/json
 
-### POST /api/users
-Create a new user account.
-
-**Request Body:**
-```json
 {
-    "username": "ali_student",
-    "email": "ali@example.edu",
-    "password": "StrongPass123",
-    "university": "Istanbul Technical University",
-    "department": "Computer Engineering",
-    "enrollment_year": 2022,
-    "primary_language": "Turkish",
-    "additional_languages": ["English", "German"]
+  "username": "ali_student",
+  "password": "StrongPass123"
 }
-```
-
-**Validation Rules:**
-- `username`: 3-32 characters, alphanumeric and underscores only
-- `email`: Must contain '@' symbol
-- `password`: Minimum 8 characters
-- Uniqueness enforced on username and email
-
-**Success Response (201):**
-```json
+###Response (200 OK):
 {
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
     "id": 1,
     "username": "ali_student",
-    "email": "ali@example.edu",
-    "university": "Istanbul Technical University",
-    "department": "Computer Engineering",
-    "enrollment_year": 2022,
-    "primary_language": "Turkish",
-    "additional_languages": ["English", "German"]
+    "email": "ali@example.edu"
+  }
+}
+
+**Roadmap**
+
+Phase 2: Friendships and messaging
+
+Phase 3: News feed and groups
+
+Phase 4: Media uploads and notifications
+
+##Build
+```bash
+mkdir build && cd build
+cmake ..
+make
+./sohbet
+```
+###Run Tests
+```bash
+ctest
+```
+**Dev Notes**
+##.gitignore
+# Shared libraries
+*.so
+*.dylib
+*.exe
+
+# Database files
+*.db
+*.sqlite
+!.gitkeep
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*~
+.#*
+
+# Log files
+*.log
+
+##CMakeLists.txt
+cmake_minimum_required(VERSION 3.16)
+project(Sohbet VERSION 0.2.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Include FetchContent for external dependencies
+include(FetchContent)
+
+# Fetch bcrypt library
+FetchContent_Declare(
+  bcrypt
+  GIT_REPOSITORY https://github.com/trusch/libbcrypt.git
+  GIT_TAG        master
+)
+FetchContent_MakeAvailable(bcrypt)
+
+# Find packages
+find_package(SQLite3 REQUIRED)
+find_package(OpenSSL REQUIRED)
+
+# Include directories
+include_directories(include)
+include_directories(${CMAKE_BINARY_DIR}/_deps/bcrypt-src/include)
+
+# Source files
+set(SOURCES
+    src/models/user.cpp
+    src/db/database.cpp
+    src/repositories/user_repository.cpp
+    src/utils/hash.cpp
+    src/security/bcrypt_wrapper.cpp
+    src/security/jwt.cpp
+    src/server/server.cpp
+)
+
+# Create library
+add_library(sohbet_lib ${SOURCES})
+target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt OpenSSL::SSL OpenSSL::Crypto)
+target_include_directories(sohbet_lib PUBLIC include)
+
+# Main executable
+add_executable(sohbet src/main.cpp)
+target_link_libraries(sohbet sohbet_lib)
+
+# Enable testing
+enable_testing()
+
+# Test executables
+add_executable(test_user tests/test_user.cpp)
+target_link_libraries(test_user sohbet_lib)
+add_test(NAME UserTest COMMAND test_user)
+
+add_executable(test_user_repository tests/test_user_repository.cpp)
+target_link_libraries(test_user_repository sohbet_lib)
+add_test(NAME UserRepositoryTest COMMAND test_user_repository)
+
+add_executable(test_bcrypt tests/test_bcrypt.cpp)
+target_link_libraries(test_bcrypt bcrypt)
+add_test(NAME BcryptTest COMMAND test_bcrypt)
+
+add_executable(test_authentication tests/test_authentication.cpp)
+target_link_libraries(test_authentication sohbet_lib)
+add_test(NAME AuthenticationTest COMMAND test_authentication)
+
+# Compiler flags
+target_compile_options(sohbet_lib PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(sohbet PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_user PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_user_repository PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_bcrypt PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_authentication PRIVATE -Wall -Wextra -Wpedantic)
+#### User Retrieval
+```bash
+GET /api/users/:username
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "username": "ali_student",
+  "email": "ali@example.edu",
+  "university": "Istanbul Technical University",
+  "department": "Computer Engineering",
+  "enrollment_year": 2023,
+  "primary_language": "Turkish"
 }
 ```
 
-**Error Responses:**
-- `400`: Validation error
-- `409`: Username or email already exists
-- `500`: Internal server error
+#### Other Endpoints
+- `GET /api/status` - Server status and version
+- `GET /api/users/demo` - Demo user data
 
-## Building & Running
+### Error Responses
+- **400 Bad Request**: Invalid input format or validation errors
+- **401 Unauthorized**: Invalid credentials
+- **404 Not Found**: User not found
+- **409 Conflict**: Username or email already exists
+- **500 Internal Server Error**: Database or system errors
+
+## Build & Run
 
 ### Prerequisites
-- CMake 3.16+
-- C++17 compatible compiler
+- CMake 3.15+
+- C++17 compiler
 - SQLite3 development libraries
+- OpenSSL development libraries
 
-### Build Instructions
+### Build
 ```bash
-mkdir build
-cd build
-cmake ..
-make
+cmake -B build .
+cmake --build build
 ```
 
-### Running Tests
+### Run Tests
 ```bash
-ctest -V
+cmake --build build --target test
 ```
 
-### Running the Server
+### Run Server
 ```bash
-./sohbet
+./build/sohbet
 ```
 
-### Manual Testing with curl
-```bash
-# Register a new user
-curl -X POST http://localhost:8080/api/users \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "username":"test_student",
-    "email":"test@university.edu",
-    "password":"SecurePass123",
-    "university":"Example University",
-    "department":"Computer Science",
-    "enrollment_year":2023,
-    "primary_language":"English"
-  }'
-```
+## Security Status ✅
 
-## Database Schema
+- **Password Hashing**: Production-ready bcrypt with 12 rounds
+- **Authentication**: JWT tokens with HMAC-SHA256 signatures
+- **Data Protection**: No sensitive data in API responses
+- **Input Validation**: Comprehensive validation and sanitization
+### Security Notice
+⚠️ **WARNING**: The current implementation uses a placeholder hashing mechanism (std::hash + salt) for password
 
-### Users Table
-```sql
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    university TEXT,
-    department TEXT,
-    enrollment_year INTEGER,
-    primary_language TEXT,
-    additional_languages TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-```
-
+**Previous security warning resolved**: Placeholder std::hash implementation has been completely replaced with secure bcrypt.
 ## Architecture
 
 ### Components
-- **Models**: User data structures with JSON serialization
-- **Database**: SQLite RAII wrapper for safe database operations
-- **Repositories**: Data access layer with CRUD operations
-- **Server**: HTTP request handling and routing
-- **Utils**: Hashing utilities (placeholder implementation)
+- **Models**: User model with academic profile fields and JSON serialization  
+- **Database**: SQLite RAII wrapper with migrations and safe operations  
+- **Repositories**: Data access layer with CRUD operations  
+- **Security**: bcrypt password hashing and JWT token management  
+- **Server**: HTTP request handlers and endpoint routing  
+- **Utils**: Hashing utilities and input validation helpers  
 
-### Security Features
-- Password hashing (placeholder - needs replacement)
-- Input validation
-- SQL injection prevention through prepared statements
-- Password hashes never exposed in API responses
+### File Structure
+```
+include/
+├── models/user.h
+├── db/database.h
+├── repositories/user_repository.h
+├── security/bcrypt_wrapper.h
+├── security/jwt.h
+├── server/server.h
+└── utils/hash.h
+
+src/
+├── models/user.cpp
+├── db/database.cpp
+├── repositories/user_repository.cpp
+├── security/bcrypt_wrapper.cpp
+├── security/jwt.cpp
+├── server/server.cpp
+├── utils/hash.cpp
+└── main.cpp
+
+tests/
+├── test_user.cpp
+├── test_user_repository.cpp  
+├── test_bcrypt.cpp
+└── test_authentication.cpp
+```
+
+---
+
+## Dependencies
+- **SQLite3**: Database storage  
+- **bcrypt**: Secure password hashing (via FetchContent)  
+- **OpenSSL**: HMAC-SHA256 for JWT signatures  
+
+---
 
 ## Roadmap
 
-### Phase 2 (Current) ✅
-- User registration and authentication foundation
-- SQLite database integration
-- Basic API endpoints
+### Phase 1: Foundation & Authentication (Complete)
+- User Registration with validation and uniqueness checks  
+- Secure Password Hashing (bcrypt, 12 rounds)  
+- User Authentication with JWT token generation  
+- SQLite integration with RAII database wrapper and migrations  
+- Academic profile fields (username, email, university, department, enrollment_year, primary_language)  
 
-### Phase 3 (Planned)
-- Course and StudyGroup models
-- Proper bcrypt/Argon2 password hashing
-- JWT-based authentication
-- Extended user profiles
+### Phase 2: Course & Study Groups (Planned)
+- Course model with enrollment management  
+- StudyGroup model with membership  
+- Academic networking features  
 
-### Phase 4 (Future)
-- Posts and Q&A systems
-- Real-time messaging
-- File sharing capabilities
-- Advanced search and filtering
+### Phase 3: Content & Interaction (Planned)
+- Post creation and interaction  
+- Q&A system for academic help  
+- Real-time messaging  
+- Extended user profiles  
+
+### Phase 4: Advanced Features (Planned)
+- Email verification  
+- Rate limiting and security improvements  
+- File sharing capabilities  
+- Advanced search and filtering  
+- Analytics and insights  
+
+
+---
 
 ## Contributing
-This is an academic project focused on learning C++ backend development patterns and security practices.
+This is an academic project focused on learning C++ backend development patterns and security practices. Contributions are welcome, but please note this is not intended for production deployment without further hardening.
 
 ## License
-Educational use only - not intended for production deployment without security hardening.
+Educational use only — not intended for production deployment without additional security auditing.

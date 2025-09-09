@@ -26,11 +26,12 @@ public:
     bool migrate();
     
     /**
-     * Create a new user
+     * Create a new user with password hashing
      * @param user User object to create (ID will be set after creation)
-     * @return true if successful, false otherwise
+     * @param password Plaintext password
+     * @return User object if successful, nullopt otherwise
      */
-    bool createUser(User& user);
+    std::optional<User> create(User& user, const std::string& password);
     
     /**
      * Find a user by username

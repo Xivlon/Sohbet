@@ -1,4 +1,5 @@
 #include "utils/hash.h"
+#include "security/bcrypt_wrapper.h"
 #include <functional>
 #include <random>
 #include <iomanip>
@@ -7,64 +8,70 @@
 namespace sohbet {
 namespace utils {
 
-std::string Hash::generateSalt() {
-    return generateRandomString(16);
+// -------------------- Modern bcrypt API --------------------
+std::string hash_password(const std::string& password) {
+    return security::hash_password_bcrypt(password);
 }
 
-std::string Hash::hashPassword(const std::string& password, const std::string& salt) {
-    // WARNING: This is an INSECURE placeholder implementation!
-    // Using std::hash is NOT suitable for password hashing in production.
-    // Replace with bcrypt, Argon2, or similar before production deployment.
-    
-    std::string salted_password = salt + password + salt;
-    std::hash<std::string> hasher;
-    size_t hash_value = hasher(salted_password);
-    
-    // Convert to hex string
+bool verify_password(const std::string& password, const std::string& stored_hash) {
+    // If it looks like a bcrypt hash
+    if (!stored_hash.empty() && stored_hash[0] == '$' && stored_hash.length() >= 60) {
+        return security::verify_password_bcrypt(password, stored_hash);
+    }
+    // Fallback to legacy verification
+    return verify_password_legacy(password, stored_hash);
+}
+
+// -------------------- Legacy (insecure) hashing --------------------
+std::string generate_salt_legacy() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 255);
+
     std::ostringstream oss;
-    oss << std::hex << hash_value;
+    for (int i = 0; i < 16; ++i) {
+        oss << std::hex << std::setfill('0') << std::setw(2) << dis(gen);
+    }
     return oss.str();
 }
 
-bool Hash::verifyPassword(const std::string& password, const std::string& hash, const std::string& salt) {
-    std::string computed_hash = hashPassword(password, salt);
-    return computed_hash == hash;
+std::string hash_password_legacy(const std::string& password) {
+    std::string salt = generate_salt_legacy();
+    std::hash<std::string> hasher;
+    size_t hash_value = hasher(password + salt);
+
+    std::ostringstream oss;
+    oss << salt << ":" << hash_value;
+    return oss.str();
 }
 
-std::string Hash::generateSaltedHash(const std::string& password) {
-    std::string salt = generateSalt();
-    std::string hash = hashPassword(password, salt);
-    return salt + ":" + hash;
+bool verify_password_legacy(const std::string& password, const std::string& stored_hash) {
+    size_t separator = stored_hash.find(':');
+    if (separator == std::string::npos) return false;
+
+    std::string salt = stored_hash.substr(0, separator);
+    std::string hash_part = stored_hash.substr(separator + 1);
+
+    std::hash<std::string> hasher;
+    size_t computed_hash = hasher(password + salt);
+
+    return std::to_string(computed_hash) == hash_part;
+}
+#include "security/bcrypt_wrapper.h"
+#include <bcrypt/BCrypt.hpp> // Using C++ BCrypt library (https://github.com/rg3/bcrypt)
+
+namespace sohbet {
+namespace security {
+
+std::string hash_password_bcrypt(const std::string& password) {
+    // Generate a bcrypt hash with default work factor (10)
+    return BCrypt::generateHash(password);
 }
 
-bool Hash::verifySaltedHash(const std::string& password, const std::string& salted_hash) {
-    size_t separator_pos = salted_hash.find(':');
-    if (separator_pos == std::string::npos) {
-        return false;
-    }
-    
-    std::string salt = salted_hash.substr(0, separator_pos);
-    std::string hash = salted_hash.substr(separator_pos + 1);
-    
-    return verifyPassword(password, hash, salt);
+bool verify_password_bcrypt(const std::string& password, const std::string& hash) {
+    return BCrypt::validatePassword(password, hash);
 }
 
-std::string Hash::generateRandomString(size_t length) {
-    const std::string charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    
-    std::random_device rd;
-    std::mt19937 generator(rd());
-    std::uniform_int_distribution<> distribution(0, charset.size() - 1);
-    
-    std::string result;
-    result.reserve(length);
-    
-    for (size_t i = 0; i < length; ++i) {
-        result += charset[distribution(generator)];
-    }
-    
-    return result;
-}
-
+} // namespace security
 } // namespace utils
 } // namespace sohbet
