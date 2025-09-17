@@ -7,7 +7,7 @@ A Turkish-centered social media platform with C++ backend and React frontend.
 This project demonstrates modern full-stack development with:
 - **Backend**: C++ with SQLite, bcrypt, JWT authentication
 - **Frontend**: React with TypeScript, Material-UI components
-- **Architecture**: RESTful API communication between frontend and backend
+- **Architecture**: RESTful API communication between React frontend and pure C++ backend
 
 ## Quick Start
 
