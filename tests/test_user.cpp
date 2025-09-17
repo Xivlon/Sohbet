@@ -71,8 +71,7 @@ void testUserFromJson() {
         "primary_language": "JSON"
     })";
     
-    sohbet::User user;
-    user.fromJson(json);
+    sohbet::User user = sohbet::User::fromJson(json);
     
     assert(user.getUsername() == "json_user");
     assert(user.getEmail() == "json@example.com");
