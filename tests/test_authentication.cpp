@@ -104,10 +104,52 @@ void test_jwt_functionality() {
     std::cout << "JWT functionality tests passed!" << std::endl;
 }
 
+void test_demo_user_authentication() {
+    std::cout << "Testing demo user authentication..." << std::endl;
+    
+    // Create server with in-memory database
+    sohbet::server::AcademicSocialServer server(8080, ":memory:");
+    assert(server.initialize());
+    
+    // Test demo user login with correct credentials
+    std::string demo_login_body = R"({
+        "username": "demo_student",
+        "password": "demo123"
+    })";
+    
+    sohbet::server::HttpRequest demo_login_request("POST", "/api/login", demo_login_body);
+    auto demo_login_response = server.handleRequest(demo_login_request);
+    std::cout << "Demo login response: " << demo_login_response.body << std::endl;
+    
+    // Should contain token and user data
+    assert(demo_login_response.status_code == 200);
+    assert(demo_login_response.body.find("\"token\":") != std::string::npos);
+    assert(demo_login_response.body.find("\"user\":") != std::string::npos);
+    assert(demo_login_response.body.find("\"username\":\"demo_student\"") != std::string::npos);
+    assert(demo_login_response.body.find("\"university\":\"Demo University\"") != std::string::npos);
+    
+    // Test demo user login with incorrect credentials
+    std::string wrong_login_body = R"({
+        "username": "demo_student",
+        "password": "wrong_password"
+    })";
+    
+    sohbet::server::HttpRequest wrong_login_request("POST", "/api/login", wrong_login_body);
+    auto wrong_login_response = server.handleRequest(wrong_login_request);
+    std::cout << "Wrong password response: " << wrong_login_response.body << std::endl;
+    
+    // Should fail with 401
+    assert(wrong_login_response.status_code == 401);
+    assert(wrong_login_response.body.find("\"error\":") != std::string::npos);
+    
+    std::cout << "Demo user authentication tests passed!" << std::endl;
+}
+
 int main() {
     try {
         test_jwt_functionality();
         test_user_registration_login_retrieval();
+        test_demo_user_authentication();
         std::cout << "All authentication tests passed!" << std::endl;
         return 0;
     } catch (const std::exception& e) {

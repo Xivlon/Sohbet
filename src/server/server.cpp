@@ -32,6 +32,9 @@ bool AcademicSocialServer::initialize() {
         return false;
     }
 
+    // Ensure demo user exists for demo/testing purposes
+    ensureDemoUserExists();
+
     std::cout << "Server initialized successfully" << std::endl;
     return true;
 }
@@ -364,6 +367,29 @@ bool AcademicSocialServer::validateUserRegistration(const std::string& username,
         return false;
     }
     return true;
+}
+
+void AcademicSocialServer::ensureDemoUserExists() {
+    // Check if demo user already exists
+    auto existing_user = user_repository_->findByUsername("demo_student");
+    if (existing_user.has_value()) {
+        std::cout << "Demo user already exists" << std::endl;
+        return;
+    }
+
+    // Create demo user
+    User demo_user("demo_student", "demo@example.edu");
+    demo_user.setUniversity("Demo University");
+    demo_user.setDepartment("Computer Science");
+    demo_user.setEnrollmentYear(2023);
+    demo_user.setPrimaryLanguage("Turkish");
+
+    auto created_user = user_repository_->create(demo_user, "demo123");
+    if (created_user.has_value()) {
+        std::cout << "Demo user created successfully (ID: " << created_user->getId().value() << ")" << std::endl;
+    } else {
+        std::cerr << "Warning: Failed to create demo user" << std::endl;
+    }
 }
 
 } // namespace server

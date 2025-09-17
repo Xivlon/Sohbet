@@ -102,6 +102,7 @@ private:
     HttpResponse createErrorResponse(int status_code, const std::string& message);
     std::string extractJsonField(const std::string& json, const std::string& field);
     bool validateUserRegistration(const std::string& username, const std::string& email, const std::string& password, std::string& error);
+    void ensureDemoUserExists();
 };
 
 } // namespace server
