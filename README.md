@@ -1,13 +1,73 @@
 # Sohbet
 
-A Turkish-centered social media backend written in C++.
+A Turkish-centered social media platform with C++ backend and React frontend.
 
 ## Version 0.2.0-academic
-An academic-oriented backend featuring secure authentication and user management.
+
+This project demonstrates modern full-stack development with:
+- **Backend**: C++ with SQLite, bcrypt, JWT authentication
+- **Frontend**: React with TypeScript, Material-UI components
+- **Architecture**: RESTful API communication between frontend and backend
+
+## Quick Start
+
+### Prerequisites
+- **C++ Environment**: cmake, make, SQLite3, OpenSSL
+- **Node.js**: Version 16+ with npm
+
+### Full Stack Startup
+```bash
+# Clone the repository
+git clone https://github.com/Xivlon/Sohbet.git
+cd Sohbet
+
+# Run both backend and frontend
+./start-fullstack.sh
+```
+
+This will:
+1. Build the C++ backend (if needed)
+2. Install React dependencies (if needed)  
+3. Start backend server on port 8080
+4. Start frontend development server on port 3000
+5. Open your browser to http://localhost:3000
+
+### Manual Setup
+
+#### Backend Only
+```bash
+mkdir build && cd build
+cmake ..
+make
+./sohbet
+```
+
+#### Frontend Only
+```bash
+cd frontend
+npm install
+npm start
+```
 
 ---
 
 ## Features
+
+### Backend (C++) ✅
+- **User Registration**: `POST /api/users` with validation and uniqueness checks  
+- **Secure Password Hashing**: Production-ready bcrypt implementation (12 rounds)  
+- **User Authentication**: `POST /api/login` with JWT token generation  
+- **User Retrieval**: `GET /api/users/:username` for public profiles  
+- **SQLite Integration**: RAII database wrapper with migrations  
+- **Academic Profile Fields**: `username`, `email`, `university`, `department`, `enrollment_year`, `primary_language`  
+
+### Frontend (React) ✅
+- **Modern UI**: Material-UI components with responsive design
+- **User Authentication**: Login and registration forms with validation
+- **User Dashboard**: Profile display with academic information
+- **Real-time Integration**: Live communication with C++ backend API
+- **Status Display**: Server health monitoring and demo user information
+- **TypeScript**: Type-safe development with comprehensive interfaces
 
 ### Phase 1: Foundation & Authentication ✅
 - **User Registration**: `POST /api/users` with validation and uniqueness checks  
