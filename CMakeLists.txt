@@ -57,7 +57,7 @@ target_link_libraries(test_user_repository sohbet_lib)
 add_test(NAME UserRepositoryTest COMMAND test_user_repository)
 
 add_executable(test_bcrypt tests/test_bcrypt.cpp)
-target_link_libraries(test_bcrypt bcrypt)
+target_link_libraries(test_bcrypt sohbet_lib bcrypt)
 add_test(NAME BcryptTest COMMAND test_bcrypt)
 
 add_executable(test_authentication tests/test_authentication.cpp)

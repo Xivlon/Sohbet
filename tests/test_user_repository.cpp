@@ -38,9 +38,10 @@ void testUserCreationAndRetrieval() {
     user.setAdditionalLanguages({"Turkish", "German"});
 
     // Save user
-    assert(repo.createUser(user));
-    assert(user.getId().has_value());
-    assert(user.getId().value() > 0);
+    auto created_user = repo.create(user, "test_password");
+    assert(created_user.has_value());
+    assert(created_user->getId().has_value());
+    assert(created_user->getId().value() > 0);
 
     // Retrieve by username
     auto found_user = repo.findByUsername("test_user");
@@ -84,22 +85,22 @@ void testUniqueConstraints() {
     sohbet::User user1;
     user1.setUsername("unique_user");
     user1.setEmail("unique@example.com");
-    user1.setPasswordHash("hash1");
-    assert(repo.createUser(user1));
+    auto created_user1 = repo.create(user1, "password1");
+    assert(created_user1.has_value());
 
     // Try to create user with same username
     sohbet::User user2;
     user2.setUsername("unique_user"); // Same username
     user2.setEmail("different@example.com");
-    user2.setPasswordHash("hash2");
-    assert(!repo.createUser(user2)); // Should fail due to unique constraint
+    auto created_user2 = repo.create(user2, "password2");
+    assert(!created_user2.has_value()); // Should fail due to unique constraint
 
     // Try to create user with same email
     sohbet::User user3;
     user3.setUsername("different_user");
     user3.setEmail("unique@example.com"); // Same email
-    user3.setPasswordHash("hash3");
-    assert(!repo.createUser(user3)); // Should fail due to unique constraint
+    auto created_user3 = repo.create(user3, "password3");
+    assert(!created_user3.has_value()); // Should fail due to unique constraint
 
     // Check existence methods
     assert(repo.usernameExists("unique_user"));

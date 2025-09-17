@@ -71,6 +71,7 @@ public:
 
 private:
     int port_;
+    std::string db_path_;
     std::shared_ptr<db::Database> database_;
     std::shared_ptr<repositories::UserRepository> user_repository_;
     
@@ -78,6 +79,7 @@ private:
     HttpResponse handleStatus(const HttpRequest& request);
     HttpResponse handleUsersDemo(const HttpRequest& request);
     HttpResponse handleCreateUser(const HttpRequest& request);
+    HttpResponse handleLogin(const HttpRequest& request);
     HttpResponse handleNotFound(const HttpRequest& request);
     
     // Helper methods

@@ -57,21 +57,51 @@ bool verify_password_legacy(const std::string& password, const std::string& stor
 
     return std::to_string(computed_hash) == hash_part;
 }
-#include "security/bcrypt_wrapper.h"
-#include <bcrypt/BCrypt.hpp> // Using C++ BCrypt library (https://github.com/rg3/bcrypt)
 
-namespace sohbet {
-namespace security {
-
-std::string hash_password_bcrypt(const std::string& password) {
-    // Generate a bcrypt hash with default work factor (10)
-    return BCrypt::generateHash(password);
+// Hash class implementation for backward compatibility
+std::string Hash::generateSalt() {
+    return generate_salt_legacy();
 }
 
-bool verify_password_bcrypt(const std::string& password, const std::string& hash) {
-    return BCrypt::validatePassword(password, hash);
+std::string Hash::hashPassword(const std::string& password, const std::string& salt) {
+    std::hash<std::string> hasher;
+    size_t hash_value = hasher(password + salt);
+    return std::to_string(hash_value);
 }
 
-} // namespace security
+bool Hash::verifyPassword(const std::string& password, const std::string& hash, const std::string& salt) {
+    std::hash<std::string> hasher;
+    size_t computed_hash = hasher(password + salt);
+    return std::to_string(computed_hash) == hash;
+}
+
+std::string Hash::generateSaltedHash(const std::string& password) {
+    std::string salt = generateSalt();
+    std::string hash = hashPassword(password, salt);
+    return salt + ":" + hash;
+}
+
+bool Hash::verifySaltedHash(const std::string& password, const std::string& salted_hash) {
+    size_t separator = salted_hash.find(':');
+    if (separator == std::string::npos) return false;
+    
+    std::string salt = salted_hash.substr(0, separator);
+    std::string hash = salted_hash.substr(separator + 1);
+    
+    return verifyPassword(password, hash, salt);
+}
+
+std::string Hash::generateRandomString(size_t length) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 255);
+
+    std::ostringstream oss;
+    for (size_t i = 0; i < length; ++i) {
+        oss << std::hex << std::setfill('0') << std::setw(2) << dis(gen);
+    }
+    return oss.str();
+}
+
 } // namespace utils
 } // namespace sohbet
