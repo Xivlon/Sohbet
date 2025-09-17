@@ -5,15 +5,15 @@ A Turkish-centered social media platform with C++ backend and React frontend.
 ## Version 0.2.0-academic
 
 This project demonstrates modern full-stack development with:
-- **Backend**: C++ with SQLite, bcrypt, JWT authentication
+- **Backend**: Pure C++ with SQLite, bcrypt, JWT authentication (fully migrated from Node.js)
 - **Frontend**: React with TypeScript, Material-UI components
 - **Architecture**: RESTful API communication between React frontend and pure C++ backend
 
 ## Quick Start
 
 ### Prerequisites
-- **C++ Environment**: cmake, make, SQLite3, OpenSSL
-- **Node.js**: Version 16+ with npm
+- **C++ Environment**: cmake, make, SQLite3, OpenSSL (for backend)
+- **Node.js**: Version 16+ with npm (for frontend only)
 
 ### Full Stack Startup
 ```bash
@@ -26,9 +26,9 @@ cd Sohbet
 ```
 
 This will:
-1. Build the C++ backend (if needed)
-2. Install React dependencies (if needed)  
-3. Start backend server on port 8080
+1. Build the pure C++ backend (if needed)
+2. Install React frontend dependencies (if needed)  
+3. Start C++ backend server on port 8080
 4. Start frontend development server on port 3000
 5. Open your browser to http://localhost:3000
 
@@ -48,6 +48,22 @@ cd frontend
 npm install
 npm start
 ```
+
+---
+
+## Backend Migration Status ✅
+
+**Migration Complete**: The backend has been fully migrated from Node.js to pure C++17. This includes:
+
+- ✅ **Complete Node.js Removal**: All Express.js, package.json, and Node.js backend dependencies eliminated
+- ✅ **C++ HTTP Server**: Custom HTTP server implementation with socket programming
+- ✅ **Database Layer**: SQLite integration with RAII wrappers and prepared statements
+- ✅ **Authentication System**: bcrypt password hashing + JWT token generation
+- ✅ **API Endpoints**: Full REST API (`/api/status`, `/api/users`, `/api/login`)
+- ✅ **Build System**: CMake configuration with proper dependency management
+- ✅ **Testing Suite**: Comprehensive unit and integration tests for C++ backend
+
+The frontend remains React+TypeScript and communicates with the C++ backend via REST API.
 
 ---
 
