@@ -145,6 +145,23 @@ Content-Type: application/json
   }
 }
 
+### Demo User
+
+For testing purposes, a demo user is automatically created when the server starts:
+
+**Demo Credentials:**
+- Username: `demo_student`
+- Password: `demo123`
+
+**Demo Login Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"username":"demo_student","password":"demo123"}' \
+  http://localhost:8080/api/login
+```
+
+This returns a valid JWT token and user data for the demo account.
+
 **Roadmap**
 
 Phase 2: Friendships and messaging
