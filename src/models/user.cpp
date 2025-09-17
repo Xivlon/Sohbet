@@ -6,8 +6,8 @@
 namespace sohbet {
 
 // Constructor
-User::User(const std::string& username, const std::string& email, const std::string& password_hash)
-    : username_(username), email_(email), password_hash_(password_hash) {}
+User::User(const std::string& username, const std::string& email)
+    : username_(username), email_(email) {}
 
 // Serialize to JSON (excludes password hash)
 std::string User::toJson() const {
@@ -21,20 +21,20 @@ std::string User::toJson() const {
     oss << "\"username\":\"" << username_ << "\",";
     oss << "\"email\":\"" << email_ << "\"";
 
-    if (!university_.empty()) {
-        oss << ",\"university\":\"" << university_ << "\"";
+    if (university_.has_value() && !university_.value().empty()) {
+        oss << ",\"university\":\"" << university_.value() << "\"";
     }
 
-    if (!department_.empty()) {
-        oss << ",\"department\":\"" << department_ << "\"";
+    if (department_.has_value() && !department_.value().empty()) {
+        oss << ",\"department\":\"" << department_.value() << "\"";
     }
 
     if (enrollment_year_.has_value()) {
         oss << ",\"enrollment_year\":" << enrollment_year_.value();
     }
 
-    if (!primary_language_.empty()) {
-        oss << ",\"primary_language\":\"" << primary_language_ << "\"";
+    if (primary_language_.has_value() && !primary_language_.value().empty()) {
+        oss << ",\"primary_language\":\"" << primary_language_.value() << "\"";
     }
 
     if (!additional_languages_.empty()) {
@@ -53,44 +53,47 @@ std::string User::toJson() const {
 }
 
 // Deserialize from JSON (basic prototype parser)
-void User::fromJson(const std::string& json) {
+User User::fromJson(const std::string& json) {
+    User user;
     std::smatch match;
 
     // Username
     std::regex username_regex("\"username\"\\s*:\\s*\"([^\"]*)\"");
     if (std::regex_search(json, match, username_regex)) {
-        username_ = match[1].str();
+        user.username_ = match[1].str();
     }
 
     // Email
     std::regex email_regex("\"email\"\\s*:\\s*\"([^\"]*)\"");
     if (std::regex_search(json, match, email_regex)) {
-        email_ = match[1].str();
+        user.email_ = match[1].str();
     }
 
     // University
     std::regex university_regex("\"university\"\\s*:\\s*\"([^\"]*)\"");
     if (std::regex_search(json, match, university_regex)) {
-        university_ = match[1].str();
+        user.university_ = match[1].str();
     }
 
     // Department
     std::regex department_regex("\"department\"\\s*:\\s*\"([^\"]*)\"");
     if (std::regex_search(json, match, department_regex)) {
-        department_ = match[1].str();
+        user.department_ = match[1].str();
     }
 
     // Enrollment year
     std::regex year_regex("\"enrollment_year\"\\s*:\\s*(\\d+)");
     if (std::regex_search(json, match, year_regex)) {
-        enrollment_year_ = std::stoi(match[1].str());
+        user.enrollment_year_ = std::stoi(match[1].str());
     }
 
     // Primary language
     std::regex lang_regex("\"primary_language\"\\s*:\\s*\"([^\"]*)\"");
     if (std::regex_search(json, match, lang_regex)) {
-        primary_language_ = match[1].str();
+        user.primary_language_ = match[1].str();
     }
+
+    return user;
 }
 
 // Validation utilities

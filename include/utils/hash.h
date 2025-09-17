@@ -14,6 +14,11 @@ std::string hash_password(const std::string& password);
 // Verify a password against stored bcrypt hash (secure)
 bool verify_password(const std::string& password, const std::string& stored_hash);
 
+// Legacy functions (for backward compatibility)
+std::string generate_salt_legacy();
+std::string hash_password_legacy(const std::string& password);
+bool verify_password_legacy(const std::string& password, const std::string& stored_hash);
+
 // =======================
 // LEGACY / PLACEHOLDER HASHING (INSECURE)
 // =======================

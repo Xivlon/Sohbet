@@ -32,8 +32,8 @@ bool UserRepository::migrate() {
 }
 
 // Create a new user
-bool UserRepository::createUser(User& user) {
-    if (!database_ || !database_->isOpen()) return false;
+std::optional<User> UserRepository::create(User& user, const std::string& password) {
+    if (!database_ || !database_->isOpen()) return std::nullopt;
 
     const std::string sql = R"(
         INSERT INTO users (username, email, password_hash, university, department, 
@@ -42,10 +42,10 @@ bool UserRepository::createUser(User& user) {
     )";
 
     db::Statement stmt(*database_, sql);
-    if (!stmt.isValid()) return false;
+    if (!stmt.isValid()) return std::nullopt;
 
     // Hash the password securely
-    std::string hashed_password = utils::hash_password(user.getPasswordHash());
+    std::string hashed_password = utils::hash_password(password);
     user.setPasswordHash(hashed_password);
 
     // Convert additional languages vector to comma-separated string
@@ -58,19 +58,19 @@ bool UserRepository::createUser(User& user) {
     stmt.bindText(1, user.getUsername());
     stmt.bindText(2, user.getEmail());
     stmt.bindText(3, hashed_password);
-    stmt.bindText(4, user.getUniversity());
-    stmt.bindText(5, user.getDepartment());
+    stmt.bindText(4, user.getUniversity().has_value() ? user.getUniversity().value() : "");
+    stmt.bindText(5, user.getDepartment().has_value() ? user.getDepartment().value() : "");
     stmt.bindText(6, user.getEnrollmentYear().has_value() ? std::to_string(user.getEnrollmentYear().value()) : "");
-    stmt.bindText(7, user.getPrimaryLanguage());
+    stmt.bindText(7, user.getPrimaryLanguage().has_value() ? user.getPrimaryLanguage().value() : "");
     stmt.bindText(8, additional_langs);
 
     int result = stmt.step();
     if (result == SQLITE_DONE) {
         user.setId(static_cast<int>(database_->lastInsertRowId()));
-        return true;
+        return user;
     }
 
-    return false;
+    return std::nullopt;
 }
 
 // Find user by username

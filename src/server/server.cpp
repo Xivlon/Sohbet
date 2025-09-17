@@ -116,11 +116,12 @@ HttpResponse AcademicSocialServer::handleCreateUser(const HttpRequest& request) 
             user.setAdditionalLanguages(langs);
         }
 
-        if (!user_repository_->createUser(user)) {
+        auto created_user = user_repository_->create(user, password);
+        if (!created_user.has_value()) {
             return createErrorResponse(500, "Failed to create user");
         }
 
-        return createJsonResponse(201, user.toJson());
+        return createJsonResponse(201, created_user.value().toJson());
     } catch (...) {
         return createErrorResponse(500, "Internal server error");
     }
