@@ -2,12 +2,29 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <signal.h>
+
+// Global server instance for signal handling
+sohbet::server::AcademicSocialServer* global_server = nullptr;
+
+void signalHandler(int signal) {
+    std::cout << "\nReceived signal " << signal << ", shutting down gracefully..." << std::endl;
+    if (global_server) {
+        global_server->stop();
+    }
+    exit(0);
+}
 
 int main() {
     std::cout << "Starting Sohbet Academic Social Backend v0.2.0-academic" << std::endl;
 
     // Create server instance on port 8080 with database file
     sohbet::server::AcademicSocialServer server(8080, "academic.db");
+    global_server = &server;
+    
+    // Set up signal handlers for graceful shutdown
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
 
     // Initialize server (setup database, run migrations)
     if (!server.initialize()) {
@@ -15,13 +32,7 @@ int main() {
         return 1;
     }
 
-    // Start server (blocking or simulated run)
-    if (!server.start()) {
-        std::cerr << "Failed to start server" << std::endl;
-        return 1;
-    }
-
-    // Demonstration of API endpoints
+    // Test API endpoints before starting HTTP server
     std::cout << "\n--- Testing API endpoints ---" << std::endl;
 
     // Status endpoint
@@ -54,20 +65,12 @@ int main() {
     std::cout << reg_resp.body << std::endl;
 
     std::cout << "\nServer demo completed successfully!" << std::endl;
-    
-    // For demonstration purposes, let's create a simple HTTP server simulation
-    std::cout << "\n🌐 Starting HTTP server simulation..." << std::endl;
-    std::cout << "Server listening on http://localhost:8080" << std::endl;
-    std::cout << "Available endpoints:" << std::endl;
-    std::cout << "  GET  /api/status" << std::endl;
-    std::cout << "  GET  /api/users/demo" << std::endl;
-    std::cout << "  POST /api/users" << std::endl;
-    std::cout << "  POST /api/login" << std::endl;
     std::cout << "\nPress Ctrl+C to stop the server" << std::endl;
     
-    // Keep the server running for demonstration
-    while (true) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+    // Start the HTTP server (blocking call)
+    if (!server.start()) {
+        std::cerr << "Failed to start HTTP server" << std::endl;
+        return 1;
     }
 
     return 0;

@@ -5,12 +5,17 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
+#include <cstring>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <signal.h>
 
 namespace sohbet {
 namespace server {
 
 AcademicSocialServer::AcademicSocialServer(int port, const std::string& db_path)
-    : port_(port), db_path_(db_path) {
+    : port_(port), db_path_(db_path), running_(false), server_socket_(-1) {
 }
 
 bool AcademicSocialServer::initialize() {
@@ -35,8 +40,174 @@ bool AcademicSocialServer::start() {
     std::cout << "Academic Social Server starting on port " << port_ << std::endl;
     std::cout << "Database: " << db_path_ << std::endl;
     std::cout << "Version: 0.2.0-academic" << std::endl;
+    
+    if (!initializeSocket()) {
+        std::cerr << "Failed to initialize server socket" << std::endl;
+        return false;
+    }
+    
+    running_ = true;
+    std::cout << "🌐 HTTP Server listening on http://localhost:" << port_ << std::endl;
+    std::cout << "Available endpoints:" << std::endl;
+    std::cout << "  GET  /api/status" << std::endl;
+    std::cout << "  GET  /api/users/demo" << std::endl;
+    std::cout << "  POST /api/users" << std::endl;
+    std::cout << "  POST /api/login" << std::endl;
     std::cout << "Server ready to handle requests" << std::endl;
+    
+    // Accept connections
+    while (running_) {
+        struct sockaddr_in client_addr;
+        socklen_t client_len = sizeof(client_addr);
+        
+        int client_socket = accept(server_socket_, (struct sockaddr*)&client_addr, &client_len);
+        if (client_socket < 0) {
+            if (running_) {
+                std::cerr << "Error accepting connection" << std::endl;
+            }
+            continue;
+        }
+        
+        // Handle client in a separate thread for concurrent connections
+        std::thread client_thread(&AcademicSocialServer::handleClient, this, client_socket);
+        client_thread.detach();
+    }
+    
     return true;
+}
+
+void AcademicSocialServer::stop() {
+    running_ = false;
+    if (server_socket_ >= 0) {
+        close(server_socket_);
+        server_socket_ = -1;
+    }
+    std::cout << "Server stopped" << std::endl;
+}
+
+bool AcademicSocialServer::initializeSocket() {
+    // Create socket
+    server_socket_ = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket_ < 0) {
+        std::cerr << "Error creating socket: " << strerror(errno) << std::endl;
+        return false;
+    }
+    
+    // Set socket options to reuse address
+    int opt = 1;
+    if (setsockopt(server_socket_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        std::cerr << "Error setting socket options: " << strerror(errno) << std::endl;
+        close(server_socket_);
+        return false;
+    }
+    
+    // Bind socket
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(port_);
+    
+    if (bind(server_socket_, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        std::cerr << "Error binding socket to port " << port_ << ": " << strerror(errno) << std::endl;
+        close(server_socket_);
+        return false;
+    }
+    
+    // Listen for connections
+    if (listen(server_socket_, 10) < 0) {
+        std::cerr << "Error listening on socket: " << strerror(errno) << std::endl;
+        close(server_socket_);
+        return false;
+    }
+    
+    return true;
+}
+
+void AcademicSocialServer::handleClient(int client_socket) {
+    const int BUFFER_SIZE = 4096;
+    char buffer[BUFFER_SIZE];
+    
+    // Read request
+    ssize_t bytes_read = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+    if (bytes_read <= 0) {
+        close(client_socket);
+        return;
+    }
+    
+    buffer[bytes_read] = '\0';
+    std::string raw_request(buffer);
+    
+    // Parse HTTP request
+    HttpRequest request = parseHttpRequest(raw_request);
+    
+    // Handle request
+    HttpResponse response = handleRequest(request);
+    
+    // Format and send response
+    std::string http_response = formatHttpResponse(response);
+    send(client_socket, http_response.c_str(), http_response.length(), 0);
+    
+    close(client_socket);
+}
+
+HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_request) {
+    std::istringstream stream(raw_request);
+    std::string line;
+    
+    // Parse request line (GET /path HTTP/1.1)
+    std::getline(stream, line);
+    std::istringstream request_line(line);
+    std::string method, path, version;
+    request_line >> method >> path >> version;
+    
+    // Skip headers until empty line
+    std::string body;
+    bool headers_done = false;
+    while (std::getline(stream, line)) {
+        if (line == "\r" || line.empty()) {
+            headers_done = true;
+            break;
+        }
+    }
+    
+    // Read body if present
+    if (headers_done) {
+        std::string remaining;
+        while (std::getline(stream, line)) {
+            body += line + "\n";
+        }
+    }
+    
+    return HttpRequest(method, path, body);
+}
+
+std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& response) {
+    std::ostringstream oss;
+    oss << "HTTP/1.1 " << response.status_code << " ";
+    
+    // Status text
+    switch (response.status_code) {
+        case 200: oss << "OK"; break;
+        case 201: oss << "Created"; break;
+        case 400: oss << "Bad Request"; break;
+        case 401: oss << "Unauthorized"; break;
+        case 404: oss << "Not Found"; break;
+        case 500: oss << "Internal Server Error"; break;
+        default: oss << "Unknown"; break;
+    }
+    
+    oss << "\r\n";
+    oss << "Content-Type: " << response.content_type << "\r\n";
+    oss << "Content-Length: " << response.body.length() << "\r\n";
+    oss << "Access-Control-Allow-Origin: *\r\n";
+    oss << "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n";
+    oss << "Access-Control-Allow-Headers: Content-Type, Authorization\r\n";
+    oss << "Connection: close\r\n";
+    oss << "\r\n";
+    oss << response.body;
+    
+    return oss.str();
 }
 
 // -------------------- Request Handlers --------------------

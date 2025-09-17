@@ -289,19 +289,216 @@ GET /api/users/:username
 
 ## Build & Run
 
-### Prerequisites
-- CMake 3.15+
-- C++17 compiler
-- SQLite3 development libraries
-- OpenSSL development libraries
+### Quick Start
 
-### Build
+For the fastest setup experience, use the setup script:
+
 ```bash
-cmake -B build .
-cmake --build build
+./setup.sh
 ```
 
+This script will:
+- Check prerequisites (CMake, Make, G++, curl)
+- Build the C++ backend automatically
+- Start the HTTP server on port 8080
+- Test all API endpoints
+- Provide troubleshooting information
+
+### Manual Build Process
+
+#### Prerequisites
+- CMake 3.16+
+- C++17 compiler (GCC/Clang)
+- SQLite3 development libraries
+- OpenSSL development libraries
+- Make (build-essential)
+
+#### Build Steps
+```bash
+mkdir build && cd build
+cmake ..
+make
+cd ..
+```
+
+#### Run Server
+```bash
+cd build
+./sohbet
+```
+
+#### Test Endpoints
+```bash
+curl http://localhost:8080/api/status
+curl http://localhost:8080/api/users/demo
+```
+
+### Full Stack Development
+
+For frontend + backend development:
+
+```bash
+./start-fullstack.sh
+```
+
+This starts both the C++ backend (port 8080) and React frontend (port 3000) with automatic proxy setup.
+
 ### Run Tests
+```bash
+cmake --build build --target test
+```
+
+## Troubleshooting
+
+### Backend Server Issues
+
+**Problem**: `ECONNREFUSED` error when frontend tries to connect
+
+**Solutions**:
+1. **Check if server is running**:
+   ```bash
+   curl http://localhost:8080/api/status
+   # Should return: {"status":"ok","version":"0.2.0-academic",...}
+   ```
+
+2. **Check port availability**:
+   ```bash
+   lsof -i :8080
+   # Should show sohbet process listening on port 8080
+   ```
+
+3. **Restart server**:
+   ```bash
+   # Kill existing server
+   pkill -f sohbet
+   
+   # Start fresh
+   ./setup.sh
+   ```
+
+**Problem**: Server fails to start
+
+**Solutions**:
+1. **Check build status**:
+   ```bash
+   ls -la build/sohbet
+   # Should exist and be executable
+   ```
+
+2. **Review server logs**:
+   ```bash
+   tail -f build/server_output.log  # If using setup.sh
+   # OR run manually to see output:
+   cd build && ./sohbet
+   ```
+
+3. **Check dependencies**:
+   ```bash
+   ldd build/sohbet  # Check linked libraries
+   ```
+
+**Problem**: Permission denied
+
+**Solutions**:
+```bash
+chmod +x build/sohbet
+chmod +x setup.sh
+```
+
+**Problem**: Port 8080 already in use
+
+**Solutions**:
+```bash
+# Find what's using port 8080
+lsof -i :8080
+
+# Kill the process (replace PID with actual process ID)
+kill <PID>
+
+# Or find and kill sohbet processes
+pkill -f sohbet
+```
+
+### Build Issues
+
+**Problem**: CMake configuration fails
+
+**Solutions**:
+1. **Install missing dependencies**:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt update
+   sudo apt install cmake build-essential libsqlite3-dev libssl-dev
+
+   # macOS (with Homebrew)
+   brew install cmake sqlite openssl
+   ```
+
+2. **Check CMake version**:
+   ```bash
+   cmake --version  # Should be 3.16+
+   ```
+
+3. **Clean build directory**:
+   ```bash
+   rm -rf build
+   mkdir build && cd build
+   cmake ..
+   ```
+
+**Problem**: Make build fails
+
+**Solutions**:
+1. **Check compiler version**:
+   ```bash
+   g++ --version  # Should support C++17
+   ```
+
+2. **Clean rebuild**:
+   ```bash
+   cd build
+   make clean
+   make
+   ```
+
+3. **Verbose build to see errors**:
+   ```bash
+   make VERBOSE=1
+   ```
+
+### Frontend Proxy Issues
+
+**Problem**: Frontend can't reach backend API
+
+**Verification**:
+1. **Backend server running**: `curl http://localhost:8080/api/status`
+2. **Frontend proxy configured**: Check `frontend/package.json` has `"proxy": "http://localhost:8080"`
+3. **CORS headers**: Server should return `Access-Control-Allow-Origin: *`
+
+**Solution**: Use the full stack startup script:
+```bash
+./start-fullstack.sh
+```
+
+### Testing & Verification
+
+**Complete endpoint test**:
+```bash
+# GET endpoints
+curl -v http://localhost:8080/api/status
+curl -v http://localhost:8080/api/users/demo
+
+# POST endpoint
+curl -v -X POST -H "Content-Type: application/json" \
+  -d '{"username":"test","email":"test@example.edu","password":"TestPass123"}' \
+  http://localhost:8080/api/users
+```
+
+**Check server health**:
+```bash
+# Server should respond with status info
+curl -s http://localhost:8080/api/status | python3 -m json.tool
+```
 ```bash
 cmake --build build --target test
 ```

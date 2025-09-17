@@ -4,6 +4,8 @@
 #include "repositories/user_repository.h"
 #include <memory>
 #include <string>
+#include <thread>
+#include <atomic>
 
 namespace sohbet {
 namespace server {
@@ -63,6 +65,11 @@ public:
     bool start();
     
     /**
+     * Stop the server gracefully
+     */
+    void stop();
+    
+    /**
      * Process HTTP request (for testing/simulation)
      * @param request HTTP request to process
      * @return HTTP response
@@ -74,6 +81,14 @@ private:
     std::string db_path_;
     std::shared_ptr<db::Database> database_;
     std::shared_ptr<repositories::UserRepository> user_repository_;
+    std::atomic<bool> running_;
+    int server_socket_;
+    
+    // HTTP server methods
+    bool initializeSocket();
+    void handleClient(int client_socket);
+    HttpRequest parseHttpRequest(const std::string& raw_request);
+    std::string formatHttpResponse(const HttpResponse& response);
     
     // Route handlers
     HttpResponse handleStatus(const HttpRequest& request);
