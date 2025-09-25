@@ -1,4 +1,5 @@
-![Sohbetlogo.png](https://github.com/Xivlon/Sohbet/blob/main/Sohbetlogo.png)
+![Sohbet](https://raw.githubusercontent.com/Xivlon/Sohbet/main/Sohbetlogo.png)
+
 # Sohbet
 
 A Turkish-centered social media platform with C++ backend and React frontend.
