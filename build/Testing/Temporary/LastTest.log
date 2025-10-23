@@ -1,0 +1,107 @@
+Start testing: Oct 23 22:45 UTC
+----------------------------------------------------------
+1/4 Testing: UserTest
+1/4 Test: UserTest
+Command: "/home/runner/work/Sohbet/Sohbet/build/test_user"
+Directory: /home/runner/work/Sohbet/Sohbet/build
+"UserTest" start time: Oct 23 22:45 UTC
+Output:
+----------------------------------------------------------
+Running User model tests...
+Testing User JSON serialization...
+Serialized JSON: {"id":1,"username":"test_user","email":"test@example.com","university":"Test University","department":"Computer Science","enrollment_year":2023,"primary_language":"English","additional_languages":["Turkish","German"]}
+JSON serialization test passed!
+Testing User validation...
+User validation test passed!
+Testing User JSON deserialization...
+JSON deserialization test passed!
+
+All User tests passed!
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"UserTest" end time: Oct 23 22:45 UTC
+"UserTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/4 Testing: UserRepositoryTest
+2/4 Test: UserRepositoryTest
+Command: "/home/runner/work/Sohbet/Sohbet/build/test_user_repository"
+Directory: /home/runner/work/Sohbet/Sohbet/build
+"UserRepositoryTest" start time: Oct 23 22:45 UTC
+Output:
+----------------------------------------------------------
+Running UserRepository tests...
+Testing UserRepository migration...
+Migration test passed!
+Testing User creation and retrieval...
+User creation and retrieval test passed!
+Testing unique constraints...
+Unique constraints test passed!
+Testing password hashing...
+Password hashing test passed!
+
+All UserRepository tests passed!
+<end of output>
+Test time =   0.92 sec
+----------------------------------------------------------
+Test Passed.
+"UserRepositoryTest" end time: Oct 23 22:45 UTC
+"UserRepositoryTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/4 Testing: BcryptTest
+3/4 Test: BcryptTest
+Command: "/home/runner/work/Sohbet/Sohbet/build/test_bcrypt"
+Directory: /home/runner/work/Sohbet/Sohbet/build
+"BcryptTest" start time: Oct 23 22:45 UTC
+Output:
+----------------------------------------------------------
+Generated bcrypt hash: $2a$12$SPdla/uHi4jNOOa5rrpbu.9XwjVMdcE.XjS.kt6QehrIFYxuux3uu
+Bcrypt password hashing test passed!
+Legacy hash format: 88c9f9912adf78009c0591fbf99ddc28:7481446333526417340
+Legacy compatibility test passed!
+Different passwords produce different hashes test passed!
+All bcrypt tests passed!
+<end of output>
+Test time =   2.08 sec
+----------------------------------------------------------
+Test Passed.
+"BcryptTest" end time: Oct 23 22:45 UTC
+"BcryptTest" time elapsed: 00:00:02
+----------------------------------------------------------
+
+4/4 Testing: AuthenticationTest
+4/4 Test: AuthenticationTest
+Command: "/home/runner/work/Sohbet/Sohbet/build/test_authentication"
+Directory: /home/runner/work/Sohbet/Sohbet/build
+"AuthenticationTest" start time: Oct 23 22:45 UTC
+Output:
+----------------------------------------------------------
+Generated JWT token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3R1c2VyIiwidXNlcl9pZCI6MTIzLCJleHAiOjE3NjEzNDU5NTJ9.BQXIDprrZSuYyxps-Jj1tazwiYsBZXLpVr-lm4TDK5k
+JWT functionality tests passed!
+Demo user created successfully (ID: 1)
+Server initialized successfully
+Registration response: {"id":2,"username":"test_student","email":"test@university.edu","university":"Test University","department":"Computer Science","enrollment_year":2023,"primary_language":"English"}
+Login response: { "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3Rfc3R1ZGVudCIsInVzZXJfaWQiOjIsImV4cCI6MTc2MTM0NTk1M30.vyhqABVX8bUQbmRqqYS__ZZ_g2qJ0Np9zfIKCUkmmy4", "user":{"id":2,"username":"test_student","email":"test@university.edu","university":"Test University","department":"Computer Science","enrollment_year":2023,"primary_language":"English"} }
+Wrong login response: {"error":"Invalid username or password"}
+Non-existent user login response: {"error":"Invalid username or password"}
+Demo user response: {"id":999,"username":"demo_student","email":"demo@example.edu","university":"Demo University","department":"Computer Science","enrollment_year":2023,"primary_language":"Turkish"}
+All registration, login, and user retrieval tests passed!
+Testing demo user authentication...
+Demo user created successfully (ID: 1)
+Server initialized successfully
+Demo login response: { "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImRlbW9fc3R1ZGVudCIsInVzZXJfaWQiOjEsImV4cCI6MTc2MTM0NTk1NH0.kETTHLYbAPcHgzcHQ4YPSfku3uFtijlvJjj1PTFCBKo", "user":{"id":1,"username":"demo_student","email":"demo@example.edu","university":"Demo University","department":"Computer Science","enrollment_year":2023,"primary_language":"Turkish"} }
+Wrong password response: {"error":"Invalid username or password"}
+Demo user authentication tests passed!
+All authentication tests passed!
+<end of output>
+Test time =   1.84 sec
+----------------------------------------------------------
+Test Passed.
+"AuthenticationTest" end time: Oct 23 22:45 UTC
+"AuthenticationTest" time elapsed: 00:00:01
+----------------------------------------------------------
+
+End testing: Oct 23 22:45 UTC
