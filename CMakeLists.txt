@@ -27,12 +27,15 @@ include_directories(${CMAKE_BINARY_DIR}/_deps/bcrypt-src/include)
 # Source files
 set(SOURCES
     src/models/user.cpp
+    src/models/voice_channel.cpp
     src/db/database.cpp
     src/repositories/user_repository.cpp
     src/utils/hash.cpp
     src/security/bcrypt_wrapper.cpp
     src/security/jwt.cpp
     src/server/server.cpp
+    src/voice/voice_config.cpp
+    src/voice/voice_service.cpp
 )
 
 # Create library
@@ -64,6 +67,10 @@ add_executable(test_authentication tests/test_authentication.cpp)
 target_link_libraries(test_authentication sohbet_lib)
 add_test(NAME AuthenticationTest COMMAND test_authentication)
 
+add_executable(test_voice_service tests/test_voice_service.cpp)
+target_link_libraries(test_voice_service sohbet_lib)
+add_test(NAME VoiceServiceTest COMMAND test_voice_service)
+
 # Compiler flags
 target_compile_options(sohbet_lib PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(sohbet PRIVATE -Wall -Wextra -Wpedantic)
@@ -71,3 +78,4 @@ target_compile_options(test_user PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(test_user_repository PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(test_bcrypt PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(test_authentication PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_voice_service PRIVATE -Wall -Wextra -Wpedantic)
