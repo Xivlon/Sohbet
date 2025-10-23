@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/sohbet.dir/link.d CMakeFiles/sohbet.dir/src/main.cpp.o -o sohbet  libsohbet_lib.a /usr/lib/x86_64-linux-gnu/libsqlite3.so _deps/bcrypt-build/libbcrypt.a /usr/lib/x86_64-linux-gnu/libssl.so /usr/lib/x86_64-linux-gnu/libcrypto.so

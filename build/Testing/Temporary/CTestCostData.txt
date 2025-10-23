@@ -1,5 +1,0 @@
-UserTest 1 0.00496197
-UserRepositoryTest 1 0.916003
-BcryptTest 1 2.07646
-AuthenticationTest 1 1.83849
----

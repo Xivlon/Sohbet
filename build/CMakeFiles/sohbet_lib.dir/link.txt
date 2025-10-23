@@ -1,2 +1,0 @@
-/usr/bin/ar qc libsohbet_lib.a CMakeFiles/sohbet_lib.dir/src/models/user.cpp.o CMakeFiles/sohbet_lib.dir/src/db/database.cpp.o CMakeFiles/sohbet_lib.dir/src/repositories/user_repository.cpp.o CMakeFiles/sohbet_lib.dir/src/utils/hash.cpp.o CMakeFiles/sohbet_lib.dir/src/security/bcrypt_wrapper.cpp.o CMakeFiles/sohbet_lib.dir/src/security/jwt.cpp.o CMakeFiles/sohbet_lib.dir/src/server/server.cpp.o
-/usr/bin/ranlib libsohbet_lib.a

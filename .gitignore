@@ -1,0 +1,69 @@
+# Build directories
+build/
+build-*/
+
+# Executables
+sohbet
+*.exe
+
+# Shared libraries
+*.so
+*.dylib
+*.dll
+
+# Database files
+*.db
+*.sqlite
+!.gitkeep
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+Makefile
+
+# Compiled Object files
+*.o
+*.obj
+*.lo
+*.slo
+
+# Static libraries
+*.a
+*.lib
+*.la
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*~
+.#*
+\#*#
+
+# Log files
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules (frontend)
+node_modules/
+frontend/node_modules/
+
+# Frontend build
+frontend/build/
+frontend/dist/
