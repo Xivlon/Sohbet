@@ -85,9 +85,11 @@ The Murmur integration is designed with the following principles:
 #### Phase 1: Foundation (Current)
 - [x] Document integration architecture
 - [x] Define security model
-- [ ] Create voice service interface (C++ header files)
-- [ ] Implement configuration structure
-- [ ] Add voice channel data model
+- [x] Create voice service interface (C++ header files)
+- [x] Implement configuration structure
+- [x] Add voice channel data model
+- [x] Create frontend TypeScript service client
+- [x] Create React hooks for voice integration
 
 #### Phase 2: Core Integration
 - [ ] Implement Murmur connection manager
@@ -263,6 +265,111 @@ The Murmur integration will require:
 4. **Security Tests**: Test authentication and authorization
 5. **End-to-End Tests**: Test full user flow from UI to voice connection
 
+### Implementation Details
+
+#### Backend Components
+
+The backend implementation consists of the following key components:
+
+**1. VoiceChannel Model** (`include/models/voice_channel.h`)
+- Represents a voice channel in the system
+- Supports JSON serialization/deserialization
+- Tracks channel metadata (name, description, creator, capacity, etc.)
+
+**2. VoiceConfig** (`include/voice/voice_config.h`)
+- Configuration structure for voice service
+- Loads configuration from environment variables
+- Validates configuration settings
+
+**3. VoiceService Interface** (`include/voice/voice_service.h`)
+- Abstract interface for voice service operations
+- Defines methods for channel management
+- Defines token generation and validation
+
+**4. VoiceServiceStub** (included in `voice_service.h`)
+- Stub implementation for testing without Murmur server
+- In-memory channel storage
+- Simple token generation for development
+
+#### Frontend Components
+
+**1. VoiceService Class** (`frontend/src/services/voiceService.ts`)
+- TypeScript service for interacting with voice API endpoints
+- Handles authentication token management
+- Provides methods for all voice operations:
+  - `createChannel()` - Create new voice channel
+  - `listChannels()` - Get all available channels
+  - `joinChannel()` - Join a channel and get connection token
+  - `deleteChannel()` - Delete a channel
+  - `isEnabled()` - Check if voice service is available
+
+**2. React Hooks** (`frontend/src/hooks/useVoice.ts`)
+- `useVoiceServiceStatus()` - Check if voice service is enabled
+- `useVoiceChannels()` - Manage voice channels (list, create, delete)
+- `useJoinVoiceChannel()` - Join a channel and get connection token
+
+#### Usage Example
+
+```typescript
+import { useVoiceChannels } from './hooks/useVoice';
+
+function VoiceChannelList() {
+  const { channels, loading, error, createChannel } = useVoiceChannels();
+
+  const handleCreateChannel = async () => {
+    const newChannel = await createChannel({
+      name: "Study Group",
+      description: "CS101 study session",
+      max_users: 10,
+      is_temporary: true
+    });
+    
+    if (newChannel) {
+      console.log("Channel created:", newChannel);
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      <button onClick={handleCreateChannel}>Create Channel</button>
+      <ul>
+        {channels.map(channel => (
+          <li key={channel.channel_id}>{channel.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+#### Environment Variables
+
+The following environment variables can be used to configure the voice service:
+
+```bash
+# Enable voice service
+export SOHBET_VOICE_ENABLED=true
+
+# Murmur server configuration
+export SOHBET_MURMUR_HOST=localhost
+export SOHBET_MURMUR_PORT=64738
+export SOHBET_MURMUR_ADMIN_PASSWORD=your_secure_password
+
+# Token configuration
+export SOHBET_VOICE_TOKEN_EXPIRY=300  # 5 minutes
+
+# Channel configuration
+export SOHBET_VOICE_MAX_USERS=25
+
+# Recording (optional)
+export SOHBET_VOICE_ENABLE_RECORDING=false
+```
+
+
+
 ---
 
 ## Progress Log
@@ -274,6 +381,13 @@ The Murmur integration will require:
 - Database schema designed
 - Documentation structure created
 - Foundation for voice service interface established
+- Implemented VoiceChannel model with JSON serialization
+- Implemented VoiceConfig for managing voice service configuration
+- Created VoiceService interface with stub implementation for testing
+- Added comprehensive unit tests for voice services
+- Created TypeScript/React frontend service client
+- Created React hooks for voice channel management
+- All tests passing (5/5 tests including voice service tests)
 
 ---
 
