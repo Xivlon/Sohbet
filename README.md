@@ -101,6 +101,9 @@ npm start
 - User profile retrieval
 - SQLite database with RAII wrapper and migrations
 - Academic profile fields: username, email, university, department, enrollment year, primary language
+- **WebSocket server for real-time communication (port 8081)**
+- **Real-time chat message delivery**
+- **Typing indicators and online presence tracking**
 
 #### Frontend (React)
 - Material-UI components with responsive design
@@ -109,6 +112,8 @@ npm start
 - Real-time integration with C++ backend
 - Server health monitoring
 - TypeScript for type-safe development
+- **WebSocket client with auto-reconnection**
+- **React hooks for real-time features**
 
 ---
 
@@ -650,16 +655,22 @@ The frontend remains React+TypeScript and communicates with the C++ backend via 
 
 - 📝 Post creation and interaction
 - 📝 Q&A system for academic help
-- 📝 Real-time messaging between users
+- ✅ Real-time messaging between users (WebSocket infrastructure complete)
 - 📝 Extended user profiles with interests and skills
 
-### Phase 4: Advanced Features (Planned)
+### Phase 4: Advanced Features (In Progress)
 
+- ✅ WebSocket infrastructure for real-time communication
+- ✅ Real-time chat messaging
+- ✅ Typing indicators
+- ✅ Online/offline presence tracking
 - 📝 Email verification for accounts
 - 📝 Rate limiting and enhanced security
 - 📝 File sharing capabilities for study materials
 - 📝 Advanced search and filtering
 - 📝 Analytics and insights dashboard
+
+**See [WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md) for detailed WebSocket documentation.**
 
 ---
 
