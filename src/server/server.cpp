@@ -30,6 +30,9 @@ bool AcademicSocialServer::initialize() {
 
     user_repository_ = std::make_shared<repositories::UserRepository>(database_);
     media_repository_ = std::make_shared<repositories::MediaRepository>(database_);
+    friendship_repository_ = std::make_shared<repositories::FriendshipRepository>(database_);
+    post_repository_ = std::make_shared<repositories::PostRepository>(database_);
+    comment_repository_ = std::make_shared<repositories::CommentRepository>(database_);
     storage_service_ = std::make_shared<services::StorageService>("uploads/");
 
     if (!user_repository_->migrate()) {
@@ -391,6 +394,48 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleGetMediaFile(request);
     } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/media") != std::string::npos) {
         return handleGetUserMedia(request);
+    }
+    // Friendship routes
+    else if (request.method == "POST" && base_path == "/api/friendships") {
+        return handleCreateFriendship(request);
+    } else if (request.method == "GET" && base_path == "/api/friendships") {
+        return handleGetFriendships(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/friends") != std::string::npos) {
+        return handleGetFriends(request);
+    } else if (request.method == "PUT" && base_path.find("/api/friendships/") == 0 && base_path.find("/accept") != std::string::npos) {
+        return handleAcceptFriendship(request);
+    } else if (request.method == "PUT" && base_path.find("/api/friendships/") == 0 && base_path.find("/reject") != std::string::npos) {
+        return handleRejectFriendship(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/friendships/") == 0) {
+        return handleDeleteFriendship(request);
+    }
+    // Post routes
+    else if (request.method == "POST" && base_path == "/api/posts") {
+        return handleCreatePost(request);
+    } else if (request.method == "GET" && base_path == "/api/posts") {
+        return handleGetPosts(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/posts") != std::string::npos) {
+        return handleGetUserPosts(request);
+    } else if (request.method == "PUT" && base_path.find("/api/posts/") == 0 && base_path.find("/react") == std::string::npos) {
+        return handleUpdatePost(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/posts/") == 0 && base_path.find("/react") == std::string::npos) {
+        return handleDeletePost(request);
+    } else if (request.method == "POST" && base_path.find("/api/posts/") == 0 && base_path.find("/react") != std::string::npos) {
+        return handleAddReaction(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/posts/") == 0 && base_path.find("/react") != std::string::npos) {
+        return handleRemoveReaction(request);
+    }
+    // Comment routes
+    else if (request.method == "POST" && base_path.find("/api/posts/") == 0 && base_path.find("/comments") != std::string::npos && base_path.find("/api/comments/") == std::string::npos) {
+        return handleCreateComment(request);
+    } else if (request.method == "GET" && base_path.find("/api/posts/") == 0 && base_path.find("/comments") != std::string::npos) {
+        return handleGetComments(request);
+    } else if (request.method == "POST" && base_path.find("/api/comments/") == 0 && base_path.find("/reply") != std::string::npos) {
+        return handleReplyToComment(request);
+    } else if (request.method == "PUT" && base_path.find("/api/comments/") == 0) {
+        return handleUpdateComment(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/comments/") == 0) {
+        return handleDeleteComment(request);
     } else {
         return handleNotFound(request);
     }
@@ -812,6 +857,601 @@ HttpResponse AcademicSocialServer::handleGetUserMedia(const HttpRequest& request
     oss << "]";
     
     return createJsonResponse(200, oss.str());
+}
+
+// ==================== Helper Methods ====================
+
+int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
+    // Extract user ID from Authorization header (JWT token)
+    // For now, we'll use a simple approach - extract from header
+    auto it = request.headers.find("Authorization");
+    if (it == request.headers.end()) {
+        return -1;
+    }
+    
+    std::string auth_header = it->second;
+    if (auth_header.find("Bearer ") == 0) {
+        std::string token = auth_header.substr(7);
+        // TODO: Properly decode JWT and extract user ID
+        // For now, we'll look for a user-id header as fallback
+    }
+    
+    // Fallback: check for X-User-ID header (for testing)
+    it = request.headers.find("X-User-ID");
+    if (it != request.headers.end()) {
+        try {
+            return std::stoi(it->second);
+        } catch (...) {
+            return -1;
+        }
+    }
+    
+    return -1;
+}
+
+int AcademicSocialServer::extractIdFromPath(const std::string& path, const std::string& prefix) {
+    size_t pos = path.find(prefix);
+    if (pos == std::string::npos) return -1;
+    
+    std::string after_prefix = path.substr(pos + prefix.length());
+    size_t end = after_prefix.find('/');
+    std::string id_str = (end == std::string::npos) ? after_prefix : after_prefix.substr(0, end);
+    
+    try {
+        return std::stoi(id_str);
+    } catch (...) {
+        return -1;
+    }
+}
+
+// ==================== Friendship Handlers ====================
+
+HttpResponse AcademicSocialServer::handleCreateFriendship(const HttpRequest& request) {
+    int requester_id = getUserIdFromAuth(request);
+    if (requester_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    std::string addressee_id_str = extractJsonField(request.body, "addressee_id");
+    if (addressee_id_str.empty()) {
+        return createErrorResponse(400, "addressee_id is required");
+    }
+    
+    int addressee_id = std::stoi(addressee_id_str);
+    
+    // Check if friendship already exists
+    auto existing = friendship_repository_->findBetweenUsers(requester_id, addressee_id);
+    if (existing.has_value()) {
+        return createErrorResponse(409, "Friendship request already exists");
+    }
+    
+    Friendship friendship(requester_id, addressee_id);
+    auto created = friendship_repository_->create(friendship);
+    
+    if (created.has_value()) {
+        return createJsonResponse(201, created->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to create friendship request");
+}
+
+HttpResponse AcademicSocialServer::handleGetFriendships(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    // Parse query parameters for status filter
+    std::string status = "";
+    std::regex status_regex("[?&]status=([^&]*)");
+    std::smatch match;
+    if (std::regex_search(request.path, match, status_regex)) {
+        status = match[1].str();
+    }
+    
+    std::vector<Friendship> friendships;
+    if (status == "pending") {
+        // Get incoming pending requests
+        friendships = friendship_repository_->findPendingRequestsForUser(user_id);
+    } else if (status == "sent") {
+        // Get outgoing pending requests
+        friendships = friendship_repository_->findSentRequestsByUser(user_id);
+    } else {
+        // Get all friendships for user
+        friendships = friendship_repository_->findByUserId(user_id, status);
+    }
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < friendships.size(); ++i) {
+        oss << friendships[i].toJson();
+        if (i < friendships.size() - 1) oss << ",";
+    }
+    oss << "]";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleGetFriends(const HttpRequest& request) {
+    int user_id = extractIdFromPath(request.path, "/api/users/");
+    if (user_id < 0) {
+        return createErrorResponse(400, "Invalid user ID");
+    }
+    
+    std::vector<User> friends = friendship_repository_->getFriendsForUser(user_id);
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < friends.size(); ++i) {
+        oss << friends[i].toJson();
+        if (i < friends.size() - 1) oss << ",";
+    }
+    oss << "]";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleAcceptFriendship(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int friendship_id = extractIdFromPath(request.path, "/api/friendships/");
+    if (friendship_id < 0) {
+        return createErrorResponse(400, "Invalid friendship ID");
+    }
+    
+    // Verify the user is the addressee
+    auto friendship = friendship_repository_->findById(friendship_id);
+    if (!friendship.has_value()) {
+        return createErrorResponse(404, "Friendship request not found");
+    }
+    
+    if (friendship->getAddresseeId() != user_id) {
+        return createErrorResponse(403, "You can only accept requests sent to you");
+    }
+    
+    if (friendship_repository_->acceptRequest(friendship_id)) {
+        auto updated = friendship_repository_->findById(friendship_id);
+        return createJsonResponse(200, updated->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to accept friendship request");
+}
+
+HttpResponse AcademicSocialServer::handleRejectFriendship(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int friendship_id = extractIdFromPath(request.path, "/api/friendships/");
+    if (friendship_id < 0) {
+        return createErrorResponse(400, "Invalid friendship ID");
+    }
+    
+    // Verify the user is the addressee
+    auto friendship = friendship_repository_->findById(friendship_id);
+    if (!friendship.has_value()) {
+        return createErrorResponse(404, "Friendship request not found");
+    }
+    
+    if (friendship->getAddresseeId() != user_id) {
+        return createErrorResponse(403, "You can only reject requests sent to you");
+    }
+    
+    if (friendship_repository_->rejectRequest(friendship_id)) {
+        auto updated = friendship_repository_->findById(friendship_id);
+        return createJsonResponse(200, updated->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to reject friendship request");
+}
+
+HttpResponse AcademicSocialServer::handleDeleteFriendship(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int friendship_id = extractIdFromPath(request.path, "/api/friendships/");
+    if (friendship_id < 0) {
+        return createErrorResponse(400, "Invalid friendship ID");
+    }
+    
+    // Verify the user is part of the friendship
+    auto friendship = friendship_repository_->findById(friendship_id);
+    if (!friendship.has_value()) {
+        return createErrorResponse(404, "Friendship not found");
+    }
+    
+    if (friendship->getRequesterId() != user_id && friendship->getAddresseeId() != user_id) {
+        return createErrorResponse(403, "You can only delete your own friendships");
+    }
+    
+    if (friendship_repository_->deleteById(friendship_id)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+    
+    return createErrorResponse(500, "Failed to delete friendship");
+}
+
+// ==================== Post Handlers ====================
+
+HttpResponse AcademicSocialServer::handleCreatePost(const HttpRequest& request) {
+    int author_id = getUserIdFromAuth(request);
+    if (author_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    std::string content = extractJsonField(request.body, "content");
+    if (content.empty()) {
+        return createErrorResponse(400, "content is required");
+    }
+    
+    Post post(author_id, content);
+    
+    std::string visibility = extractJsonField(request.body, "visibility");
+    if (!visibility.empty()) {
+        post.setVisibility(visibility);
+    }
+    
+    std::string media_urls = extractJsonField(request.body, "media_urls");
+    if (!media_urls.empty()) {
+        post.setMediaUrls(media_urls);
+    }
+    
+    std::string group_id_str = extractJsonField(request.body, "group_id");
+    if (!group_id_str.empty()) {
+        post.setGroupId(std::stoi(group_id_str));
+    }
+    
+    auto created = post_repository_->create(post);
+    if (created.has_value()) {
+        return createJsonResponse(201, created->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to create post");
+}
+
+HttpResponse AcademicSocialServer::handleGetPosts(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    // Parse pagination parameters
+    int limit = 50;
+    int offset = 0;
+    
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::smatch match;
+    
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
+    }
+    if (std::regex_search(request.path, match, offset_regex)) {
+        offset = std::stoi(match[1].str());
+    }
+    
+    std::vector<Post> posts = post_repository_->findFeedForUser(user_id, limit, offset);
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < posts.size(); ++i) {
+        oss << posts[i].toJson();
+        if (i < posts.size() - 1) oss << ",";
+    }
+    oss << "]";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleGetUserPosts(const HttpRequest& request) {
+    int user_id = extractIdFromPath(request.path, "/api/users/");
+    if (user_id < 0) {
+        return createErrorResponse(400, "Invalid user ID");
+    }
+    
+    // Parse pagination parameters
+    int limit = 50;
+    int offset = 0;
+    
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::smatch match;
+    
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
+    }
+    if (std::regex_search(request.path, match, offset_regex)) {
+        offset = std::stoi(match[1].str());
+    }
+    
+    std::vector<Post> posts = post_repository_->findByAuthor(user_id, limit, offset);
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < posts.size(); ++i) {
+        oss << posts[i].toJson();
+        if (i < posts.size() - 1) oss << ",";
+    }
+    oss << "]";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleUpdatePost(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int post_id = extractIdFromPath(request.path, "/api/posts/");
+    if (post_id < 0) {
+        return createErrorResponse(400, "Invalid post ID");
+    }
+    
+    auto post = post_repository_->findById(post_id);
+    if (!post.has_value()) {
+        return createErrorResponse(404, "Post not found");
+    }
+    
+    if (post->getAuthorId() != user_id) {
+        return createErrorResponse(403, "You can only edit your own posts");
+    }
+    
+    std::string content = extractJsonField(request.body, "content");
+    if (!content.empty()) {
+        post->setContent(content);
+    }
+    
+    std::string visibility = extractJsonField(request.body, "visibility");
+    if (!visibility.empty()) {
+        post->setVisibility(visibility);
+    }
+    
+    if (post_repository_->update(post.value())) {
+        auto updated = post_repository_->findById(post_id);
+        return createJsonResponse(200, updated->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to update post");
+}
+
+HttpResponse AcademicSocialServer::handleDeletePost(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int post_id = extractIdFromPath(request.path, "/api/posts/");
+    if (post_id < 0) {
+        return createErrorResponse(400, "Invalid post ID");
+    }
+    
+    auto post = post_repository_->findById(post_id);
+    if (!post.has_value()) {
+        return createErrorResponse(404, "Post not found");
+    }
+    
+    if (post->getAuthorId() != user_id) {
+        return createErrorResponse(403, "You can only delete your own posts");
+    }
+    
+    if (post_repository_->deleteById(post_id)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+    
+    return createErrorResponse(500, "Failed to delete post");
+}
+
+HttpResponse AcademicSocialServer::handleAddReaction(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int post_id = extractIdFromPath(request.path, "/api/posts/");
+    if (post_id < 0) {
+        return createErrorResponse(400, "Invalid post ID");
+    }
+    
+    std::string reaction_type = extractJsonField(request.body, "reaction_type");
+    if (reaction_type.empty()) {
+        reaction_type = "like"; // Default reaction type
+    }
+    
+    if (post_repository_->addReaction(post_id, user_id, reaction_type)) {
+        std::ostringstream oss;
+        oss << "{\"success\":true,\"reaction_type\":\"" << reaction_type << "\"}";
+        return createJsonResponse(200, oss.str());
+    }
+    
+    return createErrorResponse(500, "Failed to add reaction");
+}
+
+HttpResponse AcademicSocialServer::handleRemoveReaction(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int post_id = extractIdFromPath(request.path, "/api/posts/");
+    if (post_id < 0) {
+        return createErrorResponse(400, "Invalid post ID");
+    }
+    
+    // Extract reaction type from query parameters or body
+    std::string reaction_type = "like"; // Default
+    std::regex reaction_regex("[?&]reaction_type=([^&]*)");
+    std::smatch match;
+    if (std::regex_search(request.path, match, reaction_regex)) {
+        reaction_type = match[1].str();
+    }
+    
+    if (post_repository_->removeReaction(post_id, user_id, reaction_type)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+    
+    return createErrorResponse(500, "Failed to remove reaction");
+}
+
+// ==================== Comment Handlers ====================
+
+HttpResponse AcademicSocialServer::handleCreateComment(const HttpRequest& request) {
+    int author_id = getUserIdFromAuth(request);
+    if (author_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int post_id = extractIdFromPath(request.path, "/api/posts/");
+    if (post_id < 0) {
+        return createErrorResponse(400, "Invalid post ID");
+    }
+    
+    std::string content = extractJsonField(request.body, "content");
+    if (content.empty()) {
+        return createErrorResponse(400, "content is required");
+    }
+    
+    Comment comment(post_id, author_id, content);
+    
+    auto created = comment_repository_->create(comment);
+    if (created.has_value()) {
+        return createJsonResponse(201, created->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to create comment");
+}
+
+HttpResponse AcademicSocialServer::handleGetComments(const HttpRequest& request) {
+    int post_id = extractIdFromPath(request.path, "/api/posts/");
+    if (post_id < 0) {
+        return createErrorResponse(400, "Invalid post ID");
+    }
+    
+    // Parse pagination parameters
+    int limit = 100;
+    int offset = 0;
+    
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::smatch match;
+    
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
+    }
+    if (std::regex_search(request.path, match, offset_regex)) {
+        offset = std::stoi(match[1].str());
+    }
+    
+    std::vector<Comment> comments = comment_repository_->findByPostId(post_id, limit, offset);
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < comments.size(); ++i) {
+        oss << comments[i].toJson();
+        if (i < comments.size() - 1) oss << ",";
+    }
+    oss << "]";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleReplyToComment(const HttpRequest& request) {
+    int author_id = getUserIdFromAuth(request);
+    if (author_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int parent_comment_id = extractIdFromPath(request.path, "/api/comments/");
+    if (parent_comment_id < 0) {
+        return createErrorResponse(400, "Invalid comment ID");
+    }
+    
+    // Get the parent comment to extract post_id
+    auto parent_comment = comment_repository_->findById(parent_comment_id);
+    if (!parent_comment.has_value()) {
+        return createErrorResponse(404, "Parent comment not found");
+    }
+    
+    std::string content = extractJsonField(request.body, "content");
+    if (content.empty()) {
+        return createErrorResponse(400, "content is required");
+    }
+    
+    Comment comment(parent_comment->getPostId(), author_id, content);
+    comment.setParentId(parent_comment_id);
+    
+    auto created = comment_repository_->create(comment);
+    if (created.has_value()) {
+        return createJsonResponse(201, created->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to create reply");
+}
+
+HttpResponse AcademicSocialServer::handleUpdateComment(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int comment_id = extractIdFromPath(request.path, "/api/comments/");
+    if (comment_id < 0) {
+        return createErrorResponse(400, "Invalid comment ID");
+    }
+    
+    auto comment = comment_repository_->findById(comment_id);
+    if (!comment.has_value()) {
+        return createErrorResponse(404, "Comment not found");
+    }
+    
+    if (comment->getAuthorId() != user_id) {
+        return createErrorResponse(403, "You can only edit your own comments");
+    }
+    
+    std::string content = extractJsonField(request.body, "content");
+    if (!content.empty()) {
+        comment->setContent(content);
+    }
+    
+    if (comment_repository_->update(comment.value())) {
+        auto updated = comment_repository_->findById(comment_id);
+        return createJsonResponse(200, updated->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to update comment");
+}
+
+HttpResponse AcademicSocialServer::handleDeleteComment(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int comment_id = extractIdFromPath(request.path, "/api/comments/");
+    if (comment_id < 0) {
+        return createErrorResponse(400, "Invalid comment ID");
+    }
+    
+    auto comment = comment_repository_->findById(comment_id);
+    if (!comment.has_value()) {
+        return createErrorResponse(404, "Comment not found");
+    }
+    
+    if (comment->getAuthorId() != user_id) {
+        return createErrorResponse(403, "You can only delete your own comments");
+    }
+    
+    if (comment_repository_->deleteById(comment_id)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+    
+    return createErrorResponse(500, "Failed to delete comment");
 }
 
 } // namespace server

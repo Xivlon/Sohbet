@@ -3,6 +3,9 @@
 #include "db/database.h"
 #include "repositories/user_repository.h"
 #include "repositories/media_repository.h"
+#include "repositories/friendship_repository.h"
+#include "repositories/post_repository.h"
+#include "repositories/comment_repository.h"
 #include "services/storage_service.h"
 #include <memory>
 #include <string>
@@ -86,6 +89,9 @@ private:
     std::shared_ptr<db::Database> database_;
     std::shared_ptr<repositories::UserRepository> user_repository_;
     std::shared_ptr<repositories::MediaRepository> media_repository_;
+    std::shared_ptr<repositories::FriendshipRepository> friendship_repository_;
+    std::shared_ptr<repositories::PostRepository> post_repository_;
+    std::shared_ptr<repositories::CommentRepository> comment_repository_;
     std::shared_ptr<services::StorageService> storage_service_;
     std::atomic<bool> running_;
     int server_socket_;
@@ -106,6 +112,31 @@ private:
     HttpResponse handleUploadMedia(const HttpRequest& request);
     HttpResponse handleGetMediaFile(const HttpRequest& request);
     HttpResponse handleGetUserMedia(const HttpRequest& request);
+    
+    // Friendship handlers
+    HttpResponse handleCreateFriendship(const HttpRequest& request);
+    HttpResponse handleGetFriendships(const HttpRequest& request);
+    HttpResponse handleAcceptFriendship(const HttpRequest& request);
+    HttpResponse handleRejectFriendship(const HttpRequest& request);
+    HttpResponse handleDeleteFriendship(const HttpRequest& request);
+    HttpResponse handleGetFriends(const HttpRequest& request);
+    
+    // Post handlers
+    HttpResponse handleCreatePost(const HttpRequest& request);
+    HttpResponse handleGetPosts(const HttpRequest& request);
+    HttpResponse handleGetUserPosts(const HttpRequest& request);
+    HttpResponse handleUpdatePost(const HttpRequest& request);
+    HttpResponse handleDeletePost(const HttpRequest& request);
+    HttpResponse handleAddReaction(const HttpRequest& request);
+    HttpResponse handleRemoveReaction(const HttpRequest& request);
+    
+    // Comment handlers
+    HttpResponse handleCreateComment(const HttpRequest& request);
+    HttpResponse handleGetComments(const HttpRequest& request);
+    HttpResponse handleReplyToComment(const HttpRequest& request);
+    HttpResponse handleUpdateComment(const HttpRequest& request);
+    HttpResponse handleDeleteComment(const HttpRequest& request);
+    
     HttpResponse handleNotFound(const HttpRequest& request);
     
     // Helper methods
@@ -114,6 +145,8 @@ private:
     std::string extractJsonField(const std::string& json, const std::string& field);
     bool validateUserRegistration(const std::string& username, const std::string& email, const std::string& password, std::string& error);
     void ensureDemoUserExists();
+    int getUserIdFromAuth(const HttpRequest& request);
+    int extractIdFromPath(const std::string& path, const std::string& prefix);
 };
 
 } // namespace server
