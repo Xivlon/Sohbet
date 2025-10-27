@@ -406,7 +406,7 @@ Having issues? Here are common problems and solutions:
 1. **Verify the server is running:**
    ```bash
    curl http://localhost:8080/api/status
-   # Should return: {"status":"ok","version":"0.2.0-academic",...}
+   # Should return: {"status":"ok","version":"0.3.0-academic",...}
    ```
 
 2. **Check if port 8080 is in use:**
@@ -789,6 +789,14 @@ This project is intended for educational and learning purposes. It demonstrates 
 
 ### Documentation Files
 
+- **[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)** - Complete implementation roadmap with current status
+- **[ROADMAP_STATUS_CHECK.md](ROADMAP_STATUS_CHECK.md)** - Detailed status analysis of implementation progress
+- **[WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md)** - WebSocket real-time communication documentation
+- **[PHASE2_SUMMARY.md](PHASE2_SUMMARY.md)** - Phase 2 (Social Features) completion report
+- **[PHASE3_SUMMARY.md](PHASE3_SUMMARY.md)** - Phase 3 (Groups/Organizations) completion report
+- **[PHASE4_SUMMARY.md](PHASE4_SUMMARY.md)** - Phase 4 initial completion report
+- **[PHASE4A_COMPLETION_REPORT.md](PHASE4A_COMPLETION_REPORT.md)** - Phase 4A (Real-Time Chat) completion report
+- **[PHASE4C_COMPLETION_REPORT.md](PHASE4C_COMPLETION_REPORT.md)** - Phase 4C (Voice Channels API) completion report
 - **[3rd-Party Service Integration.md](3rd-Party Service Integration.md)** - Information about voice/video integration with Murmur
 - **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Summary of the Murmur integration implementation
 - **[docs/ACADEMIC_FEATURES.md](docs/ACADEMIC_FEATURES.md)** - Details about academic features and future enhancements

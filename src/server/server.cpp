@@ -84,7 +84,7 @@ bool AcademicSocialServer::initialize() {
 bool AcademicSocialServer::start() {
     std::cout << "Academic Social Server starting on port " << port_ << std::endl;
     std::cout << "Database: " << db_path_ << std::endl;
-    std::cout << "Version: 0.2.0-academic" << std::endl;
+    std::cout << "Version: 0.3.0-academic" << std::endl;
     
     if (!initializeSocket()) {
         std::cerr << "Failed to initialize server socket" << std::endl;
@@ -532,7 +532,7 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
 
 HttpResponse AcademicSocialServer::handleStatus(const HttpRequest& request) {
     (void)request;
-    std::string response = R"({"status":"ok","version":"0.2.0-academic","features":["user_registration","sqlite_persistence","bcrypt_hashing"]})";
+    std::string response = R"({"status":"ok","version":"0.3.0-academic","features":["user_registration","sqlite_persistence","bcrypt_hashing","websocket_chat","voice_channels","groups","organizations","real_time_messaging"]})";
     return createJsonResponse(200, response);
 }
 
