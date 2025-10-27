@@ -1,107 +1,275 @@
 # Sohbet Frontend
 
-React frontend for the Sohbet Academic Social Platform.
+The React-based user interface for the Sohbet Academic Social Platform.
 
-## Technologies Used
+---
 
-- **React 18** with TypeScript
-- **Material-UI (MUI)** for component library
-- **Axios** for API communication
-- **React Router** for navigation
+## What's Inside
 
-## Features
+This is the frontend (user interface) of Sohbet, built with modern web technologies to provide a smooth, responsive experience.
 
-- **User Authentication**: Login and registration forms
-- **User Dashboard**: Profile display with academic information
-- **Backend Integration**: Real-time communication with C++ backend
-- **Status Display**: Live server status and demo user data
-- **Responsive Design**: Mobile-friendly interface
+### Technologies Used
 
-## Development Setup
+- **⚛️ React 18** - Modern UI library with TypeScript for type safety
+- **🎨 Material-UI (MUI)** - Beautiful, professional UI components
+- **🔌 Axios** - Easy API communication with the backend
+- **🗺️ React Router** - Smooth navigation between pages
 
-### Prerequisites
+---
 
-- Node.js 16+ and npm
-- C++ backend server running on port 8080
+## What You Can Do
 
-### Installation
+### Current Features
 
-1. Install dependencies:
-```bash
-npm install
-```
+- ✅ **User Authentication** - Login and registration with validation
+- ✅ **User Dashboard** - View and manage your profile
+- ✅ **Backend Integration** - Real-time communication with the C++ server
+- ✅ **Status Display** - See server health and demo user information
+- ✅ **Responsive Design** - Works on desktop, tablet, and mobile
 
-2. Start development server:
-```bash
-npm start
-```
+### Coming Soon
 
-The frontend will be available at `http://localhost:3000` and will proxy API requests to the backend on `http://localhost:8080`.
+- 📝 Study groups and course enrollment
+- 📝 Academic discussions and Q&A
+- 📝 Real-time messaging
+- 📝 Voice and video calls
 
-### Available Scripts
+---
 
-- `npm start` - Start development server
-- `npm run build` - Build for production
-- `npm test` - Run tests
-- `npm run eject` - Eject from Create React App
+## Getting Started
 
-## Backend Integration
+### What You Need
 
-The frontend communicates with the C++ backend through REST API endpoints:
+Before you begin, make sure you have:
+- **Node.js 16 or higher** with npm
+- **The C++ backend server** running on port 8080
 
-- `GET /api/status` - Server status and version
-- `GET /api/users/demo` - Demo user data
-- `POST /api/users` - User registration
-- `POST /api/login` - User authentication
+### Installation Steps
 
-## Components
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-### LoginForm
-Handles user authentication with username/password.
+2. **Start the development server**:
+   ```bash
+   npm start
+   ```
 
-### RegisterForm
-Comprehensive registration form with academic profile fields:
+3. **Open in your browser**:
+   - The app will automatically open at `http://localhost:3000`
+   - API requests are automatically forwarded to the backend at `http://localhost:8080`
+
+### Available Commands
+
+| Command | What It Does |
+|---------|--------------|
+| `npm start` | Starts the development server with hot reload |
+| `npm run build` | Creates an optimized production build |
+| `npm test` | Runs the test suite |
+| `npm run eject` | Ejects from Create React App (⚠️ irreversible) |
+
+---
+
+## How It Works
+
+### Backend Communication
+
+The frontend talks to the C++ backend using REST API endpoints:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/status` | Check server health and version |
+| `GET /api/users/demo` | Get demo user information |
+| `POST /api/users` | Register a new user |
+| `POST /api/login` | Authenticate and get a token |
+| `GET /api/users/:username` | Get user profile |
+
+All API calls are automatically authenticated using JWT tokens stored in your browser.
+
+---
+
+## Main Components
+
+### 🔐 LoginForm
+Handles user authentication with username and password.
+
+**Features**:
+- Input validation
+- Error handling
+- Token storage in localStorage
+- Automatic redirect after login
+
+### 📝 RegisterForm
+Comprehensive registration form for new users.
+
+**Academic Fields**:
 - Username, email, password
-- University, department, enrollment year
+- University and department
+- Enrollment year
 - Primary and additional languages
 
-### Dashboard
-User profile display showing:
-- User information and avatar
-- Academic details
-- Platform features and roadmap
+**Features**:
+- Real-time validation
+- Password strength checking
+- Duplicate username/email detection
 
-### StatusDisplay
-Real-time status of:
+### 📊 Dashboard
+Your personal profile page.
+
+**Shows**:
+- User information and avatar
+- Academic details (university, department, year)
+- Platform features and roadmap
+- Navigation to other sections
+
+### 📡 StatusDisplay
+Real-time system information.
+
+**Displays**:
 - Backend server health
 - Available features
-- Demo user data
+- Demo user credentials
 - Connection status
+
+---
 
 ## Project Structure
 
+Here's how the frontend code is organized:
+
 ```
 frontend/
-├── public/
-│   └── index.html
-├── src/
-│   ├── components/
+├── public/              # Static files
+│   └── index.html       # Main HTML template
+│
+├── src/                 # Source code
+│   ├── components/      # React components
 │   │   ├── LoginForm.tsx
 │   │   ├── RegisterForm.tsx
 │   │   ├── Dashboard.tsx
 │   │   └── StatusDisplay.tsx
-│   ├── services/
-│   │   └── api.ts
-│   ├── App.tsx
-│   ├── App.css
-│   └── index.tsx
-├── package.json
-└── tsconfig.json
+│   │
+│   ├── services/        # API and business logic
+│   │   ├── api.ts       # Backend API client
+│   │   └── voiceService.ts  # Voice integration
+│   │
+│   ├── hooks/           # Custom React hooks
+│   │   └── useVoice.ts  # Voice channel hooks
+│   │
+│   ├── App.tsx          # Main app component
+│   ├── App.css          # Global styles
+│   └── index.tsx        # Entry point
+│
+├── package.json         # Dependencies and scripts
+└── tsconfig.json        # TypeScript configuration
 ```
 
-## Development Notes
+---
 
-- The app uses localStorage to persist authentication tokens
-- Error handling is implemented for all API calls
-- Loading states are shown during async operations
-- The interface supports both Turkish and English academic environments
+## Development Tips
+
+### Authentication
+
+The app uses **localStorage** to persist authentication tokens:
+
+```typescript
+// After successful login
+localStorage.setItem('token', jwtToken);
+
+// Access the token for API calls
+const token = localStorage.getItem('token');
+```
+
+### Error Handling
+
+All API calls include comprehensive error handling:
+
+```typescript
+try {
+  const response = await api.post('/api/login', credentials);
+  // Handle success
+} catch (error) {
+  // Handle error with user-friendly message
+  console.error('Login failed:', error);
+}
+```
+
+### Loading States
+
+Components show loading indicators during async operations:
+
+```typescript
+const [loading, setLoading] = useState(false);
+
+const handleSubmit = async () => {
+  setLoading(true);
+  try {
+    // API call
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+### Language Support
+
+The interface is designed for both Turkish and English academic environments, with easy-to-read labels and internationalization-ready structure.
+
+---
+
+## Troubleshooting
+
+### Frontend Can't Connect to Backend
+
+**Problem**: API calls fail with connection errors
+
+**Solution**:
+1. Make sure the backend is running: `curl http://localhost:8080/api/status`
+2. Check that `package.json` has: `"proxy": "http://localhost:8080"`
+3. Restart the frontend: `npm start`
+
+### Build Errors
+
+**Problem**: `npm install` or `npm start` fails
+
+**Solution**:
+1. Delete `node_modules` and `package-lock.json`
+2. Run `npm install` again
+3. Check Node.js version: `node --version` (should be 16+)
+
+### Browser Console Errors
+
+**Problem**: JavaScript errors in the browser
+
+**Solution**:
+1. Open browser DevTools (F12)
+2. Check the Console tab for error details
+3. Clear browser cache and reload
+4. Check that the backend is running properly
+
+---
+
+## Contributing
+
+When adding new components or features:
+
+1. ✅ Follow the existing TypeScript patterns
+2. ✅ Use Material-UI components for consistency
+3. ✅ Add proper error handling
+4. ✅ Include loading states
+5. ✅ Test with both demo and real user data
+6. ✅ Ensure responsive design on mobile
+
+---
+
+## Learn More
+
+- [React Documentation](https://react.dev)
+- [Material-UI Documentation](https://mui.com)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs)
+- [Main Sohbet README](../README.md) - For overall project information
+
+---
+
+**Happy coding!** 🚀
