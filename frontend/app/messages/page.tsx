@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Card } from '@/components/card'
-import { ChatList } from '@/components/chat-list'
-import { ChatWindow } from '@/components/chat-window'
+import { Card } from '@/app/components/ui/card'
+import { ChatList } from '@/app/components/chat-list'
+import { ChatWindow } from '@/app/components/chat-window'
 
 export default function MessagesPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>()

@@ -1,4 +1,5 @@
 #include "services/permission_service.h"
+#include "config/env.h"
 
 namespace sohbet {
 namespace services {
@@ -12,28 +13,32 @@ bool PermissionService::userHasPermission(int user_id, const std::string& permis
 }
 
 bool PermissionService::tokenHasPermission(const std::string& token, const std::string& permission) {
-    auto payload = security::verify_jwt_token(token);
+    std::string jwt_secret = config::get_jwt_secret();
+    auto payload = security::verify_jwt_token(token, jwt_secret);
     if (!payload.has_value()) return false;
     
     return userHasPermission(payload->user_id, permission);
 }
 
 std::optional<int> PermissionService::getUserIdFromToken(const std::string& token) {
-    auto payload = security::verify_jwt_token(token);
+    std::string jwt_secret = config::get_jwt_secret();
+    auto payload = security::verify_jwt_token(token, jwt_secret);
     if (!payload.has_value()) return std::nullopt;
     
     return payload->user_id;
 }
 
 std::optional<std::string> PermissionService::getRoleFromToken(const std::string& token) {
-    auto payload = security::verify_jwt_token(token);
+    std::string jwt_secret = config::get_jwt_secret();
+    auto payload = security::verify_jwt_token(token, jwt_secret);
     if (!payload.has_value()) return std::nullopt;
     
     return payload->role;
 }
 
 bool PermissionService::verifyAndCheckPermission(const std::string& token, const std::string& permission) {
-    auto payload = security::verify_jwt_token(token);
+    std::string jwt_secret = config::get_jwt_secret();
+    auto payload = security::verify_jwt_token(token, jwt_secret);
     if (!payload.has_value()) return false;
     
     return userHasPermission(payload->user_id, permission);

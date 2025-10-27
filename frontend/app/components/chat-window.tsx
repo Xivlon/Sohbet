@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useState, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/card'
-import { Button } from '@/components/button'
-import { Input } from '@/components/input'
-import { ScrollArea } from '@/components/scroll-area'
-import { Avatar, AvatarFallback } from '@/components/avatar'
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
+import { Button } from '@/app/components/ui/button'
+import { Input } from '@/app/components/ui/input'
+import { ScrollArea } from '@/app/components/ui/scroll-area'
+import { Avatar, AvatarFallback } from '@/app/components/avatar'
 import { Send } from 'lucide-react'
 import { useChatWebSocket } from '../lib/use-websocket'
 

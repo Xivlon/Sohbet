@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent } from '@/components/card'
-import { Avatar, AvatarFallback } from '@/components/avatar'
-import { ScrollArea } from '@/components/scroll-area'
+import { Card, CardContent } from '@/app/components/ui/card'
+import { Avatar, AvatarFallback } from '@/app/components/avatar'
+import { ScrollArea } from '@/app/components/ui/scroll-area'
 import { useOnlineUsers } from '../lib/use-websocket'
 
 interface Conversation {

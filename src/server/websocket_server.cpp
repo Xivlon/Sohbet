@@ -1,5 +1,6 @@
 #include "server/websocket_server.h"
 #include "security/jwt.h"
+#include "config/env.h"
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -297,7 +298,8 @@ int WebSocketServer::authenticateConnection(const std::string& request) {
     
     // Verify JWT token
     try {
-        auto payload = security::verify_jwt_token(token);
+        std::string jwt_secret = config::get_jwt_secret();
+        auto payload = security::verify_jwt_token(token, jwt_secret);
         if (payload.has_value()) {
             return payload->user_id;
         }
