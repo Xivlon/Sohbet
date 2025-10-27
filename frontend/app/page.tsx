@@ -8,11 +8,13 @@ import { Khave } from './components/khave';
 import { Publications } from './components/publications';
 import { Muhabbet } from './components/muhabbet';
 import { Profile } from './components/profile';
+import { GroupList } from './components/group-list';
+import { OrganizationDirectory } from './components/organization-directory';
 import { AuthModal } from './components/auth-modal';
 import { useIsMobile } from './components/use-mobile';
 import { useAuth } from './contexts/auth-context';
 
-export type ActiveSection = 'main' | 'global' | 'khave' | 'publications' | 'muhabbet' | 'profile';
+export type ActiveSection = 'main' | 'global' | 'groups' | 'organizations' | 'khave' | 'publications' | 'muhabbet' | 'profile';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<ActiveSection>('main');
@@ -29,7 +31,7 @@ export default function App() {
     return false;
   });
   const isMobile = useIsMobile();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   useEffect(() => {
     // Apply dark mode class to document element
@@ -52,6 +54,18 @@ export default function App() {
         return <MainFeed />;
       case 'global':
         return <GlobalFeed />;
+      case 'groups':
+        return (
+          <div className="h-full overflow-y-auto p-6">
+            <GroupList currentUserId={user?.id} />
+          </div>
+        );
+      case 'organizations':
+        return (
+          <div className="h-full overflow-y-auto p-6">
+            <OrganizationDirectory currentUserId={user?.id} />
+          </div>
+        );
       case 'khave':
         return <Khave />;
       case 'publications':

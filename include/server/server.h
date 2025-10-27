@@ -6,6 +6,9 @@
 #include "repositories/friendship_repository.h"
 #include "repositories/post_repository.h"
 #include "repositories/comment_repository.h"
+#include "repositories/group_repository.h"
+#include "repositories/organization_repository.h"
+#include "repositories/role_repository.h"
 #include "services/storage_service.h"
 #include <memory>
 #include <string>
@@ -92,6 +95,9 @@ private:
     std::shared_ptr<repositories::FriendshipRepository> friendship_repository_;
     std::shared_ptr<repositories::PostRepository> post_repository_;
     std::shared_ptr<repositories::CommentRepository> comment_repository_;
+    std::shared_ptr<repositories::GroupRepository> group_repository_;
+    std::shared_ptr<repositories::OrganizationRepository> organization_repository_;
+    std::shared_ptr<repositories::RoleRepository> role_repository_;
     std::shared_ptr<services::StorageService> storage_service_;
     std::atomic<bool> running_;
     int server_socket_;
@@ -136,6 +142,25 @@ private:
     HttpResponse handleReplyToComment(const HttpRequest& request);
     HttpResponse handleUpdateComment(const HttpRequest& request);
     HttpResponse handleDeleteComment(const HttpRequest& request);
+    
+    // Group handlers
+    HttpResponse handleCreateGroup(const HttpRequest& request);
+    HttpResponse handleGetGroups(const HttpRequest& request);
+    HttpResponse handleGetGroup(const HttpRequest& request);
+    HttpResponse handleUpdateGroup(const HttpRequest& request);
+    HttpResponse handleDeleteGroup(const HttpRequest& request);
+    HttpResponse handleAddGroupMember(const HttpRequest& request);
+    HttpResponse handleRemoveGroupMember(const HttpRequest& request);
+    HttpResponse handleUpdateGroupMemberRole(const HttpRequest& request);
+    
+    // Organization handlers
+    HttpResponse handleCreateOrganization(const HttpRequest& request);
+    HttpResponse handleGetOrganizations(const HttpRequest& request);
+    HttpResponse handleGetOrganization(const HttpRequest& request);
+    HttpResponse handleUpdateOrganization(const HttpRequest& request);
+    HttpResponse handleDeleteOrganization(const HttpRequest& request);
+    HttpResponse handleAddOrganizationAccount(const HttpRequest& request);
+    HttpResponse handleRemoveOrganizationAccount(const HttpRequest& request);
     
     HttpResponse handleNotFound(const HttpRequest& request);
     
