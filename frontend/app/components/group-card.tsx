@@ -6,6 +6,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Users, Lock, Globe, Settings } from "lucide-react"
 import { Badge } from "@/app/components/ui/badge"
 
+// Privacy constants
+const PRIVACY = {
+  PUBLIC: 'public',
+  PRIVATE: 'private',
+  INVITE_ONLY: 'invite_only',
+} as const;
+
 interface Group {
   id: number
   name: string
@@ -43,11 +50,11 @@ export function GroupCard({ group, currentUserId, onJoin, onManage, onView }: Gr
 
   const getPrivacyIcon = () => {
     switch (group.privacy) {
-      case 'public':
+      case PRIVACY.PUBLIC:
         return <Globe className="h-4 w-4" />
-      case 'private':
+      case PRIVACY.PRIVATE:
         return <Lock className="h-4 w-4" />
-      case 'invite_only':
+      case PRIVACY.INVITE_ONLY:
         return <Lock className="h-4 w-4" />
       default:
         return <Lock className="h-4 w-4" />
@@ -56,11 +63,11 @@ export function GroupCard({ group, currentUserId, onJoin, onManage, onView }: Gr
 
   const getPrivacyLabel = () => {
     switch (group.privacy) {
-      case 'public':
+      case PRIVACY.PUBLIC:
         return 'Public'
-      case 'private':
+      case PRIVACY.PRIVATE:
         return 'Private'
-      case 'invite_only':
+      case PRIVACY.INVITE_ONLY:
         return 'Invite Only'
       default:
         return 'Private'
@@ -104,10 +111,10 @@ export function GroupCard({ group, currentUserId, onJoin, onManage, onView }: Gr
         {!isMember ? (
           <Button
             onClick={handleJoin}
-            disabled={isJoining || group.privacy === 'invite_only'}
+            disabled={isJoining || group.privacy === PRIVACY.INVITE_ONLY}
             className="w-full"
           >
-            {isJoining ? 'Joining...' : group.privacy === 'invite_only' ? 'Invite Required' : 'Join Group'}
+            {isJoining ? 'Joining...' : group.privacy === PRIVACY.INVITE_ONLY ? 'Invite Required' : 'Join Group'}
           </Button>
         ) : (
           <Button

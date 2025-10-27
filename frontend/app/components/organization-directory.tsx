@@ -31,7 +31,10 @@ export function OrganizationDirectory({ currentUserId, onOrganizationSelect }: O
   }, [currentUserId])
 
   const fetchOrganizations = async () => {
-    if (!currentUserId) return
+    if (!currentUserId) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true)
     try {

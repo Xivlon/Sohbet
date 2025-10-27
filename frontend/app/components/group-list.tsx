@@ -32,7 +32,10 @@ export function GroupList({ currentUserId, onGroupSelect }: GroupListProps) {
   }, [currentUserId])
 
   const fetchGroups = async () => {
-    if (!currentUserId) return
+    if (!currentUserId) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true)
     try {

@@ -23,6 +23,7 @@ import {
 } from "@/app/components/ui/select"
 import { Plus } from "lucide-react"
 import { PermissionGate } from "./permission-gate"
+import { PERMISSIONS } from "@/app/lib/permissions"
 
 interface GroupCreatorProps {
   onGroupCreated?: () => void
@@ -70,7 +71,7 @@ export function GroupCreator({ onGroupCreated, currentUserId }: GroupCreatorProp
   }
 
   return (
-    <PermissionGate permission="create_group">
+    <PermissionGate permission={PERMISSIONS.CREATE_GROUP}>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button>
