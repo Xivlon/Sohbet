@@ -28,10 +28,12 @@ include_directories(${CMAKE_BINARY_DIR}/_deps/bcrypt-src/include)
 set(SOURCES
     src/models/user.cpp
     src/models/role.cpp
+    src/models/media.cpp
     src/models/voice_channel.cpp
     src/db/database.cpp
     src/repositories/user_repository.cpp
     src/repositories/role_repository.cpp
+    src/repositories/media_repository.cpp
     src/services/permission_service.cpp
     src/utils/hash.cpp
     src/security/bcrypt_wrapper.cpp
