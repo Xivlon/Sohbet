@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/auth-context';
 import { apiClient } from '../lib/api-client';
 import { User as UserIcon, Mail, Building2, BookOpen, GraduationCap, Phone, MapPin, Edit2, Save, X } from 'lucide-react';
@@ -12,14 +12,28 @@ export function Profile() {
   const [success, setSuccess] = useState('');
   
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    position: user?.position || '',
-    phone_number: user?.phone_number || '',
-    university: user?.university || '',
-    department: user?.department || '',
-    enrollment_year: user?.enrollment_year || new Date().getFullYear(),
-    primary_language: user?.primary_language || 'Turkish',
+    name: '',
+    position: '',
+    phone_number: '',
+    university: '',
+    department: '',
+    enrollment_year: new Date().getFullYear(),
+    primary_language: 'Turkish',
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        position: user.position || '',
+        phone_number: user.phone_number || '',
+        university: user.university || '',
+        department: user.department || '',
+        enrollment_year: user.enrollment_year || new Date().getFullYear(),
+        primary_language: user.primary_language || 'Turkish',
+      });
+    }
+  }, [user]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));

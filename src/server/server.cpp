@@ -57,6 +57,7 @@ bool AcademicSocialServer::start() {
     std::cout << "  GET  /api/users/demo" << std::endl;
     std::cout << "  POST /api/users (registration)" << std::endl;
     std::cout << "  POST /api/login" << std::endl;
+    std::cout << "  PUT  /api/users/:id (update profile)" << std::endl;
     std::cout << "Server ready to handle requests" << std::endl;
     
     // Accept connections
