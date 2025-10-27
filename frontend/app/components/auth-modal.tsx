@@ -7,9 +7,10 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'register';
+  required?: boolean;
 }
 
-export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialMode = 'login', required = false }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -65,12 +66,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {!required && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
 
         <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
           {mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
