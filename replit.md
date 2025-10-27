@@ -31,6 +31,12 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
     - Created Python import script for bulk user data loading
     - Imported 25 Turkish academic users (researchers, professors, engineers, students)
     - Implemented paginated user listing API with query parameter support
+  - **Authentication-Gated Content Access**:
+    - Implemented mandatory login before content access
+    - Login page appears first for all unauthenticated users
+    - AuthModal cannot be closed until user successfully authenticates
+    - Full app content (feed, sidebar, navigation) only visible after login
+    - Loading state shown during authentication verification
 
 ## Project Architecture
 
