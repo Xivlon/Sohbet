@@ -122,6 +122,11 @@ int Statement::getInt(int index) const {
     return sqlite3_column_int(stmt_, index);
 }
 
+sqlite3_int64 Statement::getInt64(int index) const {
+    if (!stmt_) return 0;
+    return sqlite3_column_int64(stmt_, index);
+}
+
 std::string Statement::getText(int index) const {
     if (!stmt_) return "";
     const char* text = reinterpret_cast<const char*>(sqlite3_column_text(stmt_, index));

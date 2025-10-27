@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus, MoreVertical, Send, Paperclip, Smile, Phone, Video, Users, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
@@ -10,117 +10,149 @@ import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
 
 interface Chat {
-  id: string;
-  name: string;
-  type: 'individual' | 'group';
-  lastMessage: string;
-  lastMessageTime: string;
-  unreadCount: number;
-  isOnline: boolean;
-  participants?: string[];
-  avatar: string;
+  id: number;
+  user1_id: number;
+  user2_id: number;
+  created_at: string;
+  last_message_at: string;
+  other_user?: {
+    id: number;
+    username: string;
+  };
 }
 
 interface Message {
-  id: string;
-  senderId: string;
-  senderName: string;
+  id: number;
+  conversation_id: number;
+  sender_id: number;
   content: string;
-  timestamp: string;
-  type: 'text' | 'image' | 'file';
-  isOwn: boolean;
+  media_url?: string;
+  read_at?: string;
+  delivered_at?: string;
+  created_at: string;
 }
-
-const mockChats: Chat[] = [
-  {
-    id: '1',
-    name: 'Dr. Ahmet Yılmaz',
-    type: 'individual',
-    lastMessage: 'Tez danışmanlığı toplantısı için yarın 14:00 uygun mu?',
-    lastMessageTime: '10:30',
-    unreadCount: 2,
-    isOnline: true,
-    avatar: 'AY'
-  },
-  {
-    id: '2',
-    name: 'Bilgisayar Mühendisliği Grubu',
-    type: 'group',
-    lastMessage: 'Zeynep: Final projesi için ekip toplantısı yapalım',
-    lastMessageTime: '09:45',
-    unreadCount: 5,
-    isOnline: false,
-    participants: ['Ali Uzun', 'Zeynep Kaya', 'Mehmet Demir', 'Ayşe Çelik'],
-    avatar: 'BMG'
-  },
-  {
-    id: '3',
-    name: 'Prof. Dr. Elif Kaya',
-    type: 'individual',
-    lastMessage: 'Araştırma önerinizdeki metodoloji kısmını gözden geçirebilir misiniz?',
-    lastMessageTime: '08:20',
-    unreadCount: 0,
-    isOnline: false,
-    avatar: 'EK'
-  },
-  {
-    id: '4',
-    name: 'Proje Geliştirme Ekibi',
-    type: 'group',
-    lastMessage: 'Can: Demo sunumu için hazırlıklar nasıl gidiyor?',
-    lastMessageTime: 'Dün',
-    unreadCount: 3,
-    isOnline: false,
-    participants: ['Ali Uzun', 'Can Özkan', 'Deniz Yılmaz'],
-    avatar: 'PGE'
-  }
-];
-
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    senderId: 'dr_ahmet',
-    senderName: 'Dr. Ahmet Yılmaz',
-    content: 'Merhaba Ali, tez çalışman nasıl gidiyor?',
-    timestamp: '09:30',
-    type: 'text',
-    isOwn: false
-  },
-  {
-    id: '2',
-    senderId: 'ali',
-    senderName: 'Ali Uzun',
-    content: 'Merhaba hocam, literatür taraması kısmını bitirdim. Metodoloji bölümüne geçmeye hazırlanıyorum.',
-    timestamp: '09:35',
-    type: 'text',
-    isOwn: true
-  },
-  {
-    id: '3',
-    senderId: 'dr_ahmet',
-    senderName: 'Dr. Ahmet Yılmaz',
-    content: 'Harika! Metodoloji için yarın bir toplantı ayarlayalım. Saat 14:00 uygun mu?',
-    timestamp: '10:30',
-    type: 'text',
-    isOwn: false
-  }
-];
 
 export function Muhabbet() {
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
-  const [messages] = useState<Message[]>(mockMessages);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [currentUserId] = useState<number>(1); // TODO: Get from auth context
+  const [loading, setLoading] = useState(true);
 
-  const filteredChats = mockChats.filter(chat =>
-    chat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.lastMessage.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
+  useEffect(() => {
+    if (selectedChat) {
+      fetchMessages(selectedChat.id);
+    }
+  }, [selectedChat]);
+
+  const fetchConversations = async () => {
+    try {
+      const response = await fetch('/api/conversations', {
+        headers: {
+          'X-User-ID': currentUserId.toString()
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Fetch user details for each conversation
+        const conversationsWithUsers = await Promise.all(
+          data.conversations.map(async (conv: Chat) => {
+            const otherUserId = conv.user1_id === currentUserId ? conv.user2_id : conv.user1_id;
+            
+            try {
+              const userResponse = await fetch(`/api/users/${otherUserId}`);
+              if (userResponse.ok) {
+                const userData = await userResponse.json();
+                return {
+                  ...conv,
+                  other_user: {
+                    id: otherUserId,
+                    username: userData.username || 'Unknown User'
+                  }
+                };
+              }
+            } catch (error) {
+              console.error('Error fetching user:', error);
+            }
+            
+            return {
+              ...conv,
+              other_user: {
+                id: otherUserId,
+                username: 'Unknown User'
+              }
+            };
+          })
+        );
+        
+        setChats(conversationsWithUsers);
+      }
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMessages = async (conversationId: number) => {
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+        headers: {
+          'X-User-ID': currentUserId.toString()
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Reverse to show oldest first
+        setMessages(data.messages.reverse());
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  const filteredChats = chats.filter(chat =>
+    chat.other_user?.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const sendMessage = () => {
-    if (newMessage.trim()) {
-      // Here you would typically send the message to your backend
-      setNewMessage('');
+  const sendMessage = async () => {
+    if (newMessage.trim() && selectedChat) {
+      try {
+        const response = await fetch(`/api/conversations/${selectedChat.id}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': currentUserId.toString()
+          },
+          body: JSON.stringify({
+            content: newMessage.trim()
+          })
+        });
+        
+        if (response.ok) {
+          const message = await response.json();
+          setMessages([...messages, message]);
+          setNewMessage('');
+          
+          // Update conversation's last_message_at in the list
+          setChats(chats.map(chat => 
+            chat.id === selectedChat.id 
+              ? { ...chat, last_message_at: new Date().toISOString() }
+              : chat
+          ));
+        }
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
     }
   };
 
@@ -128,6 +160,20 @@ export function Muhabbet() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 48) {
+      return 'Dün';
+    } else {
+      return date.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' });
     }
   };
 
@@ -150,26 +196,16 @@ export function Muhabbet() {
                 </Button>
                 <div className="relative">
                   <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
-                    <span className="text-secondary-foreground text-sm">{selectedChat.avatar}</span>
+                    <span className="text-secondary-foreground text-sm">
+                      {selectedChat.other_user?.username?.charAt(0).toUpperCase() || 'U'}
+                    </span>
                   </div>
-                  {selectedChat.type === 'individual' && selectedChat.isOnline && (
-                    <div className="w-3 h-3 bg-primary rounded-full absolute -bottom-0.5 -right-0.5 border-2 border-background"></div>
-                  )}
-                  {selectedChat.type === 'group' && (
-                    <Users className="w-4 h-4 bg-primary text-primary-foreground rounded-full p-0.5 absolute -bottom-0.5 -right-0.5" />
-                  )}
                 </div>
                 <div>
-                  <h3 className="font-medium">{selectedChat.name}</h3>
-                  {selectedChat.type === 'individual' ? (
-                    <p className="text-sm text-muted-foreground">
-                      {selectedChat.isOnline ? 'Çevrimiçi' : 'Son görülme: 2 saat önce'}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {selectedChat.participants?.length} üye
-                    </p>
-                  )}
+                  <h3 className="font-medium">{selectedChat.other_user?.username || 'Unknown User'}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Son görülme: {formatTimestamp(selectedChat.last_message_at)}
+                  </p>
                 </div>
               </div>
               
@@ -190,36 +226,35 @@ export function Muhabbet() {
           {/* Messages */}
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-[85%] ${message.isOwn ? 'order-last' : ''}`}>
-                    {!message.isOwn && (
-                      <p className="text-xs text-muted-foreground mb-1 ml-3">
-                        {message.senderName}
-                      </p>
-                    )}
-                    <div
-                      className={`p-3 rounded-2xl ${
-                        message.isOwn
-                          ? 'bg-primary text-primary-foreground rounded-br-md'
-                          : 'bg-muted rounded-bl-md'
-                      }`}
-                    >
-                      <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-                      <p className={`text-xs mt-1 ${
-                        message.isOwn 
-                          ? 'text-primary-foreground/70' 
-                          : 'text-muted-foreground'
-                      }`}>
-                        {message.timestamp}
-                      </p>
+              {messages.map((message) => {
+                const isOwn = message.sender_id === currentUserId;
+                
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[85%] ${isOwn ? 'order-last' : ''}`}>
+                      <div
+                        className={`p-3 rounded-2xl ${
+                          isOwn
+                            ? 'bg-primary text-primary-foreground rounded-br-md'
+                            : 'bg-muted rounded-bl-md'
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                        <p className={`text-xs mt-1 ${
+                          isOwn 
+                            ? 'text-primary-foreground/70' 
+                            : 'text-muted-foreground'
+                        }`}>
+                          {formatTimestamp(message.created_at)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
 
@@ -281,42 +316,45 @@ export function Muhabbet() {
           {/* Chat List */}
           <ScrollArea className="flex-1">
             <div className="p-2">
-              {filteredChats.map((chat) => (
-                <div
-                  key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
-                  className="p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="relative">
-                      <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
-                        <span className="text-secondary-foreground">{chat.avatar}</span>
-                      </div>
-                      {chat.type === 'individual' && chat.isOnline && (
-                        <div className="w-3 h-3 bg-primary rounded-full absolute -bottom-0.5 -right-0.5 border-2 border-background"></div>
-                      )}
-                      {chat.type === 'group' && (
-                        <Users className="w-4 h-4 bg-primary text-primary-foreground rounded-full p-0.5 absolute -bottom-0.5 -right-0.5" />
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-medium truncate">{chat.name}</h4>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-xs text-muted-foreground">{chat.lastMessageTime}</span>
-                          {chat.unreadCount > 0 && (
-                            <Badge className="bg-primary text-primary-foreground min-w-[20px] h-5 flex items-center justify-center text-xs">
-                              {chat.unreadCount}
-                            </Badge>
-                          )}
+              {loading ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  Yükleniyor...
+                </div>
+              ) : filteredChats.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  {searchTerm ? 'Sohbet bulunamadı' : 'Henüz mesajınız yok'}
+                </div>
+              ) : (
+                filteredChats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    onClick={() => setSelectedChat(chat)}
+                    className="p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="relative">
+                        <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
+                          <span className="text-secondary-foreground">
+                            {chat.other_user?.username?.charAt(0).toUpperCase() || 'U'}
+                          </span>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-medium truncate">{chat.other_user?.username || 'Unknown User'}</h4>
+                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                            {formatTimestamp(chat.last_message_at)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {new Date(chat.last_message_at).toLocaleDateString('tr-TR')}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </ScrollArea>
         </div>

@@ -9,6 +9,8 @@
 #include "repositories/group_repository.h"
 #include "repositories/organization_repository.h"
 #include "repositories/role_repository.h"
+#include "repositories/conversation_repository.h"
+#include "repositories/message_repository.h"
 #include "services/storage_service.h"
 #include <memory>
 #include <string>
@@ -98,6 +100,8 @@ private:
     std::shared_ptr<repositories::GroupRepository> group_repository_;
     std::shared_ptr<repositories::OrganizationRepository> organization_repository_;
     std::shared_ptr<repositories::RoleRepository> role_repository_;
+    std::shared_ptr<repositories::ConversationRepository> conversation_repository_;
+    std::shared_ptr<repositories::MessageRepository> message_repository_;
     std::shared_ptr<services::StorageService> storage_service_;
     std::atomic<bool> running_;
     int server_socket_;
@@ -161,6 +165,13 @@ private:
     HttpResponse handleDeleteOrganization(const HttpRequest& request);
     HttpResponse handleAddOrganizationAccount(const HttpRequest& request);
     HttpResponse handleRemoveOrganizationAccount(const HttpRequest& request);
+    
+    // Chat/Messaging handlers
+    HttpResponse handleGetConversations(const HttpRequest& request);
+    HttpResponse handleGetOrCreateConversation(const HttpRequest& request);
+    HttpResponse handleGetMessages(const HttpRequest& request);
+    HttpResponse handleSendMessage(const HttpRequest& request);
+    HttpResponse handleMarkMessageRead(const HttpRequest& request);
     
     HttpResponse handleNotFound(const HttpRequest& request);
     
