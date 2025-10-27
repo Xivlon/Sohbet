@@ -2,7 +2,7 @@
 
 # Sohbet
 
-**Version 0.2.0-academic**
+**Version 0.3.0-academic**
 
 ## What is Sohbet?
 
@@ -12,7 +12,12 @@ Sohbet is a **Turkish-centered academic social media platform** designed to help
 
 - 🎓 **Academic Profiles** - Connect with students from your university and department
 - 🔒 **Secure & Private** - Your data is protected with industry-standard encryption
-- 💬 **Study Groups** - Create or join groups for collaborative learning (coming soon)
+- 👥 **Friend System** - Send and accept friend requests to build your academic network
+- 📝 **Social Posts** - Share thoughts and academic content with friends or publicly
+- 💬 **Real-Time Chat** - Instant messaging with friends using WebSocket technology
+- 📚 **Study Groups** - Professors can create groups for collaborative learning
+- 🏛️ **Organizations** - Join clubs, societies, and academic organizations
+- 🎙️ **Voice Channels** - Create and join voice discussion channels (Khave)
 - 🌐 **Multilingual** - Built with Turkish and international students in mind
 - 📱 **Modern Interface** - Clean, responsive design that works on all devices
 
@@ -80,17 +85,40 @@ npm start
 
 ### What You Can Do Now
 
-#### User Accounts
+#### User Accounts & Profiles
 - **Create an Account**: Register with your academic information (university, department, year)
 - **Secure Login**: Your password is protected with industry-standard bcrypt encryption
 - **Personal Profile**: Display your academic background and interests
+- **Profile Photos**: Upload and display avatar images
 - **Demo Account**: Try out the platform with our pre-configured demo account
+
+#### Social Features
+- **Friend Requests**: Send, accept, or reject friend requests
+- **Friends List**: View and manage your academic connections
+- **Posts & Feed**: Create posts with visibility controls (public, friends-only, or private)
+- **Reactions**: React to posts with like, love, or insightful reactions
+- **Comments & Replies**: Engage in threaded discussions on posts
+- **Global Feed**: Discover public posts from the academic community
+
+#### Groups & Organizations
+- **Study Groups**: Professors can create groups for courses or study topics
+- **Group Membership**: Join groups and collaborate with members
+- **Organizations**: Explore and join academic clubs, societies, and departments
+- **Organization Accounts**: Organizations can post announcements and updates
+
+#### Real-Time Communication
+- **Instant Messaging**: Real-time chat with friends using WebSocket technology
+- **Typing Indicators**: See when someone is typing in a conversation
+- **Online Presence**: Know who's currently online
+- **Message History**: Access full conversation history with pagination
+- **Voice Channels**: Create and join voice discussion rooms (API ready, UI in progress)
 
 #### Security & Privacy
 - ✅ **Strong Password Protection**: Passwords are hashed with bcrypt (12 computational rounds)
 - ✅ **Secure Sessions**: JWT token authentication keeps you logged in safely
 - ✅ **Data Protection**: Your sensitive information never appears in API responses
 - ✅ **Input Validation**: All data is checked to prevent malicious inputs
+- ✅ **Role-Based Access Control**: Permissions system for Students, Professors, and Admins
 
 ### Technical Features (For Developers)
 
@@ -98,22 +126,44 @@ npm start
 - User registration with validation and uniqueness checks
 - Secure password hashing with bcrypt
 - JWT token generation for authentication
-- User profile retrieval
+- User profile retrieval and management
 - SQLite database with RAII wrapper and migrations
 - Academic profile fields: username, email, university, department, enrollment year, primary language
+- **Friend request system with status management**
+- **Post creation with visibility controls (public/friends/private)**
+- **Reaction system (like, love, insightful)**
+- **Threaded comments and replies**
+- **Group management (professor-created study groups)**
+- **Organization/club management**
+- **Conversation and message repositories**
 - **WebSocket server for real-time communication (port 8081)**
 - **Real-time chat message delivery**
 - **Typing indicators and online presence tracking**
+- **Voice channel management API**
+- **Role-based permission system**
+- **Media upload and storage service**
 
-#### Frontend (React)
-- Material-UI components with responsive design
+#### Frontend (React/Next.js/TypeScript)
+- Modern UI with Shadcn/UI components
+- Responsive design that works on all devices
 - Login and registration forms with validation
 - User dashboard with profile display
-- Real-time integration with C++ backend
-- Server health monitoring
-- TypeScript for type-safe development
+- **Friend requests and management interface**
+- **Post composer with visibility controls**
+- **Post feed with infinite scroll**
+- **Comment threads with nested replies**
+- **Reaction buttons and counters**
+- **Group creation and browsing**
+- **Organization directory**
+- **Real-time chat interface**
 - **WebSocket client with auto-reconnection**
 - **React hooks for real-time features**
+- **Typing indicators in chat**
+- **Online/offline status indicators**
+- **Avatar upload and display**
+- **Permission gates for role-based features**
+- Server health monitoring
+- TypeScript for type-safe development
 
 ---
 
@@ -634,43 +684,72 @@ The frontend remains React+TypeScript and communicates with the C++ backend via 
 
 ---
 
-## Roadmap - What's Coming Next
+## Roadmap - Implementation Status
 
-### Phase 1: Foundation & Authentication ✅ COMPLETE
+### Phase 1: Foundation & Authentication ✅ COMPLETE (100%)
 
 - ✅ User registration with validation and uniqueness checks
 - ✅ Secure password hashing (bcrypt, 12 rounds)
 - ✅ User authentication with JWT token generation
 - ✅ SQLite database integration with RAII wrapper
 - ✅ Academic profile fields (username, email, university, department, year, language)
+- ✅ Profile photos and media upload
+- ✅ Role-based access control (Students, Professors, Admins)
 
-### Phase 2: Academic Networking (Planned)
+### Phase 2: Academic Networking ✅ COMPLETE (100%)
 
-- 📝 Course model with enrollment management
-- 📝 Study group creation and membership
-- 📝 Academic networking features
-- 📝 Student-to-student connections
+- ✅ Friend request system (send, accept, reject, unfriend)
+- ✅ Friends list and management
+- ✅ Post creation with visibility controls
+- ✅ Post feed (personalized and global)
+- ✅ Reaction system (like, love, insightful)
+- ✅ Comments and threaded replies
+- ✅ Student-to-student connections
 
-### Phase 3: Content & Interaction (Planned)
+### Phase 3: Groups & Organizations ✅ COMPLETE (100%)
 
-- 📝 Post creation and interaction
-- 📝 Q&A system for academic help
-- ✅ Real-time messaging between users (WebSocket infrastructure complete)
-- 📝 Extended user profiles with interests and skills
+- ✅ Study group creation (professor-only feature)
+- ✅ Group membership management
+- ✅ Group browsing and discovery
+- ✅ Organization/club creation
+- ✅ Organization directory and profiles
+- ✅ Organization account management
 
-### Phase 4: Advanced Features (In Progress)
+### Phase 4: Real-Time Communication ✅ COMPLETE (95%)
 
+#### Phase 4A: Real-Time Chat ✅ COMPLETE (100%)
 - ✅ WebSocket infrastructure for real-time communication
-- ✅ Real-time chat messaging
+- ✅ Conversation creation and management
+- ✅ Real-time message delivery
 - ✅ Typing indicators
 - ✅ Online/offline presence tracking
-- 📝 Email verification for accounts
-- 📝 Rate limiting and enhanced security
-- 📝 File sharing capabilities for study materials
-- 📝 Advanced search and filtering
-- 📝 Analytics and insights dashboard
+- ✅ Message history with pagination
+- ✅ Automatic reconnection handling
+
+#### Phase 4C: Voice Channels ✅ API COMPLETE (90%)
+- ✅ Voice channel database models
+- ✅ Voice channel REST API endpoints
+- ✅ Channel creation and management
+- ✅ Session tracking (join/leave)
+- ✅ Active user counting
+- ⚠️ Murmur server integration (pending)
+- ⚠️ WebRTC voice streaming (pending)
+- ⚠️ Full Khave UI implementation (in progress)
 
 **See [WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md) for detailed WebSocket documentation.**
+**See [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for complete implementation details.**
+
+### Future Enhancements (Planned)
+
+- 📝 Email verification for accounts
+- 📝 Rate limiting and enhanced security
+- 📝 File sharing in messages and posts
+- 📝 Advanced search and filtering
+- 📝 Analytics and insights dashboard
+- 📝 Course enrollment management
+- 📝 Q&A system for academic help
+- 📝 Screen sharing in voice channels
+- 📝 Video calling support
 
 ---
 
