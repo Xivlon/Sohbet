@@ -3,7 +3,7 @@
 ## Overview
 Sohbet is a Next.js-based social media platform designed for academic discussions and collaboration. The frontend provides a modern, responsive interface built with React 19, Next.js 16, and Tailwind CSS.
 
-**Current State**: Successfully migrated from Vercel to Replit and running in development mode.
+**Current State**: Successfully migrated from Vercel to Replit and running in development mode. Critical security and build fixes applied (October 27, 2025).
 
 ## Recent Changes
 - **October 27, 2025**: Migrated from Vercel to Replit
@@ -54,6 +54,21 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
     - Seeded 13 default permissions across roles
     - Created migration file: `migrations/001_social_features.sql`
     - **Implementation Roadmap Created**: See `IMPLEMENTATION_ROADMAP.md` for complete 4-phase development plan
+  - **Critical Security & Build Fixes** (October 27, 2025):
+    - 🔐 **JWT Security Fix**: Removed hardcoded JWT secret vulnerability
+      - Created `include/config/env.h` for environment variable management
+      - JWT secret now required via `SOHBET_JWT_SECRET` environment variable
+      - Updated all JWT usage across server, WebSocket, and permission service
+      - Server fails fast if secret is not configured (prevents accidental insecure deployment)
+      - Documentation: `SECURITY_UPDATE.md` and `.env.example`
+    - 🎨 **Frontend UI Components**: Created missing Radix UI wrapper components
+      - Added `dialog.tsx`, `label.tsx`, `skeleton.tsx` to `frontend/app/components/ui/`
+      - Installed dependencies: `@radix-ui/react-dialog`, `@radix-ui/react-label`
+      - Components follow existing shadcn/Radix UI patterns
+    - 🔧 **Import Path Corrections**: Fixed inconsistent import paths
+      - Updated `messages/page.tsx`, `chat-window.tsx`, `chat-list.tsx`
+      - Standardized all UI component imports to `@/app/components/ui/...`
+      - Resolved Next.js build module resolution errors
 
 ## Project Architecture
 
