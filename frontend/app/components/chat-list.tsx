@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/card'
 import { Avatar, AvatarFallback } from '@/components/avatar'
 import { ScrollArea } from '@/components/scroll-area'
+import { useOnlineUsers } from '../lib/use-websocket'
 
 interface Conversation {
   id: number
@@ -27,6 +28,9 @@ interface ChatListProps {
 export function ChatList({ currentUserId, onSelectConversation, selectedConversationId }: ChatListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Use WebSocket hook to track online users
+  const { isOnline } = useOnlineUsers()
 
   useEffect(() => {
     fetchConversations()
@@ -104,31 +108,40 @@ export function ChatList({ currentUserId, onSelectConversation, selectedConversa
   return (
     <ScrollArea className="h-full">
       <div className="space-y-2 p-4">
-        {conversations.map((conversation) => (
-          <Card
-            key={conversation.id}
-            className={`cursor-pointer transition-colors hover:bg-accent ${
-              selectedConversationId === conversation.id ? 'bg-accent' : ''
-            }`}
-            onClick={() => onSelectConversation(conversation.id)}
-          >
-            <CardContent className="p-4 flex items-center gap-3">
-              <Avatar>
-                <AvatarFallback>
-                  {conversation.other_user?.username?.charAt(0).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">
-                  {conversation.other_user?.username || 'Unknown User'}
-                </p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {new Date(conversation.last_message_at).toLocaleDateString('tr-TR')}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {conversations.map((conversation) => {
+          const userIsOnline = conversation.other_user ? isOnline(conversation.other_user.id) : false
+          
+          return (
+            <Card
+              key={conversation.id}
+              className={`cursor-pointer transition-colors hover:bg-accent ${
+                selectedConversationId === conversation.id ? 'bg-accent' : ''
+              }`}
+              onClick={() => onSelectConversation(conversation.id)}
+            >
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="relative">
+                  <Avatar>
+                    <AvatarFallback>
+                      {conversation.other_user?.username?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {userIsOnline && (
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">
+                    {conversation.other_user?.username || 'Unknown User'}
+                  </p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {new Date(conversation.last_message_at).toLocaleDateString('tr-TR')}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     </ScrollArea>
   )

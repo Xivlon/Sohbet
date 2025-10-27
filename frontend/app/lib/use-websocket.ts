@@ -52,15 +52,20 @@ export function useWebSocketMessage(
 /**
  * Hook to send chat messages
  */
-export function useChatWebSocket(conversationId: number | null) {
+export function useChatWebSocket(
+  conversationId: number | null,
+  onMessageReceived?: (message: any) => void
+) {
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
 
   // Handle incoming messages
   useWebSocketMessage('chat:message', (message: WebSocketMessage) => {
     const payload = message.payload;
     if (payload.conversation_id === conversationId) {
-      // Message will be handled by the parent component
       console.log('New message received:', payload);
+      if (onMessageReceived) {
+        onMessageReceived(payload);
+      }
     }
   });
 
