@@ -32,6 +32,7 @@ set(SOURCES
     src/db/database.cpp
     src/repositories/user_repository.cpp
     src/repositories/role_repository.cpp
+    src/services/permission_service.cpp
     src/utils/hash.cpp
     src/security/bcrypt_wrapper.cpp
     src/security/jwt.cpp

@@ -54,7 +54,7 @@ std::string hmac_sha256(const std::string& key, const std::string& data) {
     return std::string(reinterpret_cast<char*>(digest), 32);
 }
 
-std::string generate_jwt_token(const std::string& username, int user_id, const std::string& secret, int expiry_hours) {
+std::string generate_jwt_token(const std::string& username, int user_id, const std::string& role, const std::string& secret, int expiry_hours) {
     // JWT Header
     std::string header = R"({"alg":"HS256","typ":"JWT"})";
     
@@ -66,6 +66,7 @@ std::string generate_jwt_token(const std::string& username, int user_id, const s
     std::ostringstream payload_ss;
     payload_ss << R"({"username":")" << username << R"(",)";
     payload_ss << R"("user_id":)" << user_id << R"(,)";
+    payload_ss << R"("role":")" << role << R"(",)";
     payload_ss << R"("exp":)" << exp_timestamp << "}";
     std::string payload = payload_ss.str();
     
@@ -118,6 +119,15 @@ std::optional<JWTPayload> verify_jwt_token(const std::string& token, const std::
     size_t user_id_start = payload_json.find("\"user_id\":") + 10;
     size_t user_id_end = payload_json.find(",", user_id_start);
     payload.user_id = std::stoi(payload_json.substr(user_id_start, user_id_end - user_id_start));
+    
+    // Extract role
+    size_t role_start = payload_json.find("\"role\":\"") + 8;
+    size_t role_end = payload_json.find("\"", role_start);
+    if (role_start != std::string::npos && role_end != std::string::npos) {
+        payload.role = payload_json.substr(role_start, role_end - role_start);
+    } else {
+        payload.role = "Student"; // Default role
+    }
     
     // Extract expiration
     size_t exp_start = payload_json.find("\"exp\":") + 6;
