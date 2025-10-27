@@ -33,6 +33,8 @@ set(SOURCES
     src/models/friendship.cpp
     src/models/post.cpp
     src/models/comment.cpp
+    src/models/group.cpp
+    src/models/organization.cpp
     src/db/database.cpp
     src/repositories/user_repository.cpp
     src/repositories/role_repository.cpp
@@ -40,6 +42,8 @@ set(SOURCES
     src/repositories/friendship_repository.cpp
     src/repositories/post_repository.cpp
     src/repositories/comment_repository.cpp
+    src/repositories/group_repository.cpp
+    src/repositories/organization_repository.cpp
     src/services/permission_service.cpp
     src/services/storage_service.cpp
     src/utils/hash.cpp

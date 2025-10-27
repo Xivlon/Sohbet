@@ -1,6 +1,8 @@
 #include "server/server.h"
 #include "models/user.h"
 #include "models/media.h"
+#include "models/group.h"
+#include "models/organization.h"
 #include "security/jwt.h"
 #include "utils/hash.h"
 #include "utils/multipart_parser.h"
@@ -33,6 +35,9 @@ bool AcademicSocialServer::initialize() {
     friendship_repository_ = std::make_shared<repositories::FriendshipRepository>(database_);
     post_repository_ = std::make_shared<repositories::PostRepository>(database_);
     comment_repository_ = std::make_shared<repositories::CommentRepository>(database_);
+    group_repository_ = std::make_shared<repositories::GroupRepository>(database_);
+    organization_repository_ = std::make_shared<repositories::OrganizationRepository>(database_);
+    role_repository_ = std::make_shared<repositories::RoleRepository>(database_);
     storage_service_ = std::make_shared<services::StorageService>("uploads/");
 
     if (!user_repository_->migrate()) {
@@ -436,6 +441,40 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleUpdateComment(request);
     } else if (request.method == "DELETE" && base_path.find("/api/comments/") == 0) {
         return handleDeleteComment(request);
+    }
+    // Group routes
+    else if (request.method == "POST" && base_path == "/api/groups") {
+        return handleCreateGroup(request);
+    } else if (request.method == "GET" && base_path == "/api/groups") {
+        return handleGetGroups(request);
+    } else if (request.method == "GET" && base_path.find("/api/groups/") == 0 && base_path.find("/members") == std::string::npos) {
+        return handleGetGroup(request);
+    } else if (request.method == "PUT" && base_path.find("/api/groups/") == 0 && base_path.find("/members") == std::string::npos) {
+        return handleUpdateGroup(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/groups/") == 0 && base_path.find("/members") == std::string::npos) {
+        return handleDeleteGroup(request);
+    } else if (request.method == "POST" && base_path.find("/api/groups/") == 0 && base_path.find("/members") != std::string::npos) {
+        return handleAddGroupMember(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/groups/") == 0 && base_path.find("/members/") != std::string::npos) {
+        return handleRemoveGroupMember(request);
+    } else if (request.method == "PUT" && base_path.find("/api/groups/") == 0 && base_path.find("/members/") != std::string::npos && base_path.find("/role") != std::string::npos) {
+        return handleUpdateGroupMemberRole(request);
+    }
+    // Organization routes
+    else if (request.method == "POST" && base_path == "/api/organizations") {
+        return handleCreateOrganization(request);
+    } else if (request.method == "GET" && base_path == "/api/organizations") {
+        return handleGetOrganizations(request);
+    } else if (request.method == "GET" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts") == std::string::npos) {
+        return handleGetOrganization(request);
+    } else if (request.method == "PUT" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts") == std::string::npos) {
+        return handleUpdateOrganization(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts") == std::string::npos) {
+        return handleDeleteOrganization(request);
+    } else if (request.method == "POST" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts") != std::string::npos) {
+        return handleAddOrganizationAccount(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts/") != std::string::npos) {
+        return handleRemoveOrganizationAccount(request);
     } else {
         return handleNotFound(request);
     }
@@ -1448,6 +1487,520 @@ HttpResponse AcademicSocialServer::handleDeleteComment(const HttpRequest& reques
     }
     
     return createErrorResponse(500, "Failed to delete comment");
+}
+
+// Group handlers
+HttpResponse AcademicSocialServer::handleCreateGroup(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    // Check if user has permission to create groups (Professor or Admin)
+    if (!role_repository_->userHasPermission(user_id, "create_group")) {
+        return createErrorResponse(403, "Only professors and admins can create groups");
+    }
+    
+    std::string name = extractJsonField(request.body, "name");
+    std::string description = extractJsonField(request.body, "description");
+    std::string privacy = extractJsonField(request.body, "privacy");
+    
+    if (name.empty()) {
+        return createErrorResponse(400, "Group name is required");
+    }
+    
+    if (privacy.empty()) {
+        privacy = "private";
+    }
+    
+    Group group(name, user_id);
+    if (!description.empty()) {
+        group.setDescription(description);
+    }
+    group.setPrivacy(privacy);
+    
+    auto created = group_repository_->create(group);
+    if (created.has_value()) {
+        return createJsonResponse(201, created->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to create group");
+}
+
+HttpResponse AcademicSocialServer::handleGetGroups(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    // Check if filtering by membership
+    std::regex my_groups_regex("[?&]my_groups=(true|1)");
+    std::smatch match;
+    bool my_groups = false;
+    if (std::regex_search(request.path, match, my_groups_regex)) {
+        my_groups = true;
+    }
+    
+    std::vector<Group> groups;
+    if (my_groups) {
+        groups = group_repository_->findByMember(user_id);
+    } else {
+        groups = group_repository_->findAll();
+    }
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < groups.size(); ++i) {
+        if (i > 0) oss << ",";
+        oss << groups[i].toJson();
+    }
+    oss << "]";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleGetGroup(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int group_id = extractIdFromPath(request.path, "/api/groups/");
+    if (group_id < 0) {
+        return createErrorResponse(400, "Invalid group ID");
+    }
+    
+    auto group = group_repository_->findById(group_id);
+    if (!group.has_value()) {
+        return createErrorResponse(404, "Group not found");
+    }
+    
+    return createJsonResponse(200, group->toJson());
+}
+
+HttpResponse AcademicSocialServer::handleUpdateGroup(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int group_id = extractIdFromPath(request.path, "/api/groups/");
+    if (group_id < 0) {
+        return createErrorResponse(400, "Invalid group ID");
+    }
+    
+    auto group = group_repository_->findById(group_id);
+    if (!group.has_value()) {
+        return createErrorResponse(404, "Group not found");
+    }
+    
+    // Check if user can manage this group
+    if (!group_repository_->canUserManage(group_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to update this group");
+    }
+    
+    std::string name = extractJsonField(request.body, "name");
+    std::string description = extractJsonField(request.body, "description");
+    std::string privacy = extractJsonField(request.body, "privacy");
+    
+    if (!name.empty()) {
+        group->setName(name);
+    }
+    if (!description.empty()) {
+        group->setDescription(description);
+    }
+    if (!privacy.empty()) {
+        group->setPrivacy(privacy);
+    }
+    
+    if (group_repository_->update(*group)) {
+        return createJsonResponse(200, group->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to update group");
+}
+
+HttpResponse AcademicSocialServer::handleDeleteGroup(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int group_id = extractIdFromPath(request.path, "/api/groups/");
+    if (group_id < 0) {
+        return createErrorResponse(400, "Invalid group ID");
+    }
+    
+    auto group = group_repository_->findById(group_id);
+    if (!group.has_value()) {
+        return createErrorResponse(404, "Group not found");
+    }
+    
+    // Only creator or admin can delete
+    if (group->getCreatorId() != user_id && !role_repository_->userHasPermission(user_id, "manage_users")) {
+        return createErrorResponse(403, "Only the group creator or admins can delete groups");
+    }
+    
+    if (group_repository_->deleteById(group_id)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+    
+    return createErrorResponse(500, "Failed to delete group");
+}
+
+HttpResponse AcademicSocialServer::handleAddGroupMember(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int group_id = extractIdFromPath(request.path, "/api/groups/");
+    if (group_id < 0) {
+        return createErrorResponse(400, "Invalid group ID");
+    }
+    
+    auto group = group_repository_->findById(group_id);
+    if (!group.has_value()) {
+        return createErrorResponse(404, "Group not found");
+    }
+    
+    std::string user_id_str = extractJsonField(request.body, "user_id");
+    std::string role = extractJsonField(request.body, "role");
+    
+    if (user_id_str.empty()) {
+        return createErrorResponse(400, "User ID is required");
+    }
+    
+    int member_user_id = std::stoi(user_id_str);
+    if (role.empty()) {
+        role = "member";
+    }
+    
+    // Check if requester can manage the group
+    if (!group_repository_->canUserManage(group_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to add members to this group");
+    }
+    
+    if (group_repository_->addMember(group_id, member_user_id, role)) {
+        return createJsonResponse(200, "{\"message\":\"Member added successfully\"}");
+    }
+    
+    return createErrorResponse(500, "Failed to add member");
+}
+
+HttpResponse AcademicSocialServer::handleRemoveGroupMember(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int group_id = extractIdFromPath(request.path, "/api/groups/");
+    if (group_id < 0) {
+        return createErrorResponse(400, "Invalid group ID");
+    }
+    
+    // Extract member user ID from path
+    std::regex user_id_regex("/api/groups/\\d+/members/(\\d+)");
+    std::smatch match;
+    if (!std::regex_search(request.path, match, user_id_regex) || match.size() < 2) {
+        return createErrorResponse(400, "Invalid member user ID");
+    }
+    int member_user_id = std::stoi(match[1].str());
+    
+    auto group = group_repository_->findById(group_id);
+    if (!group.has_value()) {
+        return createErrorResponse(404, "Group not found");
+    }
+    
+    // Check if requester can manage the group
+    if (!group_repository_->canUserManage(group_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to remove members from this group");
+    }
+    
+    if (group_repository_->removeMember(group_id, member_user_id)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+    
+    return createErrorResponse(500, "Failed to remove member");
+}
+
+HttpResponse AcademicSocialServer::handleUpdateGroupMemberRole(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int group_id = extractIdFromPath(request.path, "/api/groups/");
+    if (group_id < 0) {
+        return createErrorResponse(400, "Invalid group ID");
+    }
+    
+    // Extract member user ID from path
+    std::regex user_id_regex("/api/groups/\\d+/members/(\\d+)");
+    std::smatch match;
+    if (!std::regex_search(request.path, match, user_id_regex) || match.size() < 2) {
+        return createErrorResponse(400, "Invalid member user ID");
+    }
+    int member_user_id = std::stoi(match[1].str());
+    
+    auto group = group_repository_->findById(group_id);
+    if (!group.has_value()) {
+        return createErrorResponse(404, "Group not found");
+    }
+    
+    // Check if requester can manage the group
+    if (!group_repository_->canUserManage(group_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to update member roles");
+    }
+    
+    std::string role = extractJsonField(request.body, "role");
+    if (role.empty()) {
+        return createErrorResponse(400, "Role is required");
+    }
+    
+    if (group_repository_->updateMemberRole(group_id, member_user_id, role)) {
+        return createJsonResponse(200, "{\"message\":\"Member role updated successfully\"}");
+    }
+    
+    return createErrorResponse(500, "Failed to update member role");
+}
+
+// Organization handlers
+HttpResponse AcademicSocialServer::handleCreateOrganization(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    // Check if user has permission to create organizations
+    if (!role_repository_->userHasPermission(user_id, "manage_organizations")) {
+        return createErrorResponse(403, "Only admins can create organizations");
+    }
+    
+    std::string name = extractJsonField(request.body, "name");
+    std::string type = extractJsonField(request.body, "type");
+    std::string description = extractJsonField(request.body, "description");
+    std::string email = extractJsonField(request.body, "email");
+    std::string website = extractJsonField(request.body, "website");
+    
+    if (name.empty()) {
+        return createErrorResponse(400, "Organization name is required");
+    }
+    if (type.empty()) {
+        return createErrorResponse(400, "Organization type is required");
+    }
+    
+    Organization org(name, type);
+    if (!description.empty()) {
+        org.setDescription(description);
+    }
+    if (!email.empty()) {
+        org.setEmail(email);
+    }
+    if (!website.empty()) {
+        org.setWebsite(website);
+    }
+    
+    auto created = organization_repository_->create(org);
+    if (created.has_value()) {
+        // Add creator as owner
+        organization_repository_->addAccount(created->getId().value(), user_id, "owner");
+        return createJsonResponse(201, created->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to create organization");
+}
+
+HttpResponse AcademicSocialServer::handleGetOrganizations(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    std::vector<Organization> orgs = organization_repository_->findAll();
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < orgs.size(); ++i) {
+        if (i > 0) oss << ",";
+        oss << orgs[i].toJson();
+    }
+    oss << "]";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleGetOrganization(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int org_id = extractIdFromPath(request.path, "/api/organizations/");
+    if (org_id < 0) {
+        return createErrorResponse(400, "Invalid organization ID");
+    }
+    
+    auto org = organization_repository_->findById(org_id);
+    if (!org.has_value()) {
+        return createErrorResponse(404, "Organization not found");
+    }
+    
+    return createJsonResponse(200, org->toJson());
+}
+
+HttpResponse AcademicSocialServer::handleUpdateOrganization(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int org_id = extractIdFromPath(request.path, "/api/organizations/");
+    if (org_id < 0) {
+        return createErrorResponse(400, "Invalid organization ID");
+    }
+    
+    auto org = organization_repository_->findById(org_id);
+    if (!org.has_value()) {
+        return createErrorResponse(404, "Organization not found");
+    }
+    
+    // Check if user can manage this organization
+    if (!organization_repository_->canUserManage(org_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to update this organization");
+    }
+    
+    std::string name = extractJsonField(request.body, "name");
+    std::string type = extractJsonField(request.body, "type");
+    std::string description = extractJsonField(request.body, "description");
+    std::string email = extractJsonField(request.body, "email");
+    std::string website = extractJsonField(request.body, "website");
+    
+    if (!name.empty()) {
+        org->setName(name);
+    }
+    if (!type.empty()) {
+        org->setType(type);
+    }
+    if (!description.empty()) {
+        org->setDescription(description);
+    }
+    if (!email.empty()) {
+        org->setEmail(email);
+    }
+    if (!website.empty()) {
+        org->setWebsite(website);
+    }
+    
+    if (organization_repository_->update(*org)) {
+        return createJsonResponse(200, org->toJson());
+    }
+    
+    return createErrorResponse(500, "Failed to update organization");
+}
+
+HttpResponse AcademicSocialServer::handleDeleteOrganization(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int org_id = extractIdFromPath(request.path, "/api/organizations/");
+    if (org_id < 0) {
+        return createErrorResponse(400, "Invalid organization ID");
+    }
+    
+    auto org = organization_repository_->findById(org_id);
+    if (!org.has_value()) {
+        return createErrorResponse(404, "Organization not found");
+    }
+    
+    // Only admins can delete organizations
+    if (!role_repository_->userHasPermission(user_id, "manage_organizations")) {
+        return createErrorResponse(403, "Only admins can delete organizations");
+    }
+    
+    if (organization_repository_->deleteById(org_id)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+    
+    return createErrorResponse(500, "Failed to delete organization");
+}
+
+HttpResponse AcademicSocialServer::handleAddOrganizationAccount(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int org_id = extractIdFromPath(request.path, "/api/organizations/");
+    if (org_id < 0) {
+        return createErrorResponse(400, "Invalid organization ID");
+    }
+    
+    auto org = organization_repository_->findById(org_id);
+    if (!org.has_value()) {
+        return createErrorResponse(404, "Organization not found");
+    }
+    
+    std::string account_user_id_str = extractJsonField(request.body, "user_id");
+    std::string role = extractJsonField(request.body, "role");
+    
+    if (account_user_id_str.empty()) {
+        return createErrorResponse(400, "User ID is required");
+    }
+    
+    int account_user_id = std::stoi(account_user_id_str);
+    if (role.empty()) {
+        role = "editor";
+    }
+    
+    // Check if requester can manage the organization
+    if (!organization_repository_->canUserManage(org_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to add accounts to this organization");
+    }
+    
+    if (organization_repository_->addAccount(org_id, account_user_id, role)) {
+        return createJsonResponse(200, "{\"message\":\"Account added successfully\"}");
+    }
+    
+    return createErrorResponse(500, "Failed to add account");
+}
+
+HttpResponse AcademicSocialServer::handleRemoveOrganizationAccount(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int org_id = extractIdFromPath(request.path, "/api/organizations/");
+    if (org_id < 0) {
+        return createErrorResponse(400, "Invalid organization ID");
+    }
+    
+    // Extract account user ID from path
+    std::regex account_id_regex("/api/organizations/\\d+/accounts/(\\d+)");
+    std::smatch match;
+    if (!std::regex_search(request.path, match, account_id_regex) || match.size() < 2) {
+        return createErrorResponse(400, "Invalid account user ID");
+    }
+    int account_user_id = std::stoi(match[1].str());
+    
+    auto org = organization_repository_->findById(org_id);
+    if (!org.has_value()) {
+        return createErrorResponse(404, "Organization not found");
+    }
+    
+    // Check if requester can manage the organization
+    if (!organization_repository_->canUserManage(org_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to remove accounts from this organization");
+    }
+    
+    if (organization_repository_->removeAccount(org_id, account_user_id)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+    
+    return createErrorResponse(500, "Failed to remove account");
 }
 
 } // namespace server
