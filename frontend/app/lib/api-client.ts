@@ -46,6 +46,18 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface Media {
+  id: number;
+  user_id: number;
+  media_type: string;
+  storage_key: string;
+  file_name?: string;
+  file_size?: number;
+  mime_type?: string;
+  url?: string;
+  created_at?: string;
+}
+
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
@@ -170,6 +182,53 @@ class ApiClient {
 
   async getDemoUser(): Promise<ApiResponse<User>> {
     return this.request('/api/users/demo');
+  }
+
+  async uploadMedia(
+    file: File,
+    userId: number,
+    mediaType: string
+  ): Promise<ApiResponse<Media>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('user_id', userId.toString());
+    formData.append('media_type', mediaType);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/media/upload`, {
+        method: 'POST',
+        headers: this.token ? { 'Authorization': `Bearer ${this.token}` } : {},
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          error: data.error || 'Upload failed',
+          status: response.status,
+        };
+      }
+
+      return {
+        data,
+        status: response.status,
+      };
+    } catch (error) {
+      console.error('Upload Error:', error);
+      return {
+        error: error instanceof Error ? error.message : 'Network error',
+        status: 0,
+      };
+    }
+  }
+
+  async getUserMedia(userId: number): Promise<ApiResponse<Media[]>> {
+    return this.request(`/api/users/${userId}/media`);
+  }
+
+  getMediaUrl(storageKey: string): string {
+    return `${this.baseUrl}/api/media/file/${storageKey}`;
   }
 }
 
