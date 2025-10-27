@@ -37,6 +37,7 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
     - AuthModal cannot be closed until user successfully authenticates
     - Full app content (feed, sidebar, navigation) only visible after login
     - Loading state shown during authentication verification
+    - Backend API accessible via Replit domain on port 8080
 
 ## Project Architecture
 
