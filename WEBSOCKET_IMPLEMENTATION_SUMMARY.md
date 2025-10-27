@@ -323,13 +323,19 @@ Test #8: WebSocketServerTest .............. Passed
 
 ## Known Limitations
 
-1. **No Message Queue:** Messages not delivered while offline are not queued
-   - Mitigation: REST API fallback for message history
+1. **No Message Queue for Real-Time Delivery:** 
+   - Messages sent via WebSocket are only delivered to currently connected users
+   - If a user is offline when a message is sent via WebSocket, they won't receive it in real-time
+   - Mitigation: Messages are persisted in the database via the REST API fallback, so offline messages can be retrieved when the user connects and fetches conversation history
    
-2. **No Load Balancing:** Single WebSocket server instance
-   - Future: Implement Redis pub/sub for multi-instance support
+2. **No Horizontal Scaling Support:** 
+   - Single WebSocket server instance - no multi-instance coordination
+   - Requires session affinity (sticky sessions) if deployed behind load balancer
+   - Connection limit depends on single server's thread/file descriptor limits
+   - Future: Implement Redis pub/sub for message distribution across multiple instances
    
 3. **No Message Compression:** WebSocket frames not compressed
+   - Could reduce bandwidth usage for text messages
    - Future: Add permessage-deflate extension support
 
 ## Conclusion
