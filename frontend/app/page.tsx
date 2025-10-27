@@ -7,6 +7,7 @@ import { GlobalFeed } from './components/global-feed';
 import { Khave } from './components/khave';
 import { Publications } from './components/publications';
 import { Muhabbet } from './components/muhabbet';
+import { useIsMobile } from './components/use-mobile';
 
 export type ActiveSection = 'main' | 'global' | 'khave' | 'publications' | 'muhabbet';
 
@@ -24,6 +25,7 @@ export default function App() {
     }
     return false;
   });
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Apply dark mode class to document element
@@ -56,17 +58,6 @@ export default function App() {
         return <MainFeed />;
     }
   };
-
-  const [isMobile, setIsMobile] = useState<boolean>(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   if (isMobile) {
     return (
