@@ -9,19 +9,28 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(SQLite3 REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-# Bcrypt source files (already downloaded)
+# Download and build bcrypt library using FetchContent
+include(FetchContent)
+FetchContent_Declare(
+    bcrypt
+    GIT_REPOSITORY https://github.com/rg3/libbcrypt.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(bcrypt)
+
+# Bcrypt source files from downloaded content
 set(BCRYPT_DIR ${CMAKE_BINARY_DIR}/_deps/bcrypt-src)
 set(BCRYPT_SOURCES
-    ${BCRYPT_DIR}/src/bcrypt.c
-    ${BCRYPT_DIR}/src/crypt_blowfish.c
-    ${BCRYPT_DIR}/src/crypt_gensalt.c
-    ${BCRYPT_DIR}/src/wrapper.c
+    ${BCRYPT_DIR}/bcrypt.c
+    ${BCRYPT_DIR}/crypt_blowfish/crypt_blowfish.c
+    ${BCRYPT_DIR}/crypt_blowfish/crypt_gensalt.c
+    ${BCRYPT_DIR}/crypt_blowfish/wrapper.c
 )
 
-# Create bcrypt library from existing sources
-add_library(bcrypt STATIC ${BCRYPT_SOURCES})
-target_include_directories(bcrypt PUBLIC ${BCRYPT_DIR}/include)
-target_include_directories(bcrypt PRIVATE ${BCRYPT_DIR}/include/bcrypt)
+# Create bcrypt library from fetched sources
+add_library(bcrypt_lib STATIC ${BCRYPT_SOURCES})
+target_include_directories(bcrypt_lib PUBLIC ${BCRYPT_DIR})
+target_include_directories(bcrypt_lib PUBLIC ${BCRYPT_DIR}/crypt_blowfish)
 
 # Include directories
 include_directories(include)
@@ -66,7 +75,7 @@ set(SOURCES
 
 # Create library
 add_library(sohbet_lib ${SOURCES})
-target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt OpenSSL::SSL OpenSSL::Crypto pthread)
+target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt_lib OpenSSL::SSL OpenSSL::Crypto pthread)
 target_include_directories(sohbet_lib PUBLIC include)
 
 # Main executable
@@ -76,3 +85,39 @@ target_link_libraries(sohbet sohbet_lib)
 # Compiler flags
 target_compile_options(sohbet_lib PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(sohbet PRIVATE -Wall -Wextra -Wpedantic)
+
+# Enable testing
+enable_testing()
+
+# Test executables
+add_executable(test_user tests/test_user.cpp)
+target_link_libraries(test_user sohbet_lib)
+add_test(NAME UserTest COMMAND test_user)
+
+add_executable(test_user_repository tests/test_user_repository.cpp)
+target_link_libraries(test_user_repository sohbet_lib)
+add_test(NAME UserRepositoryTest COMMAND test_user_repository)
+
+add_executable(test_bcrypt tests/test_bcrypt.cpp)
+target_link_libraries(test_bcrypt sohbet_lib)
+add_test(NAME BcryptTest COMMAND test_bcrypt)
+
+add_executable(test_authentication tests/test_authentication.cpp)
+target_link_libraries(test_authentication sohbet_lib)
+add_test(NAME AuthenticationTest COMMAND test_authentication)
+
+add_executable(test_voice_service tests/test_voice_service.cpp)
+target_link_libraries(test_voice_service sohbet_lib)
+add_test(NAME VoiceServiceTest COMMAND test_voice_service)
+
+add_executable(test_storage_service tests/test_storage_service.cpp)
+target_link_libraries(test_storage_service sohbet_lib)
+add_test(NAME StorageServiceTest COMMAND test_storage_service)
+
+add_executable(test_multipart_parser tests/test_multipart_parser.cpp)
+target_link_libraries(test_multipart_parser sohbet_lib)
+add_test(NAME MultipartParserTest COMMAND test_multipart_parser)
+
+add_executable(test_websocket_server tests/test_websocket_server.cpp)
+target_link_libraries(test_websocket_server sohbet_lib)
+add_test(NAME WebSocketServerTest COMMAND test_websocket_server)

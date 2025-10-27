@@ -2,8 +2,12 @@
 #include "security/jwt.h"
 #include <iostream>
 #include <cassert>
+#include <cstdlib>
 
 void test_user_registration_login_retrieval() {
+    // Set JWT secret for testing
+    setenv("SOHBET_JWT_SECRET", "test_secret_key_for_unit_tests_only", 1);
+    
     // Create server with in-memory database
     sohbet::server::AcademicSocialServer server(8080, ":memory:");
     assert(server.initialize());
@@ -82,7 +86,7 @@ void test_user_registration_login_retrieval() {
 
 void test_jwt_functionality() {
     // Test JWT token generation and verification
-    std::string token = sohbet::security::generate_jwt_token("testuser", 123);
+    std::string token = sohbet::security::generate_jwt_token("testuser", 123, "student");
     std::cout << "Generated JWT token: " << token << std::endl;
     
     // Token should be non-empty and contain dots
@@ -96,6 +100,7 @@ void test_jwt_functionality() {
     auto payload = payload_opt.value();
     assert(payload.username == "testuser");
     assert(payload.user_id == 123);
+    assert(payload.role == "student");
     
     // Test with invalid token
     auto invalid_payload_opt = sohbet::security::verify_jwt_token("invalid.token.here");
@@ -106,6 +111,9 @@ void test_jwt_functionality() {
 
 void test_demo_user_authentication() {
     std::cout << "Testing demo user authentication..." << std::endl;
+    
+    // Set JWT secret for testing
+    setenv("SOHBET_JWT_SECRET", "test_secret_key_for_unit_tests_only", 1);
     
     // Create server with in-memory database
     sohbet::server::AcademicSocialServer server(8080, ":memory:");
