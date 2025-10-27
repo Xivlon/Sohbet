@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
+import { CommentThread } from "./comment-thread"
 
 interface Post {
   id: number
@@ -166,8 +167,8 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
       </CardFooter>
 
       {showComments && (
-        <CardContent className="pt-0 border-t">
-          <p className="text-sm text-gray-500 py-4">Comments will appear here</p>
+        <CardContent className="pt-4 border-t">
+          <CommentThread postId={post.id} currentUserId={currentUserId} />
         </CardContent>
       )}
     </Card>
