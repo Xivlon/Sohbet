@@ -1,25 +1,13 @@
 "use client";
 
-import { useState } from 'react';
-import { Mic, MicOff, PhoneCall, PhoneOff, Users, Volume2, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Mic, MicOff, PhoneCall, PhoneOff, Users, Volume2, Settings, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { Slider } from './ui/slider';
-
-interface VoiceRoom {
-  id: string;
-  name: string;
-  description: string;
-  participants: number;
-  maxParticipants: number;
-  isActive: boolean;
-  type: 'local' | 'global';
-  university?: string;
-  topic: string;
-  moderator: string;
-}
+import { voiceService, VoiceChannel } from '@/app/lib/voice-service';
 
 interface Participant {
   id: string;
@@ -30,81 +18,6 @@ interface Participant {
   isModerator: boolean;
 }
 
-const mockLocalRooms: VoiceRoom[] = [
-  {
-    id: '1',
-    name: 'Bilgisayar Mühendisliği Sohbeti',
-    description: 'Güncel teknoloji konularını tartışıyoruz',
-    participants: 12,
-    maxParticipants: 20,
-    isActive: true,
-    type: 'local',
-    university: 'İTÜ',
-    topic: 'Teknoloji',
-    moderator: 'Dr. Ahmet Yılmaz'
-  },
-  {
-    id: '2',
-    name: 'Tez Yazım Süreçleri',
-    description: 'Lisansüstü öğrenciler için tez yazım deneyimleri',
-    participants: 8,
-    maxParticipants: 15,
-    isActive: true,
-    type: 'local',
-    university: 'İTÜ',
-    topic: 'Akademik',
-    moderator: 'Prof. Dr. Elif Kaya'
-  },
-  {
-    id: '3',
-    name: 'Proje Geliştirme Atölyesi',
-    description: 'Öğrenci projeleri üzerine fikir alışverişi',
-    participants: 5,
-    maxParticipants: 25,
-    isActive: false,
-    type: 'local',
-    university: 'İTÜ',
-    topic: 'Proje',
-    moderator: 'Asst. Prof. Can Özkan'
-  }
-];
-
-const mockGlobalRooms: VoiceRoom[] = [
-  {
-    id: '4',
-    name: 'International AI Discussions',
-    description: 'Global AI researchers sharing insights',
-    participants: 45,
-    maxParticipants: 100,
-    isActive: true,
-    type: 'global',
-    topic: 'Artificial Intelligence',
-    moderator: 'Prof. Sarah Johnson (MIT)'
-  },
-  {
-    id: '5',
-    name: 'Climate Research Collaboration',
-    description: 'Universities worldwide discussing climate solutions',
-    participants: 32,
-    maxParticipants: 50,
-    isActive: true,
-    type: 'global',
-    topic: 'Climate Science',
-    moderator: 'Dr. Lars Hansen (ETH Zurich)'
-  },
-  {
-    id: '6',
-    name: 'Student Exchange Experiences',
-    description: 'Students sharing international study experiences',
-    participants: 18,
-    maxParticipants: 30,
-    isActive: true,
-    type: 'global',
-    topic: 'Student Life',
-    moderator: 'Maria Garcia (University of Barcelona)'
-  }
-];
-
 const mockParticipants: Participant[] = [
   { id: '1', name: 'Ali Uzun', university: 'İTÜ', isMuted: false, isSpeaking: true, isModerator: false },
   { id: '2', name: 'Dr. Ahmet Yılmaz', university: 'İTÜ', isMuted: false, isSpeaking: false, isModerator: true },
@@ -114,22 +27,97 @@ const mockParticipants: Participant[] = [
 
 export function Khave() {
   const [activeTab, setActiveTab] = useState<'local' | 'global'>('local');
-  const [currentRoom, setCurrentRoom] = useState<VoiceRoom | null>(null);
+  const [channels, setChannels] = useState<VoiceChannel[]>([]);
+  const [currentChannel, setCurrentChannel] = useState<VoiceChannel | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [volume, setVolume] = useState([75]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [newChannelName, setNewChannelName] = useState('');
 
-  const rooms = activeTab === 'local' ? mockLocalRooms : mockGlobalRooms;
+  // Load channels on mount and tab change
+  useEffect(() => {
+    loadChannels();
+  }, [activeTab]);
 
-  const joinRoom = (room: VoiceRoom) => {
-    setCurrentRoom(room);
-    setIsConnected(true);
+  const loadChannels = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await voiceService.getChannels('public');
+      if (response.data) {
+        setChannels(response.data.channels || []);
+      } else {
+        setError(response.error || 'Failed to load channels');
+      }
+    } catch (err) {
+      setError('Failed to load channels');
+      console.error('Error loading channels:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const leaveRoom = () => {
-    setCurrentRoom(null);
-    setIsConnected(false);
-    setIsMuted(false);
+  const createChannel = async () => {
+    if (!newChannelName.trim()) {
+      return;
+    }
+
+    try {
+      const response = await voiceService.createChannel({
+        name: newChannelName,
+        channel_type: 'public',
+      });
+
+      if (response.data) {
+        setShowCreateChannel(false);
+        setNewChannelName('');
+        loadChannels(); // Reload channels
+      } else {
+        setError(response.error || 'Failed to create channel');
+      }
+    } catch (err) {
+      setError('Failed to create channel');
+      console.error('Error creating channel:', err);
+    }
+  };
+
+  const joinChannel = async (channel: VoiceChannel) => {
+    try {
+      const response = await voiceService.joinChannel(channel.id);
+      if (response.data) {
+        setCurrentChannel(channel);
+        setIsConnected(true);
+        console.log('Joined channel with token:', response.data);
+      } else {
+        setError(response.error || 'Failed to join channel');
+      }
+    } catch (err) {
+      setError('Failed to join channel');
+      console.error('Error joining channel:', err);
+    }
+  };
+
+  const leaveChannel = async () => {
+    if (!currentChannel) return;
+
+    try {
+      const response = await voiceService.leaveChannel(currentChannel.id);
+      if (response.status === 200) {
+        setCurrentChannel(null);
+        setIsConnected(false);
+        setIsMuted(false);
+        loadChannels(); // Reload to get updated user counts
+      } else {
+        setError(response.error || 'Failed to leave channel');
+      }
+    } catch (err) {
+      setError('Failed to leave channel');
+      console.error('Error leaving channel:', err);
+    }
   };
 
   const toggleMute = () => {
@@ -141,24 +129,77 @@ export function Khave() {
       <div className="max-w-full mx-auto p-4 pb-20">
         {/* Header */}
         <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 p-4 -mx-4 mb-4 border-b border-border">
-          <h2 className="text-primary">Khave - Sesli Sohbet</h2>
-          <p className="text-muted-foreground text-sm">Gerçek zamanlı sesli tartışma odaları</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-primary">Khave - Sesli Sohbet</h2>
+              <p className="text-muted-foreground text-sm">Gerçek zamanlı sesli tartışma odaları</p>
+            </div>
+            <Button onClick={() => setShowCreateChannel(!showCreateChannel)} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Yeni Oda
+            </Button>
+          </div>
         </div>
 
-        {/* Current Room (if connected) */}
-        {currentRoom && isConnected && (
+        {/* Create Channel Dialog */}
+        {showCreateChannel && (
+          <Card className="mb-6">
+            <CardHeader>
+              <h3>Yeni Sesli Oda Oluştur</h3>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground">Oda Adı</label>
+                  <input
+                    type="text"
+                    value={newChannelName}
+                    onChange={(e) => setNewChannelName(e.target.value)}
+                    className="w-full p-2 border rounded mt-1"
+                    placeholder="Oda adını girin..."
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={createChannel} disabled={!newChannelName.trim()}>
+                    Oluştur
+                  </Button>
+                  <Button variant="outline" onClick={() => {
+                    setShowCreateChannel(false);
+                    setNewChannelName('');
+                  }}>
+                    İptal
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <Card className="mb-6 border-red-500">
+            <CardContent className="pt-4">
+              <p className="text-red-500">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Current Channel (if connected) */}
+        {currentChannel && isConnected && (
           <Card className="mb-6 border-primary">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    {currentRoom.name}
+                    {currentChannel.name}
                   </h3>
-                  <p className="text-muted-foreground text-sm">{currentRoom.description}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {currentChannel.active_users} kullanıcı aktif
+                  </p>
                 </div>
                 <Badge variant="secondary">
-                  {currentRoom.participants} / {currentRoom.maxParticipants} kişi
+                  {currentChannel.active_users} kişi
                 </Badge>
               </div>
             </CardHeader>
@@ -207,7 +248,7 @@ export function Khave() {
                   <Button
                     variant="destructive"
                     size="lg"
-                    onClick={leaveRoom}
+                    onClick={leaveChannel}
                     className="w-12 h-12 rounded-full"
                   >
                     <PhoneOff className="w-5 h-5" />
@@ -232,93 +273,49 @@ export function Khave() {
           </Card>
         )}
 
-        {/* Room Tabs */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'local' | 'global')}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="local">Yerel Üniversite</TabsTrigger>
-            <TabsTrigger value="global">Global Etkileşim</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="local" className="space-y-4">
+        {/* Channel List */}
+        <div className="space-y-4">
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Odalar yükleniyor...</div>
+          ) : channels.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6 text-center text-muted-foreground">
+                <p>Henüz sesli oda yok. Yeni bir oda oluşturun!</p>
+              </CardContent>
+            </Card>
+          ) : (
             <div className="grid grid-cols-1 gap-4">
-              {mockLocalRooms.map((room) => (
-                <Card key={room.id} className={`cursor-pointer transition-colors ${
-                  room.isActive ? 'hover:bg-accent' : 'opacity-60'
-                }`}>
+              {channels.map((channel) => (
+                <Card key={channel.id} className="cursor-pointer hover:bg-accent transition-colors">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${
-                          room.isActive ? 'bg-green-500' : 'bg-gray-400'
-                        }`}></div>
-                        <h3 className="font-medium text-sm">{room.name}</h3>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <h3 className="font-medium text-sm">{channel.name}</h3>
                       </div>
-                      <Badge variant="outline">{room.topic}</Badge>
+                      <Badge variant="outline">{channel.channel_type}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <p className="text-muted-foreground text-sm mb-3">{room.description}</p>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Moderatör:</span>
-                        <span>{room.moderator}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Katılımcı:</span>
-                        <span>{room.participants} / {room.maxParticipants}</span>
+                        <span>{channel.active_users} kişi</span>
                       </div>
                     </div>
                     <Button 
                       className="w-full mt-4" 
-                      disabled={!room.isActive || currentRoom?.id === room.id}
-                      onClick={() => room.isActive && joinRoom(room)}
+                      disabled={currentChannel?.id === channel.id}
+                      onClick={() => joinChannel(channel)}
                     >
-                      {currentRoom?.id === room.id ? 'Bağlısın' : room.isActive ? 'Katıl' : 'Aktif Değil'}
+                      {currentChannel?.id === channel.id ? 'Bağlısın' : 'Katıl'}
                     </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          </TabsContent>
-
-          <TabsContent value="global" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              {mockGlobalRooms.map((room) => (
-                <Card key={room.id} className="cursor-pointer hover:bg-accent transition-colors">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <h3 className="font-medium text-sm">{room.name}</h3>
-                      </div>
-                      <Badge variant="outline">{room.topic}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-muted-foreground text-sm mb-3">{room.description}</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Moderatör:</span>
-                        <span className="text-right">{room.moderator}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Katılımcı:</span>
-                        <span>{room.participants} / {room.maxParticipants}</span>
-                      </div>
-                    </div>
-                    <Button 
-                      className="w-full mt-4"
-                      disabled={currentRoom?.id === room.id}
-                      onClick={() => joinRoom(room)}
-                    >
-                      {currentRoom?.id === room.id ? 'Bağlısın' : 'Katıl'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
     </div>
   );

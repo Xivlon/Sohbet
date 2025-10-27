@@ -38,18 +38,16 @@ VoiceServiceStub::VoiceServiceStub(const VoiceConfig& config)
 }
 
 VoiceChannel VoiceServiceStub::create_channel(const std::string& name,
-                                              const std::string& description,
-                                              int creator_id,
-                                              int max_users,
-                                              bool is_temporary) {
+                                              const std::string& channel_type,
+                                              int group_id,
+                                              int organization_id) {
     VoiceChannel channel;
     channel.id = next_channel_id_++;
     channel.name = name;
-    channel.description = description;
-    channel.creator_id = creator_id;
-    channel.murmur_channel_id = -1; // Not connected to real Murmur server
-    channel.max_users = max_users;
-    channel.is_temporary = is_temporary;
+    channel.channel_type = channel_type;
+    channel.group_id = group_id;
+    channel.organization_id = organization_id;
+    channel.murmur_channel_id = ""; // Not connected to real Murmur server
     channel.created_at = std::time(nullptr);
     
     channels_.push_back(channel);

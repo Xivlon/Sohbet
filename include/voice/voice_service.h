@@ -47,17 +47,15 @@ public:
     /**
      * @brief Create a new voice channel
      * @param name Channel name
-     * @param description Channel description
-     * @param creator_id ID of the user creating the channel
-     * @param max_users Maximum number of users allowed
-     * @param is_temporary Whether the channel is temporary
+     * @param channel_type Type of channel ('private', 'group', 'public')
+     * @param group_id Optional group ID (for group channels)
+     * @param organization_id Optional organization ID
      * @return VoiceChannel object with ID assigned, or empty channel on failure
      */
     virtual VoiceChannel create_channel(const std::string& name,
-                                       const std::string& description,
-                                       int creator_id,
-                                       int max_users,
-                                       bool is_temporary) = 0;
+                                       const std::string& channel_type,
+                                       int group_id = 0,
+                                       int organization_id = 0) = 0;
 
     /**
      * @brief Delete a voice channel
@@ -118,10 +116,9 @@ public:
     explicit VoiceServiceStub(const VoiceConfig& config);
 
     VoiceChannel create_channel(const std::string& name,
-                               const std::string& description,
-                               int creator_id,
-                               int max_users,
-                               bool is_temporary) override;
+                               const std::string& channel_type,
+                               int group_id = 0,
+                               int organization_id = 0) override;
 
     bool delete_channel(int channel_id) override;
     std::vector<VoiceChannel> list_channels() override;

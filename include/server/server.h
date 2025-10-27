@@ -11,8 +11,10 @@
 #include "repositories/role_repository.h"
 #include "repositories/conversation_repository.h"
 #include "repositories/message_repository.h"
+#include "repositories/voice_channel_repository.h"
 #include "services/storage_service.h"
 #include "server/websocket_server.h"
+#include "voice/voice_service.h"
 #include <memory>
 #include <string>
 #include <thread>
@@ -103,7 +105,9 @@ private:
     std::shared_ptr<repositories::RoleRepository> role_repository_;
     std::shared_ptr<repositories::ConversationRepository> conversation_repository_;
     std::shared_ptr<repositories::MessageRepository> message_repository_;
+    std::shared_ptr<repositories::VoiceChannelRepository> voice_channel_repository_;
     std::shared_ptr<services::StorageService> storage_service_;
+    std::shared_ptr<VoiceService> voice_service_;
     std::shared_ptr<WebSocketServer> websocket_server_;
     std::atomic<bool> running_;
     int server_socket_;
@@ -174,6 +178,14 @@ private:
     HttpResponse handleGetMessages(const HttpRequest& request);
     HttpResponse handleSendMessage(const HttpRequest& request);
     HttpResponse handleMarkMessageRead(const HttpRequest& request);
+    
+    // Voice/Murmur handlers
+    HttpResponse handleCreateVoiceChannel(const HttpRequest& request);
+    HttpResponse handleGetVoiceChannels(const HttpRequest& request);
+    HttpResponse handleGetVoiceChannel(const HttpRequest& request);
+    HttpResponse handleJoinVoiceChannel(const HttpRequest& request);
+    HttpResponse handleLeaveVoiceChannel(const HttpRequest& request);
+    HttpResponse handleDeleteVoiceChannel(const HttpRequest& request);
     
     HttpResponse handleNotFound(const HttpRequest& request);
     
