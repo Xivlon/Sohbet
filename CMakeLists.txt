@@ -30,10 +30,16 @@ set(SOURCES
     src/models/role.cpp
     src/models/media.cpp
     src/models/voice_channel.cpp
+    src/models/friendship.cpp
+    src/models/post.cpp
+    src/models/comment.cpp
     src/db/database.cpp
     src/repositories/user_repository.cpp
     src/repositories/role_repository.cpp
     src/repositories/media_repository.cpp
+    src/repositories/friendship_repository.cpp
+    src/repositories/post_repository.cpp
+    src/repositories/comment_repository.cpp
     src/services/permission_service.cpp
     src/services/storage_service.cpp
     src/utils/hash.cpp
