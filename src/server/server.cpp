@@ -38,7 +38,9 @@ bool AcademicSocialServer::initialize() {
     }
     
     // Run social features migration if needed
-    std::ifstream migration_file("migrations/001_social_features.sql");
+    // Use a relative path from the current working directory
+    const std::string migration_path = "migrations/001_social_features.sql";
+    std::ifstream migration_file(migration_path);
     if (migration_file.is_open()) {
         std::stringstream buffer;
         buffer << migration_file.rdbuf();
@@ -154,24 +156,44 @@ bool AcademicSocialServer::initializeSocket() {
 
 void AcademicSocialServer::handleClient(int client_socket) {
     const int INITIAL_BUFFER_SIZE = 8192;
+    const size_t MAX_REQUEST_SIZE = 10 * 1024 * 1024; // 10MB max request size
     std::vector<char> buffer(INITIAL_BUFFER_SIZE);
     std::string raw_request;
+    
+    // Set socket timeout to prevent indefinite blocking
+    struct timeval timeout;
+    timeout.tv_sec = 30;  // 30 second timeout
+    timeout.tv_usec = 0;
+    setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     
     // Read request data
     ssize_t total_bytes = 0;
     ssize_t bytes_read;
+    bool headers_found = false;
+    size_t headers_end = 0;
     
     while ((bytes_read = recv(client_socket, buffer.data() + total_bytes, 
                                buffer.size() - total_bytes, 0)) > 0) {
         total_bytes += bytes_read;
         
-        // Check if we've read the headers (look for \r\n\r\n)
-        std::string current_data(buffer.data(), total_bytes);
-        size_t headers_end = current_data.find("\r\n\r\n");
+        // Only search for headers if we haven't found them yet
+        if (!headers_found) {
+            // Use string_view-like approach to avoid creating new strings
+            const char* data_ptr = buffer.data();
+            for (size_t i = 0; i + 3 < static_cast<size_t>(total_bytes); ++i) {
+                if (data_ptr[i] == '\r' && data_ptr[i+1] == '\n' && 
+                    data_ptr[i+2] == '\r' && data_ptr[i+3] == '\n') {
+                    headers_end = i;
+                    headers_found = true;
+                    break;
+                }
+            }
+        }
         
-        if (headers_end != std::string::npos) {
+        if (headers_found) {
             // Parse headers to get Content-Length
-            std::istringstream header_stream(current_data.substr(0, headers_end));
+            std::string headers_section(buffer.data(), headers_end);
+            std::istringstream header_stream(headers_section);
             std::string line;
             size_t content_length = 0;
             bool has_content_length = false;
@@ -182,14 +204,35 @@ void AcademicSocialServer::handleClient(int client_socket) {
                     // Trim whitespace
                     length_str.erase(0, length_str.find_first_not_of(" \t\r\n"));
                     length_str.erase(length_str.find_last_not_of(" \t\r\n") + 1);
-                    content_length = std::stoull(length_str);
-                    has_content_length = true;
+                    
+                    try {
+                        content_length = std::stoull(length_str);
+                        has_content_length = true;
+                    } catch (const std::exception&) {
+                        // Invalid Content-Length, close connection
+                        close(client_socket);
+                        return;
+                    }
                     break;
                 }
             }
             
             if (has_content_length) {
                 size_t expected_total = headers_end + 4 + content_length; // +4 for \r\n\r\n
+                
+                // Enforce maximum request size
+                if (expected_total > MAX_REQUEST_SIZE) {
+                    // Send 413 Payload Too Large
+                    std::string error_response = 
+                        "HTTP/1.1 413 Payload Too Large\r\n"
+                        "Content-Type: application/json\r\n"
+                        "Content-Length: 38\r\n"
+                        "Connection: close\r\n\r\n"
+                        "{\"error\":\"Request too large (max 10MB)\"}";
+                    send(client_socket, error_response.c_str(), error_response.length(), 0);
+                    close(client_socket);
+                    return;
+                }
                 
                 // Resize buffer if needed
                 if (expected_total > buffer.size()) {
@@ -208,8 +251,12 @@ void AcademicSocialServer::handleClient(int client_socket) {
             break; // We have the full request
         }
         
-        // Expand buffer if needed
+        // Expand buffer if needed, but enforce max size
         if (total_bytes >= static_cast<ssize_t>(buffer.size())) {
+            if (buffer.size() * 2 > MAX_REQUEST_SIZE) {
+                close(client_socket);
+                return;
+            }
             buffer.resize(buffer.size() * 2);
         }
     }
