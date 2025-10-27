@@ -19,13 +19,9 @@ bool UserRepository::migrate() {
             username TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            name TEXT,
-            position TEXT,
-            phone_number TEXT,
             university TEXT,
             department TEXT,
             enrollment_year INTEGER,
-            warnings INTEGER DEFAULT 0,
             primary_language TEXT,
             additional_languages TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -40,10 +36,9 @@ std::optional<User> UserRepository::create(User& user, const std::string& passwo
     if (!database_ || !database_->isOpen()) return std::nullopt;
 
     const std::string sql = R"(
-        INSERT INTO users (username, email, password_hash, name, position, phone_number,
-                          university, department, enrollment_year, warnings,
-                          primary_language, additional_languages)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (username, email, password_hash, university, department, 
+                          enrollment_year, primary_language, additional_languages)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     )";
 
     db::Statement stmt(*database_, sql);
@@ -63,15 +58,11 @@ std::optional<User> UserRepository::create(User& user, const std::string& passwo
     stmt.bindText(1, user.getUsername());
     stmt.bindText(2, user.getEmail());
     stmt.bindText(3, hashed_password);
-    stmt.bindText(4, user.getName().has_value() ? user.getName().value() : "");
-    stmt.bindText(5, user.getPosition().has_value() ? user.getPosition().value() : "");
-    stmt.bindText(6, user.getPhoneNumber().has_value() ? user.getPhoneNumber().value() : "");
-    stmt.bindText(7, user.getUniversity().has_value() ? user.getUniversity().value() : "");
-    stmt.bindText(8, user.getDepartment().has_value() ? user.getDepartment().value() : "");
-    stmt.bindText(9, user.getEnrollmentYear().has_value() ? std::to_string(user.getEnrollmentYear().value()) : "");
-    stmt.bindText(10, user.getWarnings().has_value() ? std::to_string(user.getWarnings().value()) : "0");
-    stmt.bindText(11, user.getPrimaryLanguage().has_value() ? user.getPrimaryLanguage().value() : "");
-    stmt.bindText(12, additional_langs);
+    stmt.bindText(4, user.getUniversity().has_value() ? user.getUniversity().value() : "");
+    stmt.bindText(5, user.getDepartment().has_value() ? user.getDepartment().value() : "");
+    stmt.bindText(6, user.getEnrollmentYear().has_value() ? std::to_string(user.getEnrollmentYear().value()) : "");
+    stmt.bindText(7, user.getPrimaryLanguage().has_value() ? user.getPrimaryLanguage().value() : "");
+    stmt.bindText(8, additional_langs);
 
     int result = stmt.step();
     if (result == SQLITE_DONE) {
@@ -87,9 +78,8 @@ std::optional<User> UserRepository::findByUsername(const std::string& username) 
     if (!database_ || !database_->isOpen()) return std::nullopt;
 
     const std::string sql = R"(
-        SELECT id, username, email, password_hash, name, position, phone_number,
-               university, department, enrollment_year, warnings, 
-               primary_language, additional_languages, created_at
+        SELECT id, username, email, password_hash, university, department,
+               enrollment_year, primary_language, additional_languages
         FROM users WHERE username = ?
     )";
 
@@ -109,9 +99,8 @@ std::optional<User> UserRepository::findByEmail(const std::string& email) {
     if (!database_ || !database_->isOpen()) return std::nullopt;
 
     const std::string sql = R"(
-        SELECT id, username, email, password_hash, name, position, phone_number,
-               university, department, enrollment_year, warnings,
-               primary_language, additional_languages, created_at
+        SELECT id, username, email, password_hash, university, department,
+               enrollment_year, primary_language, additional_languages
         FROM users WHERE email = ?
     )";
 
@@ -131,9 +120,8 @@ std::optional<User> UserRepository::findById(int id) {
     if (!database_ || !database_->isOpen()) return std::nullopt;
 
     const std::string sql = R"(
-        SELECT id, username, email, password_hash, name, position, phone_number,
-               university, department, enrollment_year, warnings,
-               primary_language, additional_languages, created_at
+        SELECT id, username, email, password_hash, university, department,
+               enrollment_year, primary_language, additional_languages
         FROM users WHERE id = ?
     )";
 
@@ -165,32 +153,15 @@ User UserRepository::userFromStatement(db::Statement& stmt) {
     user.setUsername(stmt.getText(1));
     user.setEmail(stmt.getText(2));
     user.setPasswordHash(stmt.getText(3));
-    
-    std::string name = stmt.getText(4);
-    if (!name.empty()) user.setName(name);
-    
-    std::string position = stmt.getText(5);
-    if (!position.empty()) user.setPosition(position);
-    
-    std::string phone = stmt.getText(6);
-    if (!phone.empty()) user.setPhoneNumber(phone);
-    
-    std::string university = stmt.getText(7);
-    if (!university.empty()) user.setUniversity(university);
-    
-    std::string department = stmt.getText(8);
-    if (!department.empty()) user.setDepartment(department);
+    user.setUniversity(stmt.getText(4));
+    user.setDepartment(stmt.getText(5));
 
-    std::string year_str = stmt.getText(9);
+    std::string year_str = stmt.getText(6);
     if (!year_str.empty()) user.setEnrollmentYear(std::stoi(year_str));
 
-    std::string warnings_str = stmt.getText(10);
-    if (!warnings_str.empty()) user.setWarnings(std::stoi(warnings_str));
+    user.setPrimaryLanguage(stmt.getText(7));
 
-    std::string primary_lang = stmt.getText(11);
-    if (!primary_lang.empty()) user.setPrimaryLanguage(primary_lang);
-
-    std::string langs_str = stmt.getText(12);
+    std::string langs_str = stmt.getText(8);
     if (!langs_str.empty()) {
         std::vector<std::string> langs;
         std::stringstream ss(langs_str);
@@ -200,9 +171,6 @@ User UserRepository::userFromStatement(db::Statement& stmt) {
         }
         user.setAdditionalLanguages(langs);
     }
-
-    std::string created = stmt.getText(13);
-    if (!created.empty()) user.setCreatedAt(created);
 
     return user;
 }

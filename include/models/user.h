@@ -16,9 +16,14 @@ public:
     std::optional<int> getId() const { return id_; }
     const std::string& getUsername() const { return username_; }
     const std::string& getEmail() const { return email_; }
+    const std::optional<std::string>& getName() const { return name_; }
+    const std::optional<std::string>& getPosition() const { return position_; }
+    const std::optional<std::string>& getPhoneNumber() const { return phone_number_; }
     const std::optional<std::string>& getUniversity() const { return university_; }
     const std::optional<std::string>& getDepartment() const { return department_; }
     const std::optional<int>& getEnrollmentYear() const { return enrollment_year_; }
+    const std::optional<std::string>& getCreatedAt() const { return created_at_; }
+    const std::optional<int>& getWarnings() const { return warnings_; }
     const std::optional<std::string>& getPrimaryLanguage() const { return primary_language_; }
     const std::vector<std::string>& getAdditionalLanguages() const { return additional_languages_; }
 
@@ -26,9 +31,14 @@ public:
     void setId(int id) { id_ = id; }
     void setUsername(const std::string& username) { username_ = username; }
     void setEmail(const std::string& email) { email_ = email; }
+    void setName(const std::optional<std::string>& name) { name_ = name; }
+    void setPosition(const std::optional<std::string>& position) { position_ = position; }
+    void setPhoneNumber(const std::optional<std::string>& phone) { phone_number_ = phone; }
     void setUniversity(const std::optional<std::string>& university) { university_ = university; }
     void setDepartment(const std::optional<std::string>& department) { department_ = department; }
     void setEnrollmentYear(const std::optional<int>& year) { enrollment_year_ = year; }
+    void setCreatedAt(const std::optional<std::string>& created) { created_at_ = created; }
+    void setWarnings(const std::optional<int>& warnings) { warnings_ = warnings; }
     void setPrimaryLanguage(const std::optional<std::string>& language) { primary_language_ = language; }
     void setAdditionalLanguages(const std::vector<std::string>& languages) { additional_languages_ = languages; }
 
@@ -49,9 +59,14 @@ private:
     std::optional<int> id_;
     std::string username_;
     std::string email_;
+    std::optional<std::string> name_;
+    std::optional<std::string> position_;
+    std::optional<std::string> phone_number_;
     std::optional<std::string> university_;
     std::optional<std::string> department_;
     std::optional<int> enrollment_year_;
+    std::optional<std::string> created_at_;
+    std::optional<int> warnings_;
     std::optional<std::string> primary_language_;
     std::vector<std::string> additional_languages_;
     std::string password_hash_; // Not serialized in JSON

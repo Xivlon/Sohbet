@@ -21,18 +21,6 @@ std::string User::toJson() const {
     oss << "\"username\":\"" << username_ << "\",";
     oss << "\"email\":\"" << email_ << "\"";
 
-    if (name_.has_value() && !name_.value().empty()) {
-        oss << ",\"name\":\"" << name_.value() << "\"";
-    }
-
-    if (position_.has_value() && !position_.value().empty()) {
-        oss << ",\"position\":\"" << position_.value() << "\"";
-    }
-
-    if (phone_number_.has_value() && !phone_number_.value().empty()) {
-        oss << ",\"phone_number\":\"" << phone_number_.value() << "\"";
-    }
-
     if (university_.has_value() && !university_.value().empty()) {
         oss << ",\"university\":\"" << university_.value() << "\"";
     }
@@ -43,14 +31,6 @@ std::string User::toJson() const {
 
     if (enrollment_year_.has_value()) {
         oss << ",\"enrollment_year\":" << enrollment_year_.value();
-    }
-
-    if (created_at_.has_value() && !created_at_.value().empty()) {
-        oss << ",\"created_at\":\"" << created_at_.value() << "\"";
-    }
-
-    if (warnings_.has_value()) {
-        oss << ",\"warnings\":" << warnings_.value();
     }
 
     if (primary_language_.has_value() && !primary_language_.value().empty()) {

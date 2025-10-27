@@ -1,0 +1,38 @@
+CREATE TABLE mytable(
+   "ID No"           INTEGER  NOT NULL PRIMARY KEY 
+  ,Name              VARCHAR(14) NOT NULL
+  ,Username          VARCHAR(14) NOT NULL
+  ,Position          VARCHAR(10) NOT NULL
+  ,Institution       VARCHAR(19) NOT NULL
+  ,Specialization    VARCHAR(22) NOT NULL
+  ,"Graduation Year" INTEGER  NOT NULL
+  ,"Phone No"        VARCHAR(16) NOT NULL
+  ,Email             VARCHAR(26) NOT NULL
+  ,Creation          DATE  NOT NULL
+  ,Warnings          INTEGER  NOT NULL
+);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1000,'Ahmet Yilmaz','ahmet_yilmaz','Researcher','Istanbul University','Mathematics',2018,'+90-564-296-8970','ahmet_yilmaz@example.com','2022-09-24',0);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1001,'Elif Demir','elif_demir','Professor','Ankara University','Biology',2016,'+90-585-495-6389','elif_demir@example.com','2023-05-21',0);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1002,'Mehmet Kaya','mehmet_kaya','Researcher','Ege University','Computer Science',2023,'+90-595-606-8742','mehmet_kaya@example.com','2024-06-11',2);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1003,'Zeynep Arslan','zeynep_arslan','Engineer','Istanbul University','Mathematics',2015,'+90-596-549-7633','zeynep_arslan@example.com','2023-01-14',2);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1004,'Ali �elik','ali_celik','Technician','Istanbul University','Mechanical Engineering',2020,'+90-537-343-9414','ali_celik@example.com','2023-01-14',0);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1005,'Ay?e Korkmaz','ayse_korkmaz','Technician','Ege University','Mathematics',2024,'+90-590-392-1807','ayse_korkmaz@example.com','2020-08-15',1);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1006,'Burak ?ahin','burak_sahin','Student','Ege University','Mechanical Engineering',2022,'+90-553-935-8297','burak_sahin@example.com','2024-02-04',2);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1007,'Fatma �zt�rk','fatma_ozturk','Researcher','Marmara University','Mechanical Engineering',2021,'+90-536-207-5263','fatma_ozturk@example.com','2020-04-12',0);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1008,'Emre Polat','emre_polat','Engineer','Ankara University','Computer Science',2018,'+90-557-155-3221','emre_polat@example.com','2021-06-04',3);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1009,'Selin Yavuz','selin_yavuz','Technician','Ege University','Biology',2022,'+90-511-792-2698','selin_yavuz@example.com','2024-08-07',1);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1010,'Mert Ayd?n','mert_aydin','Technician','Ege University','Biology',2023,'+90-525-718-9410','mert_aydin@example.com','2020-05-19',0);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1011,'Ceren Ko�','ceren_koc','Engineer','Bilkent University','Chemistry',2024,'+90-596-538-3831','ceren_koc@example.com','2022-07-01',2);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1012,'O?uzhan Kaplan','oguzhan_kaplan','Engineer','Ankara University','Biology',2022,'+90-599-723-6355','oguzhan_kaplan@example.com','2023-07-10',1);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1013,'Hale Aksoy','hale_aksoy','Technician','Bilkent University','Physics',2016,'+90-572-474-5407','hale_aksoy@example.com','2024-01-18',0);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1014,'Caner G�ne?','caner_gunes','Technician','Marmara University','Chemistry',2024,'+90-514-141-6586','caner_gunes@example.com','2022-11-09',2);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1015,'Gizem Uslu','gizem_uslu','Professor','Bilkent University','Chemistry',2022,'+90-533-714-7050','gizem_uslu@example.com','2021-12-19',0);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1016,'Eren Y?ld?r?m','eren_yildirim','Researcher','Istanbul University','Physics',2015,'+90-594-473-2227','eren_yildirim@example.com','2021-05-03',1);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1017,'Seda K?l?�','seda_kilic','Researcher','Ankara University','Mathematics',2015,'+90-594-412-6927','seda_kilic@example.com','2024-12-25',2);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1018,'Hakan Karaca','hakan_karaca','Technician','Ege University','Biology',2024,'+90-524-350-5182','hakan_karaca@example.com','2021-11-14',1);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1019,'Melisa Ta?','melisa_tas','Student','Ege University','Mechanical Engineering',2024,'+90-565-436-9430','melisa_tas@example.com','2024-06-01',1);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1020,'Onur Duman','onur_duman','Professor','Ankara University','Physics',2024,'+90-526-748-1855','onur_duman@example.com','2021-08-03',1);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1021,'Nuray Er','nuray_er','Technician','Ege University','Chemistry',2024,'+90-524-392-8149','nuray_er@example.com','2024-06-11',1);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1022,'Yusuf �zkan','yusuf_ozkan','Student','Ankara University','Mathematics',2016,'+90-567-285-1527','yusuf_ozkan@example.com','2022-05-15',1);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1023,'Derya Y?lmaz','derya_yilmaz','Engineer','Bilkent University','Chemistry',2018,'+90-550-821-8004','derya_yilmaz@example.com','2023-05-14',2);
+INSERT INTO mytable("ID No",Name,Username,Position,Institution,Specialization,"Graduation Year","Phone No",Email,Creation,Warnings) VALUES (1024,'Kerem ?en','kerem_sen','Engineer','Ankara University','Biology',2024,'+90-511-180-9422','kerem_sen@example.com','2024-01-19',3);
