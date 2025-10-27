@@ -20,6 +20,9 @@ export interface User {
   additional_languages?: string[];
   created_at?: string;
   warnings?: number;
+  role?: string;
+  avatar_url?: string;
+  banner_url?: string;
 }
 
 export interface RegisterData {
