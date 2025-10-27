@@ -1,5 +1,5 @@
 "use client";
-import { Home, Globe, Mic, BookOpen, MessageCircle } from 'lucide-react';
+import { Home, Globe, Mic, BookOpen, MessageCircle, User } from 'lucide-react';
 import { ActiveSection } from '../page';
 import { useIsMobile } from './use-mobile';
 
@@ -14,6 +14,7 @@ const navigationItems = [
   { id: 'khave' as const, label: 'Khave', icon: Mic, description: 'Sesli sohbet' },
   { id: 'publications' as const, label: 'Yayınlar', icon: BookOpen, description: 'Akademik makaleler' },
   { id: 'muhabbet' as const, label: 'Muhabbet', icon: MessageCircle, description: 'Özel sohbetler' },
+  { id: 'profile' as const, label: 'Profil', icon: User, description: 'Profil ayarları' },
 ];
 
 export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {

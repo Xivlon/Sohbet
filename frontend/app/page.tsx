@@ -7,11 +7,12 @@ import { GlobalFeed } from './components/global-feed';
 import { Khave } from './components/khave';
 import { Publications } from './components/publications';
 import { Muhabbet } from './components/muhabbet';
+import { Profile } from './components/profile';
 import { AuthModal } from './components/auth-modal';
 import { useIsMobile } from './components/use-mobile';
 import { useAuth } from './contexts/auth-context';
 
-export type ActiveSection = 'main' | 'global' | 'khave' | 'publications' | 'muhabbet';
+export type ActiveSection = 'main' | 'global' | 'khave' | 'publications' | 'muhabbet' | 'profile';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<ActiveSection>('main');
@@ -57,6 +58,8 @@ export default function App() {
         return <Publications />;
       case 'muhabbet':
         return <Muhabbet />;
+      case 'profile':
+        return <Profile />;
       default:
         return <MainFeed />;
     }

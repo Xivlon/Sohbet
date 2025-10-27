@@ -10,11 +10,16 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  name?: string;
+  position?: string;
+  phone_number?: string;
   university?: string;
   department?: string;
   enrollment_year?: number;
   primary_language?: string;
   additional_languages?: string[];
+  created_at?: string;
+  warnings?: number;
 }
 
 export interface RegisterData {
