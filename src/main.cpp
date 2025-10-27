@@ -16,7 +16,7 @@ void signalHandler(int signal) {
 }
 
 int main() {
-    std::cout << "Starting Sohbet Academic Social Backend v0.2.0-academic" << std::endl;
+    std::cout << "Starting Sohbet Academic Social Backend v0.3.0-academic" << std::endl;
 
     // Create server instance on port 8080 with database file
     sohbet::server::AcademicSocialServer server(8080, "academic.db");
