@@ -26,6 +26,9 @@ public:
     const std::optional<int>& getWarnings() const { return warnings_; }
     const std::optional<std::string>& getPrimaryLanguage() const { return primary_language_; }
     const std::vector<std::string>& getAdditionalLanguages() const { return additional_languages_; }
+    const std::optional<std::string>& getRole() const { return role_; }
+    const std::optional<std::string>& getAvatarUrl() const { return avatar_url_; }
+    const std::optional<std::string>& getBannerUrl() const { return banner_url_; }
 
     // Setters
     void setId(int id) { id_ = id; }
@@ -41,6 +44,9 @@ public:
     void setWarnings(const std::optional<int>& warnings) { warnings_ = warnings; }
     void setPrimaryLanguage(const std::optional<std::string>& language) { primary_language_ = language; }
     void setAdditionalLanguages(const std::vector<std::string>& languages) { additional_languages_ = languages; }
+    void setRole(const std::optional<std::string>& role) { role_ = role; }
+    void setAvatarUrl(const std::optional<std::string>& avatar_url) { avatar_url_ = avatar_url; }
+    void setBannerUrl(const std::optional<std::string>& banner_url) { banner_url_ = banner_url; }
 
     // Password management (internal only, not serialized)
     void setPasswordHash(const std::string& password_hash) { password_hash_ = password_hash; }
@@ -69,6 +75,9 @@ private:
     std::optional<int> warnings_;
     std::optional<std::string> primary_language_;
     std::vector<std::string> additional_languages_;
+    std::optional<std::string> role_;
+    std::optional<std::string> avatar_url_;
+    std::optional<std::string> banner_url_;
     std::string password_hash_; // Not serialized in JSON
 };
 

@@ -372,7 +372,8 @@ HttpResponse AcademicSocialServer::handleLogin(const HttpRequest& request) {
             return createErrorResponse(401, "Invalid username or password");
         }
 
-        std::string token = security::generate_jwt_token(username, user.getId().value());
+        std::string user_role = user.getRole().value_or("Student");
+        std::string token = security::generate_jwt_token(username, user.getId().value(), user_role);
 
         std::ostringstream oss;
         oss << "{ \"token\":\"" << token << "\", \"user\":" << user.toJson() << " }";

@@ -68,6 +68,18 @@ std::string User::toJson() const {
         oss << "]";
     }
 
+    if (role_.has_value() && !role_.value().empty()) {
+        oss << ",\"role\":\"" << role_.value() << "\"";
+    }
+
+    if (avatar_url_.has_value() && !avatar_url_.value().empty()) {
+        oss << ",\"avatar_url\":\"" << avatar_url_.value() << "\"";
+    }
+
+    if (banner_url_.has_value() && !banner_url_.value().empty()) {
+        oss << ",\"banner_url\":\"" << banner_url_.value() << "\"";
+    }
+
     oss << "}";
     return oss.str();
 }
