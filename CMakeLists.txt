@@ -35,7 +35,9 @@ set(SOURCES
     src/repositories/role_repository.cpp
     src/repositories/media_repository.cpp
     src/services/permission_service.cpp
+    src/services/storage_service.cpp
     src/utils/hash.cpp
+    src/utils/multipart_parser.cpp
     src/security/bcrypt_wrapper.cpp
     src/security/jwt.cpp
     src/server/server.cpp

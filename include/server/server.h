@@ -2,10 +2,13 @@
 
 #include "db/database.h"
 #include "repositories/user_repository.h"
+#include "repositories/media_repository.h"
+#include "services/storage_service.h"
 #include <memory>
 #include <string>
 #include <thread>
 #include <atomic>
+#include <map>
 
 namespace sohbet {
 namespace server {
@@ -29,6 +32,7 @@ struct HttpRequest {
     std::string method;
     std::string path;
     std::string body;
+    std::map<std::string, std::string> headers;
     
     HttpRequest(const std::string& m, const std::string& p, const std::string& b)
         : method(m), path(p), body(b) {}
@@ -81,6 +85,8 @@ private:
     std::string db_path_;
     std::shared_ptr<db::Database> database_;
     std::shared_ptr<repositories::UserRepository> user_repository_;
+    std::shared_ptr<repositories::MediaRepository> media_repository_;
+    std::shared_ptr<services::StorageService> storage_service_;
     std::atomic<bool> running_;
     int server_socket_;
     
@@ -97,6 +103,9 @@ private:
     HttpResponse handleCreateUser(const HttpRequest& request);
     HttpResponse handleLogin(const HttpRequest& request);
     HttpResponse handleUpdateUser(const HttpRequest& request);
+    HttpResponse handleUploadMedia(const HttpRequest& request);
+    HttpResponse handleGetMediaFile(const HttpRequest& request);
+    HttpResponse handleGetUserMedia(const HttpRequest& request);
     HttpResponse handleNotFound(const HttpRequest& request);
     
     // Helper methods
