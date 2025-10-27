@@ -12,6 +12,7 @@
 #include "repositories/conversation_repository.h"
 #include "repositories/message_repository.h"
 #include "services/storage_service.h"
+#include "server/websocket_server.h"
 #include <memory>
 #include <string>
 #include <thread>
@@ -103,6 +104,7 @@ private:
     std::shared_ptr<repositories::ConversationRepository> conversation_repository_;
     std::shared_ptr<repositories::MessageRepository> message_repository_;
     std::shared_ptr<services::StorageService> storage_service_;
+    std::shared_ptr<WebSocketServer> websocket_server_;
     std::atomic<bool> running_;
     int server_socket_;
     
@@ -174,6 +176,11 @@ private:
     HttpResponse handleMarkMessageRead(const HttpRequest& request);
     
     HttpResponse handleNotFound(const HttpRequest& request);
+    
+    // WebSocket handlers
+    void setupWebSocketHandlers();
+    void handleChatMessage(int user_id, const WebSocketMessage& message);
+    void handleTypingIndicator(int user_id, const WebSocketMessage& message);
     
     // Helper methods
     HttpResponse createJsonResponse(int status_code, const std::string& json);

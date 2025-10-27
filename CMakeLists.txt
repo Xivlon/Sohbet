@@ -55,6 +55,7 @@ set(SOURCES
     src/security/bcrypt_wrapper.cpp
     src/security/jwt.cpp
     src/server/server.cpp
+    src/server/websocket_server.cpp
     src/voice/voice_config.cpp
     src/voice/voice_service.cpp
 )
@@ -100,6 +101,10 @@ add_executable(test_multipart_parser tests/test_multipart_parser.cpp)
 target_link_libraries(test_multipart_parser sohbet_lib)
 add_test(NAME MultipartParserTest COMMAND test_multipart_parser)
 
+add_executable(test_websocket_server tests/test_websocket_server.cpp)
+target_link_libraries(test_websocket_server sohbet_lib)
+add_test(NAME WebSocketServerTest COMMAND test_websocket_server)
+
 # Compiler flags
 target_compile_options(sohbet_lib PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(sohbet PRIVATE -Wall -Wextra -Wpedantic)
@@ -110,3 +115,4 @@ target_compile_options(test_authentication PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(test_voice_service PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(test_storage_service PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(test_multipart_parser PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_websocket_server PRIVATE -Wall -Wextra -Wpedantic)
