@@ -1,31 +1,36 @@
-# 3rd-Party Service Integration
+# Voice and Video Integration Guide
 
 ## Overview
 
-This document describes the integration of third-party services into Sohbet, with a focus on maintaining security while enabling future features like voice and video group calling.
+This document describes how Sohbet integrates voice and video calling capabilities using Murmur (the Mumble server). This integration is designed with security as a top priority while providing a foundation for future features like group voice calls and video conferencing.
 
-## Murmur (Mumble Server) Integration
+## What is Murmur?
 
-### What is Murmur?
+Murmur is the server component of Mumble, an open-source voice chat application. It's perfect for Sohbet because it provides:
 
-Murmur is the server component of Mumble, an open-source, low-latency, high-quality voice chat application. It provides:
-- **Low-latency voice communication**: Essential for real-time conversations
-- **Encrypted communications**: All voice traffic is encrypted
-- **Permission-based access control**: Fine-grained channel and user permissions
-- **Positional audio support**: For gaming and spatial applications
-- **Text messaging**: In addition to voice
-- **Recording capabilities**: For lectures or important meetings
+### Key Benefits
 
-### Integration Architecture
+- **🎤 Low-Latency Voice**: Crystal-clear real-time conversations
+- **🔒 Encrypted Communications**: All voice traffic is automatically encrypted
+- **👥 Permission Control**: Fine-grained control over who can access which channels
+- **🎮 Positional Audio**: Support for spatial audio in virtual environments
+- **💬 Text Messaging**: Built-in text chat alongside voice
+- **📹 Recording**: Optional recording capabilities for lectures or meetings
 
-The Murmur integration is designed with the following principles:
+---
 
-1. **Separation of Concerns**: Voice/audio services are separated from core social media functionality
-2. **Security First**: All connections are authenticated through the existing Sohbet authentication system
-3. **Future-Proof Design**: Clean interfaces allow easy extension for mobile and desktop clients
-4. **Optional Service**: Murmur integration is optional and doesn't affect core functionality
+## How It Works
 
-### Architecture Components
+### Design Principles
+
+The integration follows these important principles:
+
+1. **🔐 Security First**: All connections are authenticated through Sohbet's existing security system
+2. **🎯 Separation of Concerns**: Voice features are kept separate from core social media functionality
+3. **🚀 Future-Proof**: Clean interfaces make it easy to add mobile and desktop support
+4. **⚙️ Optional Service**: Voice features are optional and won't affect core functionality if disabled
+
+### Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -59,71 +64,104 @@ The Murmur integration is designed with the following principles:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Security Considerations
+### How Authentication Works
 
-#### Authentication Flow
+Here's how a user securely joins a voice channel:
 
-1. User authenticates with Sohbet backend (existing JWT authentication)
-2. User requests to join a voice channel
-3. Backend validates user permissions and generates a temporary Murmur connection token
-4. Token is time-limited (e.g., 5 minutes) and single-use
-5. User connects to Murmur server using the token
-6. Murmur validates token with Sohbet backend
-7. Connection is established or denied based on validation
+1. **Login**: User logs into Sohbet (using existing JWT authentication)
+2. **Request Access**: User requests to join a voice channel
+3. **Validation**: Backend checks if user has permission to join
+4. **Token Generation**: System creates a temporary, time-limited connection token (valid for 5 minutes)
+5. **Connect**: User connects to Murmur server using the token
+6. **Verification**: Murmur validates the token with Sohbet backend
+7. **Access Granted/Denied**: Connection is established or rejected based on validation
 
-#### Security Features
+### Security Features
 
-- **Token-based authentication**: Prevents unauthorized access to voice channels
-- **Time-limited tokens**: Reduces attack window
-- **Permission validation**: Users can only join channels they have access to
-- **Encrypted communications**: All voice traffic uses TLS/SSL
-- **Audit logging**: All voice channel access is logged
-- **Rate limiting**: Prevents abuse of token generation
+- ✅ **Token-Based Authentication**: No unauthorized access to voice channels
+- ✅ **Time-Limited Tokens**: Tokens expire after 5 minutes, reducing security risks
+- ✅ **Permission Validation**: Users can only join channels they're allowed to access
+- ✅ **Encrypted Communications**: All voice traffic uses TLS/SSL encryption
+- ✅ **Audit Logging**: All voice channel access is logged for security review
+- ✅ **Rate Limiting**: Prevents abuse of token generation
 
-### Implementation Phases
+---
 
-#### Phase 1: Foundation (Current)
-- [x] Document integration architecture
-- [x] Define security model
-- [x] Create voice service interface (C++ header files)
-- [x] Implement configuration structure
-- [x] Add voice channel data model
-- [x] Create frontend TypeScript service client
-- [x] Create React hooks for voice integration
+## Implementation Progress
 
-#### Phase 2: Core Integration
+### ✅ Phase 1: Foundation (COMPLETED)
+
+- [x] Architecture documentation
+- [x] Security model design
+- [x] Voice service interface (C++ header files)
+- [x] Configuration system
+- [x] Voice channel data model
+- [x] Frontend TypeScript service client
+- [x] React hooks for voice integration
+- [x] Comprehensive testing
+
+### 📋 Phase 2: Core Integration (PLANNED)
+
 - [ ] Implement Murmur connection manager
 - [ ] Create REST API endpoints for voice services
 - [ ] Add token generation and validation
-- [ ] Implement basic channel management
+- [ ] Implement channel management in backend
 
-#### Phase 3: Frontend Integration
-- [ ] Create voice service client (TypeScript)
-- [ ] Build UI components for voice channels
+### 📋 Phase 3: Frontend Integration (PLANNED)
+
+- [ ] Create voice service client components
+- [ ] Build UI for voice channels
 - [ ] Implement connection handling
 - [ ] Add error handling and reconnection logic
 
-#### Phase 4: Advanced Features
-- [ ] WebRTC integration for browser-based calling
+### 📋 Phase 4: Advanced Features (FUTURE)
+
+- [ ] WebRTC for browser-based calling
 - [ ] Mobile client support (iOS/Android)
 - [ ] Desktop client integration
 - [ ] Screen sharing capabilities
 - [ ] Recording and playback features
 
-### Configuration
+---
 
-The Murmur integration requires the following configuration options:
+## Configuration Guide
 
-```ini
-[voice]
-enabled=true
-murmur_host=localhost
-murmur_port=64738
-murmur_admin_password=<secure_password>
-token_expiry_seconds=300
-max_users_per_channel=25
-enable_recording=false
+### Environment Variables
+
+To configure the voice service, set these environment variables:
+
+```bash
+# Enable or disable voice service
+export SOHBET_VOICE_ENABLED=true
+
+# Murmur server connection details
+export SOHBET_MURMUR_HOST=localhost
+export SOHBET_MURMUR_PORT=64738
+export SOHBET_MURMUR_ADMIN_PASSWORD=<your_secure_password>
+
+# Token settings
+export SOHBET_VOICE_TOKEN_EXPIRY=300  # 5 minutes
+
+# Channel settings
+export SOHBET_VOICE_MAX_USERS=25
+
+# Recording (optional)
+export SOHBET_VOICE_ENABLE_RECORDING=false
 ```
+
+### What Each Setting Does
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `SOHBET_VOICE_ENABLED` | Turn voice features on/off | `false` |
+| `SOHBET_MURMUR_HOST` | Murmur server address | `localhost` |
+| `SOHBET_MURMUR_PORT` | Murmur server port | `64738` |
+| `SOHBET_MURMUR_ADMIN_PASSWORD` | Admin password for Murmur | Required |
+| `SOHBET_VOICE_TOKEN_EXPIRY` | Token validity in seconds | `300` |
+| `SOHBET_VOICE_MAX_USERS` | Max users per channel | `25` |
+| `SOHBET_VOICE_ENABLE_RECORDING` | Allow channel recording | `false` |
+
+---
 
 ### API Endpoints
 
