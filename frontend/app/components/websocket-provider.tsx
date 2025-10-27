@@ -1,28 +1,36 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useWebSocket, useWebSocketMessage, useChatWebSocket } from '../lib/use-websocket';
+import { useEffect, useState } from 'react';
+import { useWebSocket } from '../lib/use-websocket';
+import { apiClient } from '../lib/api-client';
+import websocketService from '../lib/websocket-service';
 
 /**
  * WebSocket Provider Component
  * Manages WebSocket connection for the entire app
  */
 export function WebSocketProvider({ 
-  children, 
-  token 
+  children
 }: { 
   children: React.ReactNode;
-  token: string | null;
 }) {
+  const [token, setToken] = useState<string | null>(null);
+
+  // Get token from API client (localStorage)
+  useEffect(() => {
+    const authToken = apiClient.getToken();
+    setToken(authToken);
+  }, []);
+
   const { connected } = useWebSocket(token);
 
   useEffect(() => {
     if (connected) {
       console.log('✓ WebSocket connected and ready');
-    } else {
-      console.log('WebSocket disconnected');
+    } else if (token) {
+      console.log('WebSocket disconnected (have token but not connected)');
     }
-  }, [connected]);
+  }, [connected, token]);
 
   return <>{children}</>;
 }
@@ -55,7 +63,3 @@ export function ConnectionStatus({ className }: { className?: string }) {
     </div>
   );
 }
-
-// Import the service for ConnectionStatus component
-import { useState } from 'react';
-import websocketService from '../lib/websocket-service';

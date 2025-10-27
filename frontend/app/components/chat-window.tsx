@@ -7,6 +7,7 @@ import { Input } from '@/components/input'
 import { ScrollArea } from '@/components/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/avatar'
 import { Send } from 'lucide-react'
+import { useChatWebSocket } from '../lib/use-websocket'
 
 interface Message {
   id: number
@@ -34,6 +35,28 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  // Callback to handle incoming WebSocket messages
+  const handleIncomingMessage = (incomingMessage: any) => {
+    console.log('Adding incoming message to UI:', incomingMessage)
+    setMessages(prev => {
+      // Avoid duplicates by checking if message already exists
+      const exists = prev.some(m => m.id === incomingMessage.id)
+      if (exists) {
+        return prev
+      }
+      return [...prev, incomingMessage as Message]
+    })
+  }
+
+  // Use WebSocket hook for real-time features
+  const { sendMessage: sendWebSocketMessage, sendTyping, typingUsers } = useChatWebSocket(
+    conversationId,
+    handleIncomingMessage
+  )
+  
+  // Check if other user is typing
+  const isOtherUserTyping = typingUsers.includes(otherUser.id)
 
   useEffect(() => {
     fetchMessages()
@@ -78,30 +101,53 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
     
     if (!newMessage.trim() || sending) return
     
+    const messageContent = newMessage.trim()
     setSending(true)
     
     try {
-      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-ID': currentUserId.toString()
-        },
-        body: JSON.stringify({
-          content: newMessage.trim()
-        })
-      })
+      // Try to send via WebSocket first
+      const webSocketSent = sendWebSocketMessage(messageContent)
       
-      if (response.ok) {
-        const message = await response.json()
-        setMessages([...messages, message])
-        setNewMessage('')
+      // Fallback to REST API if WebSocket fails
+      if (!webSocketSent) {
+        const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': currentUserId.toString()
+          },
+          body: JSON.stringify({
+            content: messageContent
+          })
+        })
+        
+        if (response.ok) {
+          const message = await response.json()
+          setMessages([...messages, message])
+        }
+      } else {
+        // Optimistically add message to UI (WebSocket will confirm)
+        const tempMessage: Message = {
+          id: Date.now(), // Temporary ID
+          conversation_id: conversationId,
+          sender_id: currentUserId,
+          content: messageContent,
+          created_at: new Date().toISOString()
+        }
+        setMessages([...messages, tempMessage])
       }
+      
+      setNewMessage('')
     } catch (error) {
       console.error('Error sending message:', error)
     } finally {
       setSending(false)
     }
+  }
+
+  const handleTyping = () => {
+    // Send typing indicator via WebSocket
+    sendTyping()
   }
 
   const formatTimestamp = (timestamp: string) => {
@@ -133,7 +179,14 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
               {otherUser.username.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <span>{otherUser.username}</span>
+          <div className="flex flex-col">
+            <span>{otherUser.username}</span>
+            {isOtherUserTyping && (
+              <span className="text-xs text-muted-foreground font-normal">
+                yazıyor...
+              </span>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       
@@ -182,7 +235,10 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
           <Input
             placeholder="Mesaj yazın..."
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value)
+              handleTyping()
+            }}
             disabled={sending}
             className="flex-1"
           />
