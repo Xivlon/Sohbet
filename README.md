@@ -551,6 +551,49 @@ cmake --build build --target test
 - **Input Validation**: Comprehensive validation and sanitization
 
 **Security Implementation**: The backend uses industry-standard bcrypt (via libbcrypt) for secure password hashing and JWT (HS256) for stateless authentication. All security tests pass and verify no password leakage in API responses.
+
+## Test Coverage ✅
+
+Comprehensive unit and integration tests ensure authentication security and correctness.
+
+### Authentication Tests (`tests/test_authentication.cpp`)
+
+**User Registration**
+- ✅ Successful registration returns user data with ID
+- ✅ Password hashes are never exposed in API responses
+- ✅ User data properly serialized without sensitive fields
+
+**User Login**
+- ✅ Successful login with valid credentials returns JWT token and user data
+- ✅ Failed login with wrong password returns 401 error
+- ✅ Failed login with non-existent user returns 401 error
+- ✅ Error responses never contain tokens
+
+**JWT Token Management**
+- ✅ Token generation creates valid JWT with correct structure
+- ✅ Token verification decodes and validates payload (username, user_id)
+- ✅ Invalid tokens are properly rejected
+- ✅ Token expiration is set and enforced
+
+**Demo User**
+- ✅ Demo user auto-created on server initialization
+- ✅ Login with demo credentials (demo_student / demo123) succeeds
+- ✅ Login with wrong demo password fails with 401
+
+### Other Test Suites
+- **BcryptTest**: Password hashing, verification, and legacy compatibility
+- **UserTest**: User model validation and JSON serialization
+- **UserRepositoryTest**: Database CRUD operations and uniqueness constraints
+- **VoiceServiceTest**: Voice channel configuration and token generation
+
+### Running Tests
+```bash
+cd build
+ctest --output-on-failure
+```
+
+All tests are registered in CMakeLists.txt and run via CTest. Tests use in-memory databases to ensure isolation and repeatability.
+
 ## Architecture
 
 ### Components
