@@ -168,17 +168,18 @@ This returns a valid JWT token and user data for the demo account.
 
 **Backend Flow**
 1. **Registration** (`POST /api/users`):
-   - Client sends user data with plain-text password
+   - Client sends user data with password over HTTPS (plain-text in transit, encrypted by TLS)
    - Server validates input (username pattern, email format, password strength)
    - Password is hashed using bcrypt (12 rounds)
    - User record stored in SQLite database
    - Server responds with user data (password hash excluded)
 
 2. **Login** (`POST /api/login`):
-   - Client sends username and password
+   - Client sends username and password over HTTPS
    - Server looks up user by username
    - Password verified using bcrypt comparison
-   - JWT token generated (HS256, includes username and user_id, 24h expiration)
+   - JWT token generated using HS256 (HMAC-SHA256 with shared secret)
+   - Token payload includes: username, user_id, expiration (24h)
    - Server responds with `{ "token": "...", "user": { ... } }`
 
 **Frontend Flow** (React + TypeScript)
@@ -191,8 +192,9 @@ This returns a valid JWT token and user data for the demo account.
 **Security Practices**
 - Password hashes never returned in API responses (verified by tests)
 - Input validation enforced on both frontend and backend
-- JWT tokens signed and verified with secret key
+- JWT tokens signed with HS256 using a shared secret (server-side only)
 - Tokens include expiration to limit validity window
+- **Production Note**: Use HTTPS to encrypt password transmission; current implementation assumes secure transport layer
 
 **Roadmap**
 
