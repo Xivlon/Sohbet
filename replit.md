@@ -62,3 +62,6 @@ The Next.js development server is configured to run automatically:
 - The cross-origin warnings in development logs are informational only and don't affect functionality
 - The application is configured for Replit's networking environment
 - All dependencies installed successfully with no vulnerabilities
+
+## Future Enhancements
+- **Cross-Origin Configuration**: Next.js 16 displays informational warnings about `allowedDevOrigins`. In a future major version of Next.js, you may need to explicitly configure this setting in `next.config.ts` to match Replit preview hosts. This is not urgent as it currently works without issues, but should be addressed before upgrading to Next.js 17+.
