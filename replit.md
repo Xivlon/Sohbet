@@ -38,6 +38,14 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
     - Full app content (feed, sidebar, navigation) only visible after login
     - Loading state shown during authentication verification
     - Backend API accessible via Replit domain on port 8080
+  - **Profile Customization System**:
+    - Created PUT /api/users/:id backend endpoint for profile updates
+    - Implemented UserRepository::update method for database persistence
+    - Built Profile component with view and edit modes
+    - Added profile navigation link to both desktop sidebar and mobile navigation
+    - Implemented async data sync using useEffect to handle user context loading
+    - Profile fields: name, position, phone_number, university, department, enrollment_year, primary_language
+    - Turkish UI localization for all profile labels and buttons
 
 ## Project Architecture
 
@@ -68,6 +76,7 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
 - `GET /api/users/demo` - Demo user data
 - `POST /api/users` - User registration
 - `POST /api/login` - User authentication (returns JWT token)
+- `PUT /api/users/:id` - Update user profile (authenticated)
 
 ### User Data Model
 Each user profile includes:
