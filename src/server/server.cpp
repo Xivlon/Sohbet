@@ -41,6 +41,10 @@ bool AcademicSocialServer::initialize() {
     conversation_repository_ = std::make_shared<repositories::ConversationRepository>(database_);
     message_repository_ = std::make_shared<repositories::MessageRepository>(database_);
     storage_service_ = std::make_shared<services::StorageService>("uploads/");
+    
+    // Initialize WebSocket server
+    websocket_server_ = std::make_shared<WebSocketServer>(8081);
+    setupWebSocketHandlers();
 
     if (!user_repository_->migrate()) {
         std::cerr << "Failed to run database migrations" << std::endl;
@@ -81,6 +85,12 @@ bool AcademicSocialServer::start() {
         return false;
     }
     
+    // Start WebSocket server
+    if (!websocket_server_->start()) {
+        std::cerr << "Failed to start WebSocket server" << std::endl;
+        return false;
+    }
+    
     running_ = true;
     std::cout << "🌐 HTTP Server listening on http://localhost:" << port_ << std::endl;
     std::cout << "Available endpoints:" << std::endl;
@@ -118,6 +128,12 @@ bool AcademicSocialServer::start() {
 
 void AcademicSocialServer::stop() {
     running_ = false;
+    
+    // Stop WebSocket server
+    if (websocket_server_) {
+        websocket_server_->stop();
+    }
+    
     if (server_socket_ >= 0) {
         close(server_socket_);
         server_socket_ = -1;
@@ -2216,6 +2232,126 @@ HttpResponse AcademicSocialServer::handleMarkMessageRead(const HttpRequest& requ
     }
     
     return createErrorResponse(500, "Failed to mark message as read");
+}
+
+// WebSocket handler setup
+void AcademicSocialServer::setupWebSocketHandlers() {
+    // Handler for chat messages
+    websocket_server_->registerHandler("chat:send", 
+        [this](int user_id, const WebSocketMessage& message) {
+            handleChatMessage(user_id, message);
+        });
+    
+    // Handler for typing indicators
+    websocket_server_->registerHandler("chat:typing",
+        [this](int user_id, const WebSocketMessage& message) {
+            handleTypingIndicator(user_id, message);
+        });
+}
+
+void AcademicSocialServer::handleChatMessage(int user_id, const WebSocketMessage& message) {
+    // Parse payload to extract conversation_id and content
+    std::string payload = message.payload;
+    
+    // Extract conversation_id
+    std::regex conv_regex("\"conversation_id\"\\s*:\\s*(\\d+)");
+    std::smatch matches;
+    int conversation_id = 0;
+    if (std::regex_search(payload, matches, conv_regex)) {
+        conversation_id = std::stoi(matches[1].str());
+    }
+    
+    // Extract content
+    std::regex content_regex("\"content\"\\s*:\\s*\"([^\"]+)\"");
+    std::string content;
+    if (std::regex_search(payload, matches, content_regex)) {
+        content = matches[1].str();
+    }
+    
+    if (conversation_id <= 0 || content.empty()) {
+        std::cerr << "Invalid chat message payload" << std::endl;
+        return;
+    }
+    
+    // Verify user is part of this conversation
+    auto conversation_opt = conversation_repository_->getById(conversation_id);
+    if (!conversation_opt.has_value()) {
+        std::cerr << "Conversation not found: " << conversation_id << std::endl;
+        return;
+    }
+    
+    auto conversation = conversation_opt.value();
+    if (conversation.user1_id != user_id && conversation.user2_id != user_id) {
+        std::cerr << "User " << user_id << " not authorized for conversation " << conversation_id << std::endl;
+        return;
+    }
+    
+    // Create the message
+    auto new_message_opt = message_repository_->createMessage(conversation_id, user_id, content);
+    if (!new_message_opt.has_value()) {
+        std::cerr << "Failed to create message" << std::endl;
+        return;
+    }
+    
+    auto new_message = new_message_opt.value();
+    
+    // Update conversation's last_message_at
+    conversation_repository_->updateLastMessageTime(conversation_id);
+    
+    // Prepare message to send to both users
+    std::ostringstream msg_json;
+    msg_json << "{\"id\":" << new_message.id
+             << ",\"conversation_id\":" << new_message.conversation_id
+             << ",\"sender_id\":" << new_message.sender_id
+             << ",\"content\":\"" << new_message.content << "\""
+             << ",\"created_at\":\"" << new_message.created_at << "\"}";
+    
+    WebSocketMessage ws_message("chat:message", msg_json.str());
+    
+    // Send to both participants
+    std::set<int> participants;
+    participants.insert(conversation.user1_id);
+    participants.insert(conversation.user2_id);
+    websocket_server_->sendToUsers(participants, ws_message);
+}
+
+void AcademicSocialServer::handleTypingIndicator(int user_id, const WebSocketMessage& message) {
+    // Parse payload to extract conversation_id
+    std::string payload = message.payload;
+    
+    std::regex conv_regex("\"conversation_id\"\\s*:\\s*(\\d+)");
+    std::smatch matches;
+    int conversation_id = 0;
+    if (std::regex_search(payload, matches, conv_regex)) {
+        conversation_id = std::stoi(matches[1].str());
+    }
+    
+    if (conversation_id <= 0) {
+        return;
+    }
+    
+    // Verify user is part of this conversation
+    auto conversation_opt = conversation_repository_->getById(conversation_id);
+    if (!conversation_opt.has_value()) {
+        return;
+    }
+    
+    auto conversation = conversation_opt.value();
+    if (conversation.user1_id != user_id && conversation.user2_id != user_id) {
+        return;
+    }
+    
+    // Determine the other user
+    int other_user_id = (conversation.user1_id == user_id) 
+        ? conversation.user2_id : conversation.user1_id;
+    
+    // Forward typing indicator to the other user
+    std::ostringstream typing_json;
+    typing_json << "{\"conversation_id\":" << conversation_id
+                << ",\"user_id\":" << user_id << "}";
+    
+    WebSocketMessage ws_message("chat:typing", typing_json.str());
+    websocket_server_->sendToUser(other_user_id, ws_message);
 }
 
 } // namespace server
