@@ -127,6 +127,8 @@ class ApiClient {
         status: response.status,
       };
     } catch (error) {
+      console.error('API Request Error:', error);
+      console.error('Endpoint:', `${this.baseUrl}${endpoint}`);
       return {
         error: error instanceof Error ? error.message : 'Network error',
         status: 0,

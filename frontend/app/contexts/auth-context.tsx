@@ -30,10 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (data: LoginData): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
+    console.log('Login attempt:', { username: data.username });
     const response = await apiClient.login(data);
+    console.log('Login response:', { success: !response.error, status: response.status, hasData: !!response.data });
     setIsLoading(false);
 
     if (response.error) {
+      console.error('Login error:', response.error);
       return { success: false, error: response.error };
     }
 
