@@ -1,7 +1,7 @@
 "use client";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import * as React from "react";
-import * as ScrollAreaPrimitive from "@radix-ui/select";
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import {
   CheckIcon,
   ChevronDownIcon,
