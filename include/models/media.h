@@ -8,7 +8,7 @@ namespace sohbet {
 class Media {
 public:
     // Constructors
-    Media() = default;
+    Media() : user_id_(0), media_type_(""), storage_key_("") {}
     Media(int user_id, const std::string& media_type, const std::string& storage_key);
 
     // Getters

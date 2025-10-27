@@ -1,5 +1,4 @@
 #include "repositories/media_repository.h"
-#include <iostream>
 
 namespace sohbet {
 namespace repositories {
