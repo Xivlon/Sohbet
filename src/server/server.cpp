@@ -38,6 +38,8 @@ bool AcademicSocialServer::initialize() {
     group_repository_ = std::make_shared<repositories::GroupRepository>(database_);
     organization_repository_ = std::make_shared<repositories::OrganizationRepository>(database_);
     role_repository_ = std::make_shared<repositories::RoleRepository>(database_);
+    conversation_repository_ = std::make_shared<repositories::ConversationRepository>(database_);
+    message_repository_ = std::make_shared<repositories::MessageRepository>(database_);
     storage_service_ = std::make_shared<services::StorageService>("uploads/");
 
     if (!user_repository_->migrate()) {
@@ -475,6 +477,18 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleAddOrganizationAccount(request);
     } else if (request.method == "DELETE" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts/") != std::string::npos) {
         return handleRemoveOrganizationAccount(request);
+    }
+    // Chat/Messaging routes
+    else if (request.method == "GET" && base_path == "/api/conversations") {
+        return handleGetConversations(request);
+    } else if (request.method == "POST" && base_path == "/api/conversations") {
+        return handleGetOrCreateConversation(request);
+    } else if (request.method == "GET" && base_path.find("/api/conversations/") == 0 && base_path.find("/messages") != std::string::npos) {
+        return handleGetMessages(request);
+    } else if (request.method == "POST" && base_path.find("/api/conversations/") == 0 && base_path.find("/messages") != std::string::npos) {
+        return handleSendMessage(request);
+    } else if (request.method == "PUT" && base_path.find("/api/messages/") == 0 && base_path.find("/read") != std::string::npos) {
+        return handleMarkMessageRead(request);
     } else {
         return handleNotFound(request);
     }
@@ -2001,6 +2015,207 @@ HttpResponse AcademicSocialServer::handleRemoveOrganizationAccount(const HttpReq
     }
     
     return createErrorResponse(500, "Failed to remove account");
+}
+
+// ============================================================================
+// Chat/Messaging Handlers
+// ============================================================================
+
+HttpResponse AcademicSocialServer::handleGetConversations(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    auto conversations = conversation_repository_->getUserConversations(user_id);
+    
+    std::ostringstream oss;
+    oss << "{\"conversations\":[";
+    
+    for (size_t i = 0; i < conversations.size(); ++i) {
+        oss << conversations[i].to_json();
+        if (i < conversations.size() - 1) {
+            oss << ",";
+        }
+    }
+    
+    oss << "],\"count\":" << conversations.size() << "}";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleGetOrCreateConversation(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    std::string other_user_id_str = extractJsonField(request.body, "user_id");
+    if (other_user_id_str.empty()) {
+        return createErrorResponse(400, "Missing user_id field");
+    }
+    
+    int other_user_id;
+    try {
+        other_user_id = std::stoi(other_user_id_str);
+    } catch (const std::exception&) {
+        return createErrorResponse(400, "Invalid user_id");
+    }
+    
+    if (other_user_id == user_id) {
+        return createErrorResponse(400, "Cannot create conversation with yourself");
+    }
+    
+    // Check if other user exists
+    auto other_user = user_repository_->findById(other_user_id);
+    if (!other_user.has_value()) {
+        return createErrorResponse(404, "User not found");
+    }
+    
+    auto conversation = conversation_repository_->findOrCreateConversation(user_id, other_user_id);
+    if (!conversation.has_value()) {
+        return createErrorResponse(500, "Failed to create conversation");
+    }
+    
+    return createJsonResponse(200, conversation->to_json());
+}
+
+HttpResponse AcademicSocialServer::handleGetMessages(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int conversation_id = extractIdFromPath(request.path, "/api/conversations/");
+    if (conversation_id < 0) {
+        return createErrorResponse(400, "Invalid conversation ID");
+    }
+    
+    // Check if user is part of this conversation
+    auto conversation = conversation_repository_->getById(conversation_id);
+    if (!conversation.has_value()) {
+        return createErrorResponse(404, "Conversation not found");
+    }
+    
+    if (conversation->user1_id != user_id && conversation->user2_id != user_id) {
+        return createErrorResponse(403, "You don't have access to this conversation");
+    }
+    
+    // Parse pagination parameters
+    int limit = 50;
+    int offset = 0;
+    
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::smatch match;
+    
+    if (std::regex_search(request.path, match, limit_regex)) {
+        int parsed_limit = std::stoi(match[1].str());
+        if (parsed_limit > 0 && parsed_limit <= 100) {
+            limit = parsed_limit;
+        }
+    }
+    
+    if (std::regex_search(request.path, match, offset_regex)) {
+        int parsed_offset = std::stoi(match[1].str());
+        if (parsed_offset >= 0) {
+            offset = parsed_offset;
+        }
+    }
+    
+    auto messages = message_repository_->getConversationMessages(conversation_id, limit, offset);
+    
+    std::ostringstream oss;
+    oss << "{\"messages\":[";
+    
+    for (size_t i = 0; i < messages.size(); ++i) {
+        oss << messages[i].to_json();
+        if (i < messages.size() - 1) {
+            oss << ",";
+        }
+    }
+    
+    oss << "],\"count\":" << messages.size();
+    oss << ",\"limit\":" << limit;
+    oss << ",\"offset\":" << offset << "}";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleSendMessage(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int conversation_id = extractIdFromPath(request.path, "/api/conversations/");
+    if (conversation_id < 0) {
+        return createErrorResponse(400, "Invalid conversation ID");
+    }
+    
+    // Check if user is part of this conversation
+    auto conversation = conversation_repository_->getById(conversation_id);
+    if (!conversation.has_value()) {
+        return createErrorResponse(404, "Conversation not found");
+    }
+    
+    if (conversation->user1_id != user_id && conversation->user2_id != user_id) {
+        return createErrorResponse(403, "You don't have access to this conversation");
+    }
+    
+    std::string content = extractJsonField(request.body, "content");
+    if (content.empty()) {
+        return createErrorResponse(400, "Message content cannot be empty");
+    }
+    
+    std::string media_url = extractJsonField(request.body, "media_url");
+    
+    auto message = message_repository_->createMessage(conversation_id, user_id, content, media_url);
+    if (!message.has_value()) {
+        return createErrorResponse(500, "Failed to send message");
+    }
+    
+    // Update conversation's last_message_at timestamp
+    conversation_repository_->updateLastMessageTime(conversation_id);
+    
+    return createJsonResponse(201, message->to_json());
+}
+
+HttpResponse AcademicSocialServer::handleMarkMessageRead(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int message_id = extractIdFromPath(request.path, "/api/messages/");
+    if (message_id < 0) {
+        return createErrorResponse(400, "Invalid message ID");
+    }
+    
+    auto message = message_repository_->getById(message_id);
+    if (!message.has_value()) {
+        return createErrorResponse(404, "Message not found");
+    }
+    
+    // Check if user is the recipient (not the sender)
+    auto conversation = conversation_repository_->getById(message->conversation_id);
+    if (!conversation.has_value()) {
+        return createErrorResponse(404, "Conversation not found");
+    }
+    
+    if (conversation->user1_id != user_id && conversation->user2_id != user_id) {
+        return createErrorResponse(403, "You don't have access to this conversation");
+    }
+    
+    if (message->sender_id == user_id) {
+        return createErrorResponse(400, "Cannot mark your own message as read");
+    }
+    
+    if (message_repository_->markAsRead(message_id)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+    
+    return createErrorResponse(500, "Failed to mark message as read");
 }
 
 } // namespace server
