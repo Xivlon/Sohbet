@@ -2,33 +2,40 @@
 #include <ctime>
 #include <sstream>
 #include <regex>
+#include <iomanip>
 
 namespace sohbet {
 
 VoiceChannel::VoiceChannel()
-    : id(0), name(""), description(""), creator_id(0), 
-      murmur_channel_id(-1), max_users(25), is_temporary(false),
+    : id(0), name(""), channel_type("public"), 
+      group_id(0), organization_id(0), murmur_channel_id(""),
       created_at(std::time(nullptr)) {
-}
-
-VoiceChannel::VoiceChannel(int id, const std::string& name, const std::string& description,
-                           int creator_id, int murmur_channel_id, int max_users,
-                           bool is_temporary, std::time_t created_at)
-    : id(id), name(name), description(description), creator_id(creator_id),
-      murmur_channel_id(murmur_channel_id), max_users(max_users),
-      is_temporary(is_temporary), created_at(created_at) {
 }
 
 std::string VoiceChannel::to_json() const {
     std::ostringstream oss;
     oss << "{";
-    oss << "\"channel_id\":" << id << ",";
+    oss << "\"id\":" << id << ",";
     oss << "\"name\":\"" << name << "\",";
-    oss << "\"description\":\"" << description << "\",";
-    oss << "\"creator_id\":" << creator_id << ",";
-    oss << "\"murmur_channel_id\":" << murmur_channel_id << ",";
-    oss << "\"max_users\":" << max_users << ",";
-    oss << "\"is_temporary\":" << (is_temporary ? "true" : "false") << ",";
+    oss << "\"channel_type\":\"" << channel_type << "\",";
+    
+    if (group_id > 0) {
+        oss << "\"group_id\":" << group_id << ",";
+    } else {
+        oss << "\"group_id\":null,";
+    }
+    
+    if (organization_id > 0) {
+        oss << "\"organization_id\":" << organization_id << ",";
+    } else {
+        oss << "\"organization_id\":null,";
+    }
+    
+    if (!murmur_channel_id.empty()) {
+        oss << "\"murmur_channel_id\":\"" << murmur_channel_id << "\",";
+    } else {
+        oss << "\"murmur_channel_id\":null,";
+    }
     
     // Convert time_t to ISO 8601 string
     char time_buf[30];
@@ -42,13 +49,12 @@ std::string VoiceChannel::to_json() const {
 VoiceChannel VoiceChannel::from_json(const std::string& json) {
     VoiceChannel channel;
     
-    std::regex id_regex("\"channel_id\"\\s*:\\s*(\\d+)");
+    std::regex id_regex("\"id\"\\s*:\\s*(\\d+)");
     std::regex name_regex("\"name\"\\s*:\\s*\"([^\"]+)\"");
-    std::regex desc_regex("\"description\"\\s*:\\s*\"([^\"]+)\"");
-    std::regex creator_regex("\"creator_id\"\\s*:\\s*(\\d+)");
-    std::regex murmur_regex("\"murmur_channel_id\"\\s*:\\s*(-?\\d+)");
-    std::regex max_users_regex("\"max_users\"\\s*:\\s*(\\d+)");
-    std::regex temp_regex("\"is_temporary\"\\s*:\\s*(true|false)");
+    std::regex type_regex("\"channel_type\"\\s*:\\s*\"([^\"]+)\"");
+    std::regex group_regex("\"group_id\"\\s*:\\s*(\\d+)");
+    std::regex org_regex("\"organization_id\"\\s*:\\s*(\\d+)");
+    std::regex murmur_regex("\"murmur_channel_id\"\\s*:\\s*\"([^\"]+)\"");
     
     std::smatch match;
     
@@ -58,20 +64,17 @@ VoiceChannel VoiceChannel::from_json(const std::string& json) {
     if (std::regex_search(json, match, name_regex)) {
         channel.name = match[1].str();
     }
-    if (std::regex_search(json, match, desc_regex)) {
-        channel.description = match[1].str();
+    if (std::regex_search(json, match, type_regex)) {
+        channel.channel_type = match[1].str();
     }
-    if (std::regex_search(json, match, creator_regex)) {
-        channel.creator_id = std::stoi(match[1].str());
+    if (std::regex_search(json, match, group_regex)) {
+        channel.group_id = std::stoi(match[1].str());
+    }
+    if (std::regex_search(json, match, org_regex)) {
+        channel.organization_id = std::stoi(match[1].str());
     }
     if (std::regex_search(json, match, murmur_regex)) {
-        channel.murmur_channel_id = std::stoi(match[1].str());
-    }
-    if (std::regex_search(json, match, max_users_regex)) {
-        channel.max_users = std::stoi(match[1].str());
-    }
-    if (std::regex_search(json, match, temp_regex)) {
-        channel.is_temporary = (match[1].str() == "true");
+        channel.murmur_channel_id = match[1].str();
     }
     
     return channel;

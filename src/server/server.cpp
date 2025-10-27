@@ -40,7 +40,13 @@ bool AcademicSocialServer::initialize() {
     role_repository_ = std::make_shared<repositories::RoleRepository>(database_);
     conversation_repository_ = std::make_shared<repositories::ConversationRepository>(database_);
     message_repository_ = std::make_shared<repositories::MessageRepository>(database_);
+    voice_channel_repository_ = std::make_shared<repositories::VoiceChannelRepository>(database_);
     storage_service_ = std::make_shared<services::StorageService>("uploads/");
+    
+    // Initialize voice service
+    VoiceConfig voice_config;
+    voice_config.enabled = true;
+    voice_service_ = std::make_shared<VoiceServiceStub>(voice_config);
     
     // Initialize WebSocket server
     websocket_server_ = std::make_shared<WebSocketServer>(8081);
@@ -505,6 +511,20 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleSendMessage(request);
     } else if (request.method == "PUT" && base_path.find("/api/messages/") == 0 && base_path.find("/read") != std::string::npos) {
         return handleMarkMessageRead(request);
+    }
+    // Voice/Murmur routes
+    else if (request.method == "POST" && base_path == "/api/voice/channels") {
+        return handleCreateVoiceChannel(request);
+    } else if (request.method == "GET" && base_path == "/api/voice/channels") {
+        return handleGetVoiceChannels(request);
+    } else if (request.method == "GET" && base_path.find("/api/voice/channels/") == 0 && base_path.find("/join") == std::string::npos && base_path.find("/leave") == std::string::npos) {
+        return handleGetVoiceChannel(request);
+    } else if (request.method == "POST" && base_path.find("/api/voice/channels/") == 0 && base_path.find("/join") != std::string::npos) {
+        return handleJoinVoiceChannel(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/voice/channels/") == 0 && base_path.find("/leave") != std::string::npos) {
+        return handleLeaveVoiceChannel(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/voice/channels/") == 0 && base_path.find("/leave") == std::string::npos) {
+        return handleDeleteVoiceChannel(request);
     } else {
         return handleNotFound(request);
     }
@@ -2352,6 +2372,240 @@ void AcademicSocialServer::handleTypingIndicator(int user_id, const WebSocketMes
     
     WebSocketMessage ws_message("chat:typing", typing_json.str());
     websocket_server_->sendToUser(other_user_id, ws_message);
+}
+
+// Voice/Murmur handler implementations
+
+HttpResponse AcademicSocialServer::handleCreateVoiceChannel(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id <= 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    std::string name = extractJsonField(request.body, "name");
+    std::string channel_type = extractJsonField(request.body, "channel_type");
+    
+    if (name.empty()) {
+        return createErrorResponse(400, "Channel name is required");
+    }
+    
+    if (channel_type.empty()) {
+        channel_type = "public";  // Default to public (Khave)
+    }
+    
+    // Validate channel_type
+    if (channel_type != "public" && channel_type != "group" && channel_type != "private") {
+        return createErrorResponse(400, "Invalid channel_type. Must be 'public', 'group', or 'private'");
+    }
+    
+    // Extract optional group_id and organization_id
+    int group_id = 0;
+    int organization_id = 0;
+    
+    std::string group_id_str = extractJsonField(request.body, "group_id");
+    if (!group_id_str.empty()) {
+        group_id = std::stoi(group_id_str);
+    }
+    
+    std::string org_id_str = extractJsonField(request.body, "organization_id");
+    if (!org_id_str.empty()) {
+        organization_id = std::stoi(org_id_str);
+    }
+    
+    // Create channel using VoiceService
+    VoiceChannel channel = voice_service_->create_channel(name, channel_type, group_id, organization_id);
+    
+    if (channel.id <= 0) {
+        return createErrorResponse(500, "Failed to create voice channel");
+    }
+    
+    // Save to database
+    auto saved_channel = voice_channel_repository_->create(channel);
+    if (!saved_channel.has_value()) {
+        return createErrorResponse(500, "Failed to save voice channel to database");
+    }
+    
+    return createJsonResponse(201, saved_channel.value().to_json());
+}
+
+HttpResponse AcademicSocialServer::handleGetVoiceChannels(const HttpRequest& request) {
+    int limit = 50;
+    int offset = 0;
+    std::string channel_type;
+    
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::regex type_regex("[?&]channel_type=([^&]+)");
+    std::smatch match;
+    
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
+    }
+    
+    if (std::regex_search(request.path, match, offset_regex)) {
+        offset = std::stoi(match[1].str());
+    }
+    
+    if (std::regex_search(request.path, match, type_regex)) {
+        channel_type = match[1].str();
+    }
+    
+    std::vector<VoiceChannel> channels;
+    if (!channel_type.empty()) {
+        channels = voice_channel_repository_->findByType(channel_type, limit, offset);
+    } else {
+        channels = voice_channel_repository_->findAll(limit, offset);
+    }
+    
+    // Get active user counts for each channel
+    std::ostringstream oss;
+    oss << "{\"channels\":[";
+    
+    for (size_t i = 0; i < channels.size(); ++i) {
+        oss << "{";
+        oss << "\"id\":" << channels[i].id << ",";
+        oss << "\"name\":\"" << channels[i].name << "\",";
+        oss << "\"channel_type\":\"" << channels[i].channel_type << "\",";
+        oss << "\"active_users\":" << voice_channel_repository_->getActiveUserCount(channels[i].id) << ",";
+        oss << "\"created_at\":\"" << channels[i].created_at << "\"";
+        oss << "}";
+        
+        if (i < channels.size() - 1) {
+            oss << ",";
+        }
+    }
+    
+    oss << "],\"count\":" << channels.size() << "}";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleGetVoiceChannel(const HttpRequest& request) {
+    int channel_id = extractIdFromPath(request.path, "/api/voice/channels/");
+    
+    if (channel_id <= 0) {
+        return createErrorResponse(400, "Invalid channel ID");
+    }
+    
+    auto channel_opt = voice_channel_repository_->findById(channel_id);
+    if (!channel_opt.has_value()) {
+        return createErrorResponse(404, "Voice channel not found");
+    }
+    
+    auto channel = channel_opt.value();
+    int active_users = voice_channel_repository_->getActiveUserCount(channel_id);
+    
+    std::ostringstream oss;
+    oss << "{";
+    oss << "\"id\":" << channel.id << ",";
+    oss << "\"name\":\"" << channel.name << "\",";
+    oss << "\"channel_type\":\"" << channel.channel_type << "\",";
+    oss << "\"active_users\":" << active_users << ",";
+    oss << "\"created_at\":\"" << channel.created_at << "\"";
+    oss << "}";
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleJoinVoiceChannel(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id <= 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int channel_id = extractIdFromPath(request.path, "/api/voice/channels/");
+    
+    if (channel_id <= 0) {
+        return createErrorResponse(400, "Invalid channel ID");
+    }
+    
+    // Verify channel exists
+    auto channel_opt = voice_channel_repository_->findById(channel_id);
+    if (!channel_opt.has_value()) {
+        return createErrorResponse(404, "Voice channel not found");
+    }
+    
+    // Check if user already has an active session
+    int existing_session = voice_channel_repository_->getUserActiveSession(user_id, channel_id);
+    if (existing_session > 0) {
+        return createErrorResponse(400, "User already in this channel");
+    }
+    
+    // Generate connection token
+    VoiceConnectionToken token = voice_service_->generate_connection_token(user_id, channel_id);
+    
+    // Create session in database
+    int session_id = voice_channel_repository_->createSession(channel_id, user_id);
+    
+    if (session_id <= 0) {
+        return createErrorResponse(500, "Failed to create voice session");
+    }
+    
+    std::ostringstream oss;
+    oss << "{";
+    oss << "\"session_id\":" << session_id << ",";
+    oss << "\"channel_id\":" << channel_id << ",";
+    oss << token.to_json().substr(1); // Remove opening { from token.to_json()
+    
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleLeaveVoiceChannel(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id <= 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int channel_id = extractIdFromPath(request.path, "/api/voice/channels/");
+    
+    if (channel_id <= 0) {
+        return createErrorResponse(400, "Invalid channel ID");
+    }
+    
+    // Get user's active session
+    int session_id = voice_channel_repository_->getUserActiveSession(user_id, channel_id);
+    
+    if (session_id <= 0) {
+        return createErrorResponse(404, "No active session found");
+    }
+    
+    // End the session
+    if (!voice_channel_repository_->endSession(session_id)) {
+        return createErrorResponse(500, "Failed to end voice session");
+    }
+    
+    return createJsonResponse(200, "{\"message\":\"Left voice channel successfully\"}");
+}
+
+HttpResponse AcademicSocialServer::handleDeleteVoiceChannel(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id <= 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+    
+    int channel_id = extractIdFromPath(request.path, "/api/voice/channels/");
+    
+    if (channel_id <= 0) {
+        return createErrorResponse(400, "Invalid channel ID");
+    }
+    
+    // Verify channel exists
+    auto channel_opt = voice_channel_repository_->findById(channel_id);
+    if (!channel_opt.has_value()) {
+        return createErrorResponse(404, "Voice channel not found");
+    }
+    
+    // Delete the channel using voice service
+    if (!voice_service_->delete_channel(channel_id)) {
+        return createErrorResponse(500, "Failed to delete voice channel from service");
+    }
+    
+    // Delete from database
+    if (!voice_channel_repository_->deleteById(channel_id)) {
+        return createErrorResponse(500, "Failed to delete voice channel from database");
+    }
+    
+    return createJsonResponse(200, "{\"message\":\"Voice channel deleted successfully\"}");
 }
 
 } // namespace server

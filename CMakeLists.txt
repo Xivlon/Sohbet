@@ -48,6 +48,7 @@ set(SOURCES
     src/repositories/organization_repository.cpp
     src/repositories/conversation_repository.cpp
     src/repositories/message_repository.cpp
+    src/repositories/voice_channel_repository.cpp
     src/services/permission_service.cpp
     src/services/storage_service.cpp
     src/utils/hash.cpp

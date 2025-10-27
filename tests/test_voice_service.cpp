@@ -41,23 +41,23 @@ void test_voice_config() {
 void test_voice_channel() {
     std::cout << "Testing VoiceChannel..." << std::endl;
     
-    VoiceChannel channel(1, "Test Channel", "A test channel", 42, -1, 10, false, std::time(nullptr));
+    VoiceChannel channel;
+    channel.id = 1;
+    channel.name = "Test Channel";
+    channel.channel_type = "public";
+    channel.group_id = 0;
+    channel.organization_id = 0;
+    channel.created_at = std::time(nullptr);
     
     assert(channel.id == 1);
     assert(channel.name == "Test Channel");
-    assert(channel.description == "A test channel");
-    assert(channel.creator_id == 42);
-    assert(channel.max_users == 10);
-    assert(channel.is_temporary == false);
+    assert(channel.channel_type == "public");
     
     // Test JSON conversion
     std::string j = channel.to_json();
-    assert(j.find("\"channel_id\":1") != std::string::npos);
+    assert(j.find("\"id\":1") != std::string::npos);
     assert(j.find("\"name\":\"Test Channel\"") != std::string::npos);
-    assert(j.find("\"description\":\"A test channel\"") != std::string::npos);
-    assert(j.find("\"creator_id\":42") != std::string::npos);
-    assert(j.find("\"max_users\":10") != std::string::npos);
-    assert(j.find("\"is_temporary\":false") != std::string::npos);
+    assert(j.find("\"channel_type\":\"public\"") != std::string::npos);
     
     std::cout << "VoiceChannel tests passed!" << std::endl;
 }
@@ -76,18 +76,14 @@ void test_voice_service_stub() {
     // Test creating a channel
     VoiceChannel channel = service.create_channel(
         "Study Group", 
-        "CS101 Study Session", 
-        1, 
-        15, 
-        true
+        "public",
+        0,
+        0
     );
     
     assert(channel.id > 0);
     assert(channel.name == "Study Group");
-    assert(channel.description == "CS101 Study Session");
-    assert(channel.creator_id == 1);
-    assert(channel.max_users == 15);
-    assert(channel.is_temporary == true);
+    assert(channel.channel_type == "public");
     
     // Test listing channels
     auto channels = service.list_channels();
