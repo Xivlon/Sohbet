@@ -46,6 +46,14 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
     - Implemented async data sync using useEffect to handle user context loading
     - Profile fields: name, position, phone_number, university, department, enrollment_year, primary_language
     - Turkish UI localization for all profile labels and buttons
+  - **Social Features Database Expansion**:
+    - Created comprehensive database schema with 17 new tables
+    - Implemented Role-Based Access Control (RBAC) with 3 roles: Student, Professor, Admin
+    - Added support for academic groups, organizations/clubs, friendships, posts, comments
+    - Built infrastructure for real-time chat and voice communication
+    - Seeded 13 default permissions across roles
+    - Created migration file: `migrations/001_social_features.sql`
+    - **Implementation Roadmap Created**: See `IMPLEMENTATION_ROADMAP.md` for complete 4-phase development plan
 
 ## Project Architecture
 
@@ -70,13 +78,16 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
 - **Authentication**: bcrypt password hashing + JWT token-based auth
 - **HTTP Server**: Custom HTTP/1.1 server implementation on port 8080
 
-### Backend API Endpoints
+### Backend API Endpoints (Current)
 - `GET /api/status` - Server health check
 - `GET /api/users?limit=50&offset=0` - List all users with pagination (default limit: 50, max: 100)
 - `GET /api/users/demo` - Demo user data
 - `POST /api/users` - User registration
 - `POST /api/login` - User authentication (returns JWT token)
 - `PUT /api/users/:id` - Update user profile (authenticated)
+
+**Planned API Endpoints** (See IMPLEMENTATION_ROADMAP.md for details):
+- 50+ new endpoints for: Media uploads, Friendships, Posts, Comments, Groups, Organizations, Chat, Voice
 
 ### User Data Model
 Each user profile includes:
@@ -93,6 +104,16 @@ The database contains 27 users including:
 - Diverse positions: Professors, Researchers, Engineers, Technicians, Students
 - Specializations: Mathematics, Computer Science, Biology, Physics, Chemistry, Mechanical Engineering
 
+### Database Schema
+The SQLite database now includes:
+- **Core Tables**: users, roles, role_permissions, user_roles
+- **Social Features**: friendships, posts, comments, post_reactions
+- **Groups & Orgs**: groups, group_members, organizations, organization_accounts
+- **Communication**: conversations, messages, voice_channels, voice_sessions
+- **Media**: user_media (for avatar uploads and file storage)
+
+**Total Tables**: 18 (1 original users table + 17 new tables)
+
 ### Full-Stack Integration
 - **Frontend-Backend Communication**: 
   - API client utility (`frontend/app/lib/api-client.ts`) handles all HTTP requests
@@ -103,7 +124,7 @@ The database contains 27 users including:
   2. Backend validates credentials and returns JWT token
   3. Frontend stores token in localStorage and includes it in API requests
   4. User session persists across page reloads
-- **Security**: CORS enabled on backend, bcrypt for password hashing, JWT for stateless auth
+- **Security**: CORS enabled on backend, bcrypt for password hashing, JWT for stateless auth, RBAC for permissions
 
 ### C++ Dependencies
 - **SQLite3**: Database operations
