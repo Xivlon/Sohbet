@@ -57,16 +57,44 @@ export default function App() {
     }
   };
 
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-screen bg-background overflow-hidden">
+        <Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+        <main className="flex-1 overflow-hidden pb-safe">
+          {renderActiveSection()}
+        </main>
+        <Sidebar 
+          activeSection={activeSection} 
+          onSectionChange={setActiveSection} 
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden">
-      <Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
-      <main className="flex-1 overflow-hidden pb-safe">
-        {renderActiveSection()}
-      </main>
+    <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar 
         activeSection={activeSection} 
         onSectionChange={setActiveSection} 
       />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+        <main className="flex-1 overflow-hidden">
+          {renderActiveSection()}
+        </main>
+      </div>
     </div>
   );
 }
