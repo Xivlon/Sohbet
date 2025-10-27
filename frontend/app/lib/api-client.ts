@@ -232,6 +232,31 @@ class ApiClient {
   getMediaUrl(storageKey: string): string {
     return `${this.baseUrl}/api/media/file/${storageKey}`;
   }
+
+  // Posts API
+  async getPosts(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ posts: any[]; total: number }>> {
+    return this.request(`/api/posts?limit=${limit}&offset=${offset}`);
+  }
+
+  async createPost(content: string, visibility: string = 'friends'): Promise<ApiResponse<any>> {
+    return this.request('/api/posts', {
+      method: 'POST',
+      body: JSON.stringify({ content, visibility }),
+    });
+  }
+
+  async reactToPost(postId: number, reactionType: string = 'like'): Promise<ApiResponse<any>> {
+    return this.request(`/api/posts/${postId}/react`, {
+      method: 'POST',
+      body: JSON.stringify({ reaction_type: reactionType }),
+    });
+  }
+
+  async removeReaction(postId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/posts/${postId}/react`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

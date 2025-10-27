@@ -1,130 +1,135 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share, MoreHorizontal, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
+import { apiClient } from '@/app/lib/api-client';
+import { useAuth } from '@/app/contexts/auth-context';
 
 interface Post {
-  id: string;
-  author: {
-    name: string;
-    department: string;
-    university: string;
-    avatar: string;
-  };
+  id: number;
+  user_id: number;
   content: string;
-  timestamp: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  isLiked: boolean;
-  type: 'announcement' | 'discussion' | 'event' | 'academic';
+  visibility: string;
+  created_at: string;
+  updated_at?: string;
+  user?: {
+    id: number;
+    username: string;
+    name?: string;
+    department?: string;
+    university?: string;
+    avatar_url?: string;
+  };
+  reaction_count?: number;
+  comment_count?: number;
+  has_reacted?: boolean;
 }
 
-const mockPosts: Post[] = [
-  {
-    id: '1',
-    author: {
-      name: 'Prof. Dr. Mehmet Kaya',
-      department: 'Bilgisayar Mühendisliği',
-      university: 'İTÜ',
-      avatar: 'MK'
-    },
-    content: 'Yeni araştırma projemiz "Yapay Zeka ve Etik" konusunda başladı. Bu konuda çalışmak isteyen öğrenciler bana ulaşabilir. Proje kapsamında makine öğrenmesi, doğal dil işleme ve etik algoritmalar üzerine çalışacağız.',
-    timestamp: '2 saat önce',
-    likes: 24,
-    comments: 8,
-    shares: 3,
-    isLiked: false,
-    type: 'academic'
-  },
-  {
-    id: '2',
-    author: {
-      name: 'Ayşe Demir',
-      department: 'Endüstri Mühendisliği',
-      university: 'ODTÜ',
-      avatar: 'AD'
-    },
-    content: 'Yarın saat 14:00\'da "Sürdürülebilir Üretim Teknikleri" konulu seminerimiz var. Herkes davetli! Konferans salonunda olacak.',
-    timestamp: '5 saat önce',
-    likes: 15,
-    comments: 3,
-    shares: 7,
-    isLiked: true,
-    type: 'event'
-  },
-  {
-    id: '3',
-    author: {
-      name: 'Dr. Can Özkan',
-      department: 'Fizik',
-      university: 'Boğaziçi',
-      avatar: 'CÖ'
-    },
-    content: 'Kuantum hesaplama alanında yaptığımız son çalışma Journal of Quantum Computing\'de yayınlandı. Makaleye erişim için profile bakabilirsiniz.',
-    timestamp: '1 gün önce',
-    likes: 42,
-    comments: 12,
-    shares: 8,
-    isLiked: false,
-    type: 'announcement'
-  }
-];
-
 export function MainFeed() {
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const { user } = useAuth();
 
-  const handleLike = (postId: string) => {
-    setPosts(posts.map(post => 
-      post.id === postId 
-        ? { ...post, isLiked: !post.isLiked, likes: post.isLiked ? post.likes - 1 : post.likes + 1 }
-        : post
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  const loadPosts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.getPosts(50, 0);
+      if (response.data) {
+        setPosts(response.data.posts || []);
+      } else {
+        setError(response.error || 'Gönderiler yüklenemedi');
+      }
+    } catch (err) {
+      setError('Bir hata oluştu. Lütfen tekrar deneyin.');
+      console.error('Failed to load posts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLike = async (post: Post) => {
+    // Optimistic update
+    const wasLiked = post.has_reacted;
+    const oldCount = post.reaction_count || 0;
+    
+    setPosts(posts.map(p => 
+      p.id === post.id 
+        ? { ...p, has_reacted: !wasLiked, reaction_count: wasLiked ? oldCount - 1 : oldCount + 1 }
+        : p
     ));
-  };
 
-  const handleCreatePost = () => {
-    if (newPost.trim()) {
-      const post: Post = {
-        id: Date.now().toString(),
-        author: {
-          name: 'Ali Uzun',
-          department: 'Bilgisayar Mühendisliği',
-          university: 'İTÜ',
-          avatar: 'AU'
-        },
-        content: newPost,
-        timestamp: 'şimdi',
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        isLiked: false,
-        type: 'discussion'
-      };
-      setPosts([post, ...posts]);
-      setNewPost('');
+    try {
+      if (wasLiked) {
+        await apiClient.removeReaction(post.id);
+      } else {
+        await apiClient.reactToPost(post.id, 'like');
+      }
+    } catch (error) {
+      // Rollback on error
+      setPosts(posts.map(p => 
+        p.id === post.id 
+          ? { ...p, has_reacted: wasLiked, reaction_count: oldCount }
+          : p
+      ));
+      alert('Beğeni işlemi başarısız oldu. Lütfen tekrar deneyin.');
+      console.error('Failed to react to post:', error);
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'announcement': return 'bg-primary/10 text-primary border border-primary/20';
-      case 'event': return 'bg-secondary text-secondary-foreground border border-border';
-      case 'academic': return 'bg-accent text-accent-foreground border border-border';
-      default: return 'bg-muted text-muted-foreground border border-border';
+  const handleCreatePost = async () => {
+    if (!newPost.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const response = await apiClient.createPost(newPost.trim(), 'friends');
+      if (response.data) {
+        // Reload posts to get the new post with all metadata
+        await loadPosts();
+        setNewPost('');
+      } else {
+        alert('Gönderi paylaşılamadı: ' + (response.error || 'Bilinmeyen hata'));
+      }
+    } catch (err) {
+      alert('Gönderi paylaşılamadı. Lütfen tekrar deneyin.');
+      console.error('Failed to create post:', err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'announcement': return 'Duyuru';
-      case 'event': return 'Etkinlik';
-      case 'academic': return 'Akademik';
-      default: return 'Tartışma';
+  const formatTimestamp = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'şimdi';
+    if (diffMins < 60) return `${diffMins} dakika önce`;
+    if (diffHours < 24) return `${diffHours} saat önce`;
+    if (diffDays < 7) return `${diffDays} gün önce`;
+    
+    return date.toLocaleDateString('tr-TR');
+  };
+
+  const getInitials = (name?: string, username?: string) => {
+    if (name) {
+      const parts = name.split(' ');
+      return parts.map(p => p[0]).join('').toUpperCase().slice(0, 2);
     }
+    return username?.slice(0, 2).toUpperCase() || 'U';
   };
 
   return (
@@ -133,94 +138,119 @@ export function MainFeed() {
         {/* Header */}
         <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 p-4 -mx-4 md:-mx-6 lg:-mx-8 mb-4 border-b border-border">
           <div className="max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
-            <h2 className="text-primary text-xl md:text-2xl">Ana Akış</h2>
+            <h2 className="text-primary text-xl md:text-2xl font-semibold">Ana Akış</h2>
             <p className="text-muted-foreground text-sm md:text-base">Kişiselleştirilmiş içerikler</p>
           </div>
         </div>
 
         {/* Create Post */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-primary-foreground">AU</span>
+        {user && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-primary-foreground text-sm font-medium">
+                      {getInitials(user.name, user.username)}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <Textarea
+                      placeholder="Ne düşünüyorsun? Bir araştırma, proje veya etkinlik paylaş..."
+                      value={newPost}
+                      onChange={(e) => setNewPost(e.target.value)}
+                      className="min-h-20 resize-none"
+                      disabled={submitting}
+                    />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <Textarea
-                    placeholder="Ne düşünüyorsun? Bir araştırma, proje veya etkinlik paylaş..."
-                    value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
-                    className="min-h-20 resize-none"
-                  />
+                <div className="flex justify-end">
+                  <Button onClick={handleCreatePost} disabled={!newPost.trim() || submitting}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    {submitting ? 'Paylaşılıyor...' : 'Paylaş'}
+                  </Button>
                 </div>
               </div>
-              <div className="flex justify-end">
-                <Button onClick={handleCreatePost} disabled={!newPost.trim()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Paylaş
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Posts */}
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <Card key={post.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center">
-                      <span className="text-secondary-foreground">{post.author.avatar}</span>
-                    </div>
-                    <div>
-                      <div className="font-medium">{post.author.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {post.author.department}, {post.author.university}
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Yükleniyor...</p>
+          </div>
+        ) : error ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-destructive mb-4">{error}</p>
+              <Button onClick={loadPosts}>Tekrar Dene</Button>
+            </CardContent>
+          </Card>
+        ) : posts.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">Henüz gönderi yok. İlk gönderiyi siz paylaşın!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <Card key={post.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-secondary-foreground text-sm font-medium">
+                          {getInitials(post.user?.name, post.user?.username)}
+                        </span>
                       </div>
-                      <div className="text-sm text-muted-foreground">{post.timestamp}</div>
+                      <div>
+                        <div className="font-medium">{post.user?.name || post.user?.username || 'Anonim'}</div>
+                        {(post.user?.department || post.user?.university) && (
+                          <div className="text-sm text-muted-foreground">
+                            {post.user?.department && post.user?.university 
+                              ? `${post.user.department}, ${post.user.university}`
+                              : post.user?.department || post.user?.university}
+                          </div>
+                        )}
+                        <div className="text-sm text-muted-foreground">{formatTimestamp(post.created_at)}</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs ${getTypeColor(post.type)}`}>
-                      {getTypeLabel(post.type)}
-                    </span>
                     <Button variant="ghost" size="sm">
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="mb-4">{post.content}</p>
-                
-                <div className="flex items-center justify-between border-t border-border pt-3">
-                  <div className="flex items-center gap-6">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleLike(post.id)}
-                      className={post.isLiked ? 'text-primary' : ''}
-                    >
-                      <Heart className={`w-4 h-4 mr-2 ${post.isLiked ? 'fill-current' : ''}`} />
-                      {post.likes}
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      {post.comments}
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Share className="w-4 h-4 mr-2" />
-                      {post.shares}
-                    </Button>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="mb-4 whitespace-pre-wrap">{post.content}</p>
+                  
+                  <div className="flex items-center justify-between border-t border-border pt-3">
+                    <div className="flex items-center gap-6">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleLike(post)}
+                        className={post.has_reacted ? 'text-primary' : ''}
+                      >
+                        <Heart className={`w-4 h-4 mr-2 ${post.has_reacted ? 'fill-current' : ''}`} />
+                        {post.reaction_count || 0}
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        {post.comment_count || 0}
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Share className="w-4 h-4 mr-2" />
+                        0
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
