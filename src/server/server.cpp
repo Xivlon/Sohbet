@@ -236,6 +236,8 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleCreateUser(request);
     } else if (request.method == "POST" && base_path == "/api/login") {
         return handleLogin(request);
+    } else if (request.method == "PUT" && base_path.find("/api/users/") == 0) {
+        return handleUpdateUser(request);
     } else {
         return handleNotFound(request);
     }
@@ -374,6 +376,56 @@ HttpResponse AcademicSocialServer::handleLogin(const HttpRequest& request) {
         std::ostringstream oss;
         oss << "{ \"token\":\"" << token << "\", \"user\":" << user.toJson() << " }";
         return createJsonResponse(200, oss.str());
+    } catch (...) {
+        return createErrorResponse(500, "Internal server error");
+    }
+}
+
+HttpResponse AcademicSocialServer::handleUpdateUser(const HttpRequest& request) {
+    try {
+        std::regex id_regex("/api/users/(\\d+)");
+        std::smatch match;
+        if (!std::regex_search(request.path, match, id_regex)) {
+            return createErrorResponse(400, "Invalid user ID");
+        }
+        
+        int user_id = std::stoi(match[1].str());
+        
+        auto user_opt = user_repository_->findById(user_id);
+        if (!user_opt.has_value()) {
+            return createErrorResponse(404, "User not found");
+        }
+        
+        User user = user_opt.value();
+        
+        std::string name = extractJsonField(request.body, "name");
+        if (!name.empty()) user.setName(name);
+        
+        std::string position = extractJsonField(request.body, "position");
+        if (!position.empty()) user.setPosition(position);
+        
+        std::string phone_number = extractJsonField(request.body, "phone_number");
+        if (!phone_number.empty()) user.setPhoneNumber(phone_number);
+        
+        std::string university = extractJsonField(request.body, "university");
+        if (!university.empty()) user.setUniversity(university);
+        
+        std::string department = extractJsonField(request.body, "department");
+        if (!department.empty()) user.setDepartment(department);
+        
+        std::string enrollment_year_str = extractJsonField(request.body, "enrollment_year");
+        if (!enrollment_year_str.empty()) {
+            user.setEnrollmentYear(std::stoi(enrollment_year_str));
+        }
+        
+        std::string primary_language = extractJsonField(request.body, "primary_language");
+        if (!primary_language.empty()) user.setPrimaryLanguage(primary_language);
+        
+        if (!user_repository_->update(user)) {
+            return createErrorResponse(500, "Failed to update user");
+        }
+        
+        return createJsonResponse(200, user.toJson());
     } catch (...) {
         return createErrorResponse(500, "Internal server error");
     }

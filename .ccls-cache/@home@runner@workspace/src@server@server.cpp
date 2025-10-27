@@ -53,8 +53,9 @@ bool AcademicSocialServer::start() {
     std::cout << "🌐 HTTP Server listening on http://localhost:" << port_ << std::endl;
     std::cout << "Available endpoints:" << std::endl;
     std::cout << "  GET  /api/status" << std::endl;
+    std::cout << "  GET  /api/users (list all users)" << std::endl;
     std::cout << "  GET  /api/users/demo" << std::endl;
-    std::cout << "  POST /api/users" << std::endl;
+    std::cout << "  POST /api/users (registration)" << std::endl;
     std::cout << "  POST /api/login" << std::endl;
     std::cout << "Server ready to handle requests" << std::endl;
     
@@ -217,15 +218,23 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
 // -------------------- Request Handlers --------------------
 
 HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
+    std::string base_path = request.path;
+    size_t query_pos = base_path.find('?');
+    if (query_pos != std::string::npos) {
+        base_path = base_path.substr(0, query_pos);
+    }
+    
     if (request.method == "OPTIONS") {
         return HttpResponse(204, "text/plain", "");
-    } else if (request.method == "GET" && request.path == "/api/status") {
+    } else if (request.method == "GET" && base_path == "/api/status") {
         return handleStatus(request);
-    } else if (request.method == "GET" && request.path == "/api/users/demo") {
+    } else if (request.method == "GET" && base_path == "/api/users") {
+        return handleGetUsers(request);
+    } else if (request.method == "GET" && base_path == "/api/users/demo") {
         return handleUsersDemo(request);
-    } else if (request.method == "POST" && request.path == "/api/users") {
+    } else if (request.method == "POST" && base_path == "/api/users") {
         return handleCreateUser(request);
-    } else if (request.method == "POST" && request.path == "/api/login") {
+    } else if (request.method == "POST" && base_path == "/api/login") {
         return handleLogin(request);
     } else {
         return handleNotFound(request);
@@ -236,6 +245,49 @@ HttpResponse AcademicSocialServer::handleStatus(const HttpRequest& request) {
     (void)request;
     std::string response = R"({"status":"ok","version":"0.2.0-academic","features":["user_registration","sqlite_persistence","bcrypt_hashing"]})";
     return createJsonResponse(200, response);
+}
+
+HttpResponse AcademicSocialServer::handleGetUsers(const HttpRequest& request) {
+    int limit = 50;
+    int offset = 0;
+    
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::smatch match;
+    
+    if (std::regex_search(request.path, match, limit_regex)) {
+        int parsed_limit = std::stoi(match[1].str());
+        if (parsed_limit > 0 && parsed_limit <= 100) {
+            limit = parsed_limit;
+        }
+    }
+    
+    if (std::regex_search(request.path, match, offset_regex)) {
+        int parsed_offset = std::stoi(match[1].str());
+        if (parsed_offset >= 0) {
+            offset = parsed_offset;
+        }
+    }
+    
+    std::vector<User> users = user_repository_->findAll(limit, offset);
+    int total = user_repository_->countAll();
+    
+    std::ostringstream oss;
+    oss << "{\"users\":[";
+    
+    for (size_t i = 0; i < users.size(); ++i) {
+        oss << users[i].toJson();
+        if (i < users.size() - 1) {
+            oss << ",";
+        }
+    }
+    
+    oss << "],\"total\":" << total;
+    oss << ",\"limit\":" << limit;
+    oss << ",\"offset\":" << offset;
+    oss << ",\"count\":" << users.size() << "}";
+    
+    return createJsonResponse(200, oss.str());
 }
 
 HttpResponse AcademicSocialServer::handleUsersDemo(const HttpRequest& request) {

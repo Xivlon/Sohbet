@@ -81,6 +81,13 @@ public:
      * @return Total count of users in database
      */
     int countAll();
+    
+    /**
+     * Update an existing user's profile
+     * @param user User object with updated data
+     * @return true if successful, false otherwise
+     */
+    bool update(const User& user);
 
 private:
     std::shared_ptr<db::Database> database_;

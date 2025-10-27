@@ -202,6 +202,37 @@ int UserRepository::countAll() {
     return 0;
 }
 
+// Update user profile
+bool UserRepository::update(const User& user) {
+    if (!database_ || !database_->isOpen()) return false;
+
+    const std::string sql = R"(
+        UPDATE users SET 
+            name = ?,
+            position = ?,
+            phone_number = ?,
+            university = ?,
+            department = ?,
+            enrollment_year = ?,
+            primary_language = ?
+        WHERE id = ?
+    )";
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return false;
+
+    stmt.bindText(1, user.getName().value_or(""));
+    stmt.bindText(2, user.getPosition().value_or(""));
+    stmt.bindText(3, user.getPhoneNumber().value_or(""));
+    stmt.bindText(4, user.getUniversity().value_or(""));
+    stmt.bindText(5, user.getDepartment().value_or(""));
+    stmt.bindInt(6, user.getEnrollmentYear().value_or(0));
+    stmt.bindText(7, user.getPrimaryLanguage().value_or(""));
+    stmt.bindInt(8, user.getId().value());
+
+    return stmt.step() == SQLITE_DONE;
+}
+
 // Build User object from a DB row
 User UserRepository::userFromStatement(db::Statement& stmt) {
     User user;
