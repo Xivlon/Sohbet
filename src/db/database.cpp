@@ -102,6 +102,11 @@ bool Statement::bindText(int index, const std::string& value) {
     return sqlite3_bind_text(stmt_, index, value.c_str(), -1, SQLITE_TRANSIENT) == SQLITE_OK;
 }
 
+bool Statement::bindNull(int index) {
+    if (!stmt_) return false;
+    return sqlite3_bind_null(stmt_, index) == SQLITE_OK;
+}
+
 int Statement::step() {
     if (!stmt_) return SQLITE_ERROR;
     return sqlite3_step(stmt_);
@@ -121,6 +126,11 @@ std::string Statement::getText(int index) const {
     if (!stmt_) return "";
     const char* text = reinterpret_cast<const char*>(sqlite3_column_text(stmt_, index));
     return text ? text : "";
+}
+
+bool Statement::isNull(int index) const {
+    if (!stmt_) return true;
+    return sqlite3_column_type(stmt_, index) == SQLITE_NULL;
 }
 
 } // namespace db

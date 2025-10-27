@@ -62,6 +62,7 @@ public:
     // Bind parameters
     bool bindInt(int index, int value);
     bool bindText(int index, const std::string& value);
+    bool bindNull(int index);
 
     // Execution
     int step();
@@ -70,6 +71,7 @@ public:
     // Column getters
     int getInt(int index) const;
     std::string getText(int index) const;
+    bool isNull(int index) const;
 
     bool isValid() const { return stmt_ != nullptr; }
 
