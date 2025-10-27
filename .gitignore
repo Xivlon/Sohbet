@@ -85,3 +85,7 @@ out/
 
 # Vercel
 .vercel
+
+# Uploads directory (user uploaded files)
+uploads/
+*.uploaded
