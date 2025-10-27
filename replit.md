@@ -12,6 +12,9 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
   - Set up development workflow with auto-restart
   - Configured deployment settings for Autoscale deployment target
   - Updated .gitignore with Next.js-specific patterns
+  - Updated color scheme:
+    - Light mode: Red and white color palette for a clean, academic aesthetic
+    - Dark mode: Black and gray color palette for comfortable night reading
 
 ## Project Architecture
 
