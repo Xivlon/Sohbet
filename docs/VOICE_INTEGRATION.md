@@ -1,95 +1,148 @@
-# Voice Integration Guide
+# Voice Integration - Developer Guide
 
-This guide explains how to use and extend the voice integration in Sohbet.
+## What This Guide Covers
 
-## Overview
+This guide explains how to use and extend the voice integration features in Sohbet. It's designed for developers who want to:
 
-The voice integration provides a foundation for adding voice and video calling features to Sohbet using Murmur (Mumble server). The current implementation includes:
+- Understand how voice features work
+- Use the voice API in their code
+- Extend the integration with new features
+- Test voice functionality
 
-- **Backend Service Interface**: C++ classes for managing voice channels and tokens
-- **Frontend Client**: TypeScript service and React hooks
-- **Stub Implementation**: For development without a live Murmur server
-- **Security Model**: Token-based authentication with time limits
+---
 
-## Quick Start
+## Quick Overview
 
-### Backend Development
+The voice integration provides these capabilities:
 
-1. **Build the project**:
+- **Voice Channels**: Create and manage voice chat rooms
+- **Authentication**: Secure token-based access control
+- **Frontend Hooks**: Easy-to-use React components
+- **Stub Implementation**: Test without a live Murmur server
+- **Extensible Design**: Add new features easily
+
+---
+
+## Getting Started
+
+### Step 1: Build the Project
+
+First, make sure the project builds successfully:
+
 ```bash
 mkdir build && cd build
 cmake ..
 make
 ```
 
-2. **Run tests**:
+### Step 2: Run Tests
+
+Verify everything works by running the tests:
+
 ```bash
 ctest --output-on-failure
 ```
 
-3. **Using the VoiceService**:
+You should see all tests pass, including `VoiceServiceTest`.
+
+### Step 3: Try It Out
+
+Here's a simple example to get started:
+
+#### Backend (C++)
+
 ```cpp
 #include "voice/voice_service.h"
 
-// Create configuration
+// Step 1: Create configuration
 VoiceConfig config;
 config.enabled = true;
 config.murmur_host = "localhost";
 config.murmur_port = 64738;
 
-// Create service (stub for testing)
+// Step 2: Create service (using stub for testing)
 VoiceServiceStub service(config);
 
-// Create a channel
+// Step 3: Create a voice channel
 VoiceChannel channel = service.create_channel(
-    "Study Group",
-    "CS101 meeting",
-    user_id,
-    10,
-    true  // temporary
+    "Study Group",           // Channel name
+    "CS101 meeting",         // Description
+    user_id,                 // Creator user ID
+    10,                      // Max users
+    true                     // Temporary channel
 );
 
-// Generate connection token
+// Step 4: Generate a connection token
 VoiceConnectionToken token = service.generate_connection_token(
-    user_id,
-    channel.id
+    user_id,                 // User requesting access
+    channel.id               // Channel to join
 );
+
+// Token is now ready to use!
+std::cout << "Token: " << token.token << std::endl;
 ```
 
-### Frontend Development
+#### Frontend (React/TypeScript)
 
-1. **Import the service and hooks**:
 ```typescript
 import { voiceService } from './services/voiceService';
 import { useVoiceChannels, useJoinVoiceChannel } from './hooks/useVoice';
-```
 
-2. **Use in a component**:
-```typescript
-function MyComponent() {
+function VoiceChannelDemo() {
+  // Hook for managing channels
   const { channels, loading, createChannel } = useVoiceChannels();
+  
+  // Hook for joining channels
   const { joinChannel, connectionToken } = useJoinVoiceChannel();
 
-  // Create a channel
-  const handleCreate = async () => {
-    await createChannel({
-      name: "My Channel",
-      description: "Test channel",
-      max_users: 10
+  // Create a new channel
+  const handleCreateChannel = async () => {
+    const newChannel = await createChannel({
+      name: "My Study Group",
+      description: "Math homework help",
+      max_users: 10,
+      is_temporary: true
     });
+    
+    if (newChannel) {
+      console.log("Created channel:", newChannel.name);
+    }
   };
 
-  // Join a channel
-  const handleJoin = async (channelId: number) => {
+  // Join an existing channel
+  const handleJoinChannel = async (channelId: number) => {
     const token = await joinChannel(channelId);
-    console.log("Connection token:", token);
+    
+    if (token) {
+      console.log("Got connection token:", token);
+      // Use token to connect to voice server
+    }
   };
+
+  // Render UI
+  if (loading) return <div>Loading channels...</div>;
 
   return (
-    // Your UI here
+    <div>
+      <h2>Voice Channels</h2>
+      <button onClick={handleCreateChannel}>Create New Channel</button>
+      
+      <ul>
+        {channels.map(channel => (
+          <li key={channel.channel_id}>
+            {channel.name} - {channel.active_users}/{channel.max_users} users
+            <button onClick={() => handleJoinChannel(channel.channel_id)}>
+              Join
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 ```
+
+---
 
 ## Configuration
 

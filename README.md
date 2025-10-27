@@ -2,41 +2,64 @@
 
 # Sohbet
 
-A Turkish-centered social media platform with C++ backend and React frontend.
+**Version 0.2.0-academic**
 
-## Version 0.2.0-academic
+## What is Sohbet?
 
-This project demonstrates modern full-stack development with:
-- **Backend**: Pure C++ with SQLite, bcrypt, JWT authentication (fully migrated from Node.js)
-- **Frontend**: React with TypeScript, Material-UI components
-- **Architecture**: RESTful API communication between React frontend and pure C++ backend
+Sohbet is a **Turkish-centered academic social media platform** designed to help students connect, collaborate, and learn together. Whether you're looking for study partners, want to join academic discussions, or need help with coursework, Sohbet provides a safe and focused environment for academic networking.
 
-## Quick Start
+### Key Features for Users
 
-### Prerequisites
-- **C++ Environment**: cmake, make, SQLite3, OpenSSL (for backend)
-- **Node.js**: Version 16+ with npm (for frontend only)
+- 🎓 **Academic Profiles** - Connect with students from your university and department
+- 🔒 **Secure & Private** - Your data is protected with industry-standard encryption
+- 💬 **Study Groups** - Create or join groups for collaborative learning (coming soon)
+- 🌐 **Multilingual** - Built with Turkish and international students in mind
+- 📱 **Modern Interface** - Clean, responsive design that works on all devices
 
-### Full Stack Startup
+### For Developers
+
+This project showcases modern full-stack development:
+- **Backend**: Pure C++ with SQLite database, bcrypt password hashing, and JWT authentication
+- **Frontend**: React with TypeScript and Material-UI components
+- **Architecture**: RESTful API for seamless communication between frontend and backend
+
+---
+
+## Getting Started
+
+### Quick Start (Easiest Way)
+
+The fastest way to get Sohbet running on your computer:
+
 ```bash
-# Clone the repository
+# 1. Download Sohbet
 git clone https://github.com/Xivlon/Sohbet.git
 cd Sohbet
 
-# Run both backend and frontend
+# 2. Run the application
 ./start-fullstack.sh
 ```
 
-This will:
-1. Build the pure C++ backend (if needed)
-2. Install React frontend dependencies (if needed)  
-3. Start C++ backend server on port 8080
-4. Start frontend development server on port 3000
-5. Open your browser to http://localhost:3000
+This simple command will:
+1. Set up everything automatically
+2. Start the application
+3. Open Sohbet in your web browser at http://localhost:3000
 
-### Manual Setup
+You can then create an account or use the demo login:
+- **Username**: `demo_student`
+- **Password**: `demo123`
 
-#### Backend Only
+### What You Need (Prerequisites)
+
+Before running Sohbet, make sure you have:
+- **For the backend** (server): cmake, make, SQLite3, OpenSSL
+- **For the frontend** (user interface): Node.js version 16 or higher with npm
+
+### Alternative Setup Options
+
+If you prefer to run components separately:
+
+#### Run Backend Server Only
 ```bash
 mkdir build && cd build
 cmake ..
@@ -44,7 +67,7 @@ make
 ./sohbet
 ```
 
-#### Frontend Only
+#### Run Frontend Only
 ```bash
 cd frontend
 npm install
@@ -53,59 +76,50 @@ npm start
 
 ---
 
-## Backend Migration Status ✅
+## Current Features
 
-**Migration Complete**: The backend has been fully migrated from Node.js to pure C++17. This includes:
+### What You Can Do Now
 
-- ✅ **Complete Node.js Removal**: All Express.js, package.json, and Node.js backend dependencies eliminated
-- ✅ **C++ HTTP Server**: Custom HTTP server implementation with socket programming
-- ✅ **Database Layer**: SQLite integration with RAII wrappers and prepared statements
-- ✅ **Authentication System**: bcrypt password hashing + JWT token generation
-- ✅ **API Endpoints**: Full REST API (`/api/status`, `/api/users`, `/api/login`)
-- ✅ **Build System**: CMake configuration with proper dependency management
-- ✅ **Testing Suite**: Comprehensive unit and integration tests for C++ backend
+#### User Accounts
+- **Create an Account**: Register with your academic information (university, department, year)
+- **Secure Login**: Your password is protected with industry-standard bcrypt encryption
+- **Personal Profile**: Display your academic background and interests
+- **Demo Account**: Try out the platform with our pre-configured demo account
 
-The frontend remains React+TypeScript and communicates with the C++ backend via REST API.
+#### Security & Privacy
+- ✅ **Strong Password Protection**: Passwords are hashed with bcrypt (12 computational rounds)
+- ✅ **Secure Sessions**: JWT token authentication keeps you logged in safely
+- ✅ **Data Protection**: Your sensitive information never appears in API responses
+- ✅ **Input Validation**: All data is checked to prevent malicious inputs
 
----
+### Technical Features (For Developers)
 
-## Features
+#### Backend (C++)
+- User registration with validation and uniqueness checks
+- Secure password hashing with bcrypt
+- JWT token generation for authentication
+- User profile retrieval
+- SQLite database with RAII wrapper and migrations
+- Academic profile fields: username, email, university, department, enrollment year, primary language
 
-### Backend (C++) ✅
-- **User Registration**: `POST /api/users` with validation and uniqueness checks  
-- **Secure Password Hashing**: Production-ready bcrypt implementation (12 rounds)  
-- **User Authentication**: `POST /api/login` with JWT token generation  
-- **User Retrieval**: `GET /api/users/:username` for public profiles  
-- **SQLite Integration**: RAII database wrapper with migrations  
-- **Academic Profile Fields**: `username`, `email`, `university`, `department`, `enrollment_year`, `primary_language`  
-
-### Frontend (React) ✅
-- **Modern UI**: Material-UI components with responsive design
-- **User Authentication**: Login and registration forms with validation
-- **User Dashboard**: Profile display with academic information
-- **Real-time Integration**: Live communication with C++ backend API
-- **Status Display**: Server health monitoring and demo user information
-- **TypeScript**: Type-safe development with comprehensive interfaces
-
-### Phase 1: Foundation & Authentication ✅
-- **User Registration**: `POST /api/users` with validation and uniqueness checks  
-- **Secure Password Hashing**: Production-ready bcrypt implementation (12 rounds)  
-- **User Authentication**: `POST /api/login` with JWT token generation  
-- **User Retrieval**: `GET /api/users/:username` for public profiles  
-- **SQLite Integration**: RAII database wrapper with migrations  
-- **Academic Profile Fields**: `username`, `email`, `university`, `department`, `enrollment_year`, `primary_language`  
-
-### Security Features ✅
-- **bcrypt Password Hashing**: Replaces insecure placeholder implementation  
-- **JWT Authentication**: HS256 signed tokens with expiration  
-- **Password Protection**: No password/hash exposure in API responses  
-- **Input Validation**: Username patterns, email format, password strength  
+#### Frontend (React)
+- Material-UI components with responsive design
+- Login and registration forms with validation
+- User dashboard with profile display
+- Real-time integration with C++ backend
+- Server health monitoring
+- TypeScript for type-safe development
 
 ---
 
-## API Endpoints
+## API Reference (For Developers)
+
+This section is for developers who want to understand how to interact with the Sohbet backend.
 
 ### User Registration
+
+Create a new user account:
+
 ```bash
 POST /api/users
 Content-Type: application/json
@@ -119,7 +133,10 @@ Content-Type: application/json
   "enrollment_year": 2023,
   "primary_language": "Turkish"
 }
-###Response (201 Created):
+```
+
+**Response** (201 Created):
+```json
 {
   "id": 1,
   "username": "ali_student",
@@ -129,7 +146,13 @@ Content-Type: application/json
   "enrollment_year": 2023,
   "primary_language": "Turkish"
 }
-###User Login
+```
+
+### User Login
+
+Authenticate and receive a login token:
+
+```bash
 POST /api/login
 Content-Type: application/json
 
@@ -137,7 +160,10 @@ Content-Type: application/json
   "username": "ali_student",
   "password": "StrongPass123"
 }
-###Response (200 OK):
+```
+
+**Response** (200 OK):
+```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
@@ -146,22 +172,9 @@ Content-Type: application/json
     "email": "ali@example.edu"
   }
 }
-
-### Demo User
-
-For testing purposes, a demo user is automatically created when the server starts:
-
-**Demo Credentials:**
-- Username: `demo_student`
-- Password: `demo123`
-
-**Demo Login Example:**
-```bash
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"username":"demo_student","password":"demo123"}' \
-  http://localhost:8080/api/login
 ```
 
+### User Retrieval
 This returns a valid JWT token and user data for the demo account.
 
 ### Authentication Flow
@@ -202,135 +215,13 @@ Phase 2: Friendships and messaging
 
 Phase 3: News feed and groups
 
-Phase 4: Media uploads and notifications
+Get user profile information:
 
-##Build
-```bash
-mkdir build && cd build
-cmake ..
-make
-./sohbet
-```
-###Run Tests
-```bash
-ctest
-```
-**Dev Notes**
-##.gitignore
-# Shared libraries
-*.so
-*.dylib
-*.exe
-
-# Database files
-*.db
-*.sqlite
-!.gitkeep
-
-# CMake generated files
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-CTestTestfile.cmake
-Testing/
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-Thumbs.db
-
-# Temporary files
-*.tmp
-*.bak
-*~
-.#*
-
-# Log files
-*.log
-
-##CMakeLists.txt
-cmake_minimum_required(VERSION 3.16)
-project(Sohbet VERSION 0.2.0 LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Include FetchContent for external dependencies
-include(FetchContent)
-
-# Fetch bcrypt library
-FetchContent_Declare(
-  bcrypt
-  GIT_REPOSITORY https://github.com/trusch/libbcrypt.git
-  GIT_TAG        master
-)
-FetchContent_MakeAvailable(bcrypt)
-
-# Find packages
-find_package(SQLite3 REQUIRED)
-find_package(OpenSSL REQUIRED)
-
-# Include directories
-include_directories(include)
-include_directories(${CMAKE_BINARY_DIR}/_deps/bcrypt-src/include)
-
-# Source files
-set(SOURCES
-    src/models/user.cpp
-    src/db/database.cpp
-    src/repositories/user_repository.cpp
-    src/utils/hash.cpp
-    src/security/bcrypt_wrapper.cpp
-    src/security/jwt.cpp
-    src/server/server.cpp
-)
-
-# Create library
-add_library(sohbet_lib ${SOURCES})
-target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt OpenSSL::SSL OpenSSL::Crypto)
-target_include_directories(sohbet_lib PUBLIC include)
-
-# Main executable
-add_executable(sohbet src/main.cpp)
-target_link_libraries(sohbet sohbet_lib)
-
-# Enable testing
-enable_testing()
-
-# Test executables
-add_executable(test_user tests/test_user.cpp)
-target_link_libraries(test_user sohbet_lib)
-add_test(NAME UserTest COMMAND test_user)
-
-add_executable(test_user_repository tests/test_user_repository.cpp)
-target_link_libraries(test_user_repository sohbet_lib)
-add_test(NAME UserRepositoryTest COMMAND test_user_repository)
-
-add_executable(test_bcrypt tests/test_bcrypt.cpp)
-target_link_libraries(test_bcrypt bcrypt)
-add_test(NAME BcryptTest COMMAND test_bcrypt)
-
-add_executable(test_authentication tests/test_authentication.cpp)
-target_link_libraries(test_authentication sohbet_lib)
-add_test(NAME AuthenticationTest COMMAND test_authentication)
-
-# Compiler flags
-target_compile_options(sohbet_lib PRIVATE -Wall -Wextra -Wpedantic)
-target_compile_options(sohbet PRIVATE -Wall -Wextra -Wpedantic)
-target_compile_options(test_user PRIVATE -Wall -Wextra -Wpedantic)
-target_compile_options(test_user_repository PRIVATE -Wall -Wextra -Wpedantic)
-target_compile_options(test_bcrypt PRIVATE -Wall -Wextra -Wpedantic)
-target_compile_options(test_authentication PRIVATE -Wall -Wextra -Wpedantic)
-#### User Retrieval
 ```bash
 GET /api/users/:username
 ```
 
-**Response (200 OK):**
+**Response** (200 OK):
 ```json
 {
   "id": 1,
@@ -343,42 +234,63 @@ GET /api/users/:username
 }
 ```
 
-#### Other Endpoints
-- `GET /api/status` - Server status and version
-- `GET /api/users/demo` - Demo user data
+### Other Endpoints
+
+- `GET /api/status` - Server status and version information
+- `GET /api/users/demo` - Demo user data for testing
+
+### Demo User
+
+A demo account is automatically created for testing:
+
+- **Username**: `demo_student`
+- **Password**: `demo123`
+
+**Example:**
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"username":"demo_student","password":"demo123"}' \
+  http://localhost:8080/api/login
+```
 
 ### Error Responses
-- **400 Bad Request**: Invalid input format or validation errors
+
+The API returns standard HTTP status codes:
+- **400 Bad Request**: Invalid input or validation errors
 - **401 Unauthorized**: Invalid credentials
 - **404 Not Found**: User not found
 - **409 Conflict**: Username or email already exists
 - **500 Internal Server Error**: Database or system errors
 
-## Build & Run
+---
 
-### Quick Start
+## Building and Testing (For Developers)
 
-For the fastest setup experience, use the setup script:
+### Using the Setup Script (Recommended)
+
+The easiest way to build and start the server:
 
 ```bash
 ./setup.sh
 ```
 
 This script will:
-- Check prerequisites (CMake, Make, G++, curl)
+- Check that you have all required tools (CMake, Make, G++, curl)
 - Build the C++ backend automatically
 - Start the HTTP server on port 8080
 - Test all API endpoints
-- Provide troubleshooting information
+- Show troubleshooting information if needed
 
 ### Manual Build Process
 
+If you prefer to build manually:
+
 #### Prerequisites
-- CMake 3.16+
-- C++17 compiler (GCC/Clang)
+- CMake 3.16 or higher
+- C++17 compatible compiler (GCC or Clang)
 - SQLite3 development libraries
 - OpenSSL development libraries
-- Make (build-essential)
+- Make (build-essential package)
 
 #### Build Steps
 ```bash
@@ -388,195 +300,216 @@ make
 cd ..
 ```
 
-#### Run Server
+#### Run the Server
 ```bash
 cd build
 ./sohbet
 ```
 
-#### Test Endpoints
+#### Test the API
 ```bash
 curl http://localhost:8080/api/status
 curl http://localhost:8080/api/users/demo
 ```
 
+### Running Tests
+
+To run the automated test suite:
+
+```bash
+cd build
+ctest
+# Or for verbose output:
+ctest -V
+```
+
 ### Full Stack Development
 
-For frontend + backend development:
+To run both backend and frontend together:
 
 ```bash
 ./start-fullstack.sh
 ```
 
-This starts both the C++ backend (port 8080) and React frontend (port 3000) with automatic proxy setup.
+This starts:
+- C++ backend server on port 8080
+- React frontend development server on port 3000
+- Automatic proxy configuration for API calls
 
-### Run Tests
-```bash
-cmake --build build --target test
-```
+---
 
 ## Troubleshooting
 
+Having issues? Here are common problems and solutions:
+
 ### Backend Server Issues
 
-**Problem**: `ECONNREFUSED` error when frontend tries to connect
+#### Problem: Frontend shows "ECONNREFUSED" error
 
-**Solutions**:
-1. **Check if server is running**:
+**Solutions:**
+
+1. **Verify the server is running:**
    ```bash
    curl http://localhost:8080/api/status
    # Should return: {"status":"ok","version":"0.2.0-academic",...}
    ```
 
-2. **Check port availability**:
+2. **Check if port 8080 is in use:**
    ```bash
    lsof -i :8080
-   # Should show sohbet process listening on port 8080
+   # Should show sohbet process
    ```
 
-3. **Restart server**:
+3. **Restart the server:**
    ```bash
-   # Kill existing server
    pkill -f sohbet
-   
-   # Start fresh
    ./setup.sh
    ```
 
-**Problem**: Server fails to start
+#### Problem: Server won't start
 
-**Solutions**:
-1. **Check build status**:
+**Solutions:**
+
+1. **Verify the executable exists:**
    ```bash
    ls -la build/sohbet
    # Should exist and be executable
    ```
 
-2. **Review server logs**:
+2. **Check server logs:**
    ```bash
-   tail -f build/server_output.log  # If using setup.sh
-   # OR run manually to see output:
    cd build && ./sohbet
+   # Watch for error messages
    ```
 
-3. **Check dependencies**:
+3. **Verify dependencies:**
    ```bash
-   ldd build/sohbet  # Check linked libraries
+   ldd build/sohbet
    ```
 
-**Problem**: Permission denied
+#### Problem: Permission denied
 
-**Solutions**:
+**Solution:**
 ```bash
 chmod +x build/sohbet
 chmod +x setup.sh
 ```
 
-**Problem**: Port 8080 already in use
+#### Problem: Port 8080 already in use
 
-**Solutions**:
+**Solutions:**
 ```bash
 # Find what's using port 8080
 lsof -i :8080
 
-# Kill the process (replace PID with actual process ID)
+# Kill the process (replace PID with actual ID)
 kill <PID>
 
-# Or find and kill sohbet processes
+# Or kill all sohbet processes
 pkill -f sohbet
 ```
 
 ### Build Issues
 
-**Problem**: CMake configuration fails
+#### Problem: CMake configuration fails
 
-**Solutions**:
-1. **Install missing dependencies**:
+**Solutions:**
+
+1. **Install missing dependencies:**
+   
+   On Ubuntu/Debian:
    ```bash
-   # Ubuntu/Debian
    sudo apt update
    sudo apt install cmake build-essential libsqlite3-dev libssl-dev
-
-   # macOS (with Homebrew)
+   ```
+   
+   On macOS (with Homebrew):
+   ```bash
    brew install cmake sqlite openssl
    ```
 
-2. **Check CMake version**:
+2. **Check CMake version:**
    ```bash
-   cmake --version  # Should be 3.16+
+   cmake --version  # Should be 3.16 or higher
    ```
 
-3. **Clean build directory**:
+3. **Clean and rebuild:**
    ```bash
    rm -rf build
    mkdir build && cd build
    cmake ..
    ```
 
-**Problem**: Make build fails
+#### Problem: Make build fails
 
-**Solutions**:
-1. **Check compiler version**:
+**Solutions:**
+
+1. **Check compiler version:**
    ```bash
    g++ --version  # Should support C++17
    ```
 
-2. **Clean rebuild**:
+2. **Clean rebuild:**
    ```bash
    cd build
    make clean
    make
    ```
 
-3. **Verbose build to see errors**:
+3. **Verbose build to see detailed errors:**
    ```bash
    make VERBOSE=1
    ```
 
-### Frontend Proxy Issues
+### Frontend Issues
 
-**Problem**: Frontend can't reach backend API
+#### Problem: Frontend can't reach backend API
 
-**Verification**:
-1. **Backend server running**: `curl http://localhost:8080/api/status`
-2. **Frontend proxy configured**: Check `frontend/package.json` has `"proxy": "http://localhost:8080"`
-3. **CORS headers**: Server should return `Access-Control-Allow-Origin: *`
+**Verification Steps:**
 
-**Solution**: Use the full stack startup script:
+1. Backend server is running: `curl http://localhost:8080/api/status`
+2. Frontend proxy is configured: Check `frontend/package.json` for `"proxy": "http://localhost:8080"`
+3. CORS headers are present: Server should return `Access-Control-Allow-Origin: *`
+
+**Solution:**
+
+Use the full stack startup script which handles all configuration:
 ```bash
 ./start-fullstack.sh
 ```
 
-### Testing & Verification
+### Testing the Complete Setup
 
-**Complete endpoint test**:
+Run these commands to verify everything is working:
+
 ```bash
-# GET endpoints
+# Test all endpoints
 curl -v http://localhost:8080/api/status
 curl -v http://localhost:8080/api/users/demo
 
-# POST endpoint
+# Test user registration
 curl -v -X POST -H "Content-Type: application/json" \
   -d '{"username":"test","email":"test@example.edu","password":"TestPass123"}' \
   http://localhost:8080/api/users
-```
 
-**Check server health**:
-```bash
-# Server should respond with status info
+# Check server health (with formatted output)
 curl -s http://localhost:8080/api/status | python3 -m json.tool
 ```
-```bash
-cmake --build build --target test
-```
 
-### Run Server
-```bash
-./build/sohbet
-```
+---
 
-## Security Status ✅
+## Technical Architecture (For Developers)
 
+### System Components
+
+Sohbet is built with a clean separation of concerns:
+
+- **Models**: User data structures with academic profile fields and JSON serialization
+- **Database**: SQLite with RAII wrapper, migrations, and safe query operations
+- **Repositories**: Data access layer providing CRUD operations
+- **Security**: bcrypt password hashing and JWT token management
+- **Server**: HTTP request handlers and API endpoint routing
+- **Utils**: Hashing utilities and input validation helpers
 - **Password Hashing**: Production-ready bcrypt with 12 rounds
 - **Authentication**: JWT tokens with HMAC-SHA256 signatures
 - **Data Protection**: No sensitive data in API responses
@@ -628,83 +561,170 @@ All tests are registered in CMakeLists.txt and run via CTest. Tests use in-memor
 
 ## Architecture
 
-### Components
-- **Models**: User model with academic profile fields and JSON serialization  
-- **Database**: SQLite RAII wrapper with migrations and safe operations  
-- **Repositories**: Data access layer with CRUD operations  
-- **Security**: bcrypt password hashing and JWT token management  
-- **Server**: HTTP request handlers and endpoint routing  
-- **Utils**: Hashing utilities and input validation helpers  
+### Project Structure
 
-### File Structure
 ```
-include/
-├── models/user.h
-├── db/database.h
-├── repositories/user_repository.h
-├── security/bcrypt_wrapper.h
-├── security/jwt.h
-├── server/server.h
-└── utils/hash.h
+Sohbet/
+├── include/              # Header files
+│   ├── models/
+│   │   └── user.h
+│   ├── db/
+│   │   └── database.h
+│   ├── repositories/
+│   │   └── user_repository.h
+│   ├── security/
+│   │   ├── bcrypt_wrapper.h
+│   │   └── jwt.h
+│   ├── server/
+│   │   └── server.h
+│   └── utils/
+│       └── hash.h
+├── src/                  # Source files
+│   ├── models/
+│   │   └── user.cpp
+│   ├── db/
+│   │   └── database.cpp
+│   ├── repositories/
+│   │   └── user_repository.cpp
+│   ├── security/
+│   │   ├── bcrypt_wrapper.cpp
+│   │   └── jwt.cpp
+│   ├── server/
+│   │   └── server.cpp
+│   ├── utils/
+│   │   └── hash.cpp
+│   └── main.cpp
+├── tests/               # Test files
+│   ├── test_user.cpp
+│   ├── test_user_repository.cpp
+│   ├── test_bcrypt.cpp
+│   └── test_authentication.cpp
+├── frontend/            # React frontend
+│   └── src/
+└── docs/                # Additional documentation
 
-src/
-├── models/user.cpp
-├── db/database.cpp
-├── repositories/user_repository.cpp
-├── security/bcrypt_wrapper.cpp
-├── security/jwt.cpp
-├── server/server.cpp
-├── utils/hash.cpp
-└── main.cpp
-
-tests/
-├── test_user.cpp
-├── test_user_repository.cpp  
-├── test_bcrypt.cpp
-└── test_authentication.cpp
 ```
+
+### Dependencies
+
+The project uses these external libraries:
+
+- **SQLite3**: Lightweight database for data storage
+- **bcrypt**: Secure password hashing (fetched via CMake)
+- **OpenSSL**: HMAC-SHA256 signatures for JWT tokens
+
+### Migration History
+
+**Backend Evolution**: The backend has been fully migrated from Node.js to pure C++17:
+
+- ✅ Removed all Node.js dependencies (Express.js, package.json, etc.)
+- ✅ Implemented custom HTTP server with socket programming
+- ✅ Created SQLite integration with RAII patterns
+- ✅ Added bcrypt password hashing and JWT authentication
+- ✅ Built comprehensive REST API
+- ✅ Set up CMake build system
+- ✅ Created full test suite
+
+The frontend remains React+TypeScript and communicates with the C++ backend via REST API.
 
 ---
 
-## Dependencies
-- **SQLite3**: Database storage  
-- **bcrypt**: Secure password hashing (via FetchContent)  
-- **OpenSSL**: HMAC-SHA256 for JWT signatures  
+## Roadmap - What's Coming Next
 
----
+### Phase 1: Foundation & Authentication ✅ COMPLETE
 
-## Roadmap
+- ✅ User registration with validation and uniqueness checks
+- ✅ Secure password hashing (bcrypt, 12 rounds)
+- ✅ User authentication with JWT token generation
+- ✅ SQLite database integration with RAII wrapper
+- ✅ Academic profile fields (username, email, university, department, year, language)
 
-### Phase 1: Foundation & Authentication (Complete)
-- User Registration with validation and uniqueness checks  
-- Secure Password Hashing (bcrypt, 12 rounds)  
-- User Authentication with JWT token generation  
-- SQLite integration with RAII database wrapper and migrations  
-- Academic profile fields (username, email, university, department, enrollment_year, primary_language)  
+### Phase 2: Academic Networking (Planned)
 
-### Phase 2: Course & Study Groups (Planned)
-- Course model with enrollment management  
-- StudyGroup model with membership  
-- Academic networking features  
+- 📝 Course model with enrollment management
+- 📝 Study group creation and membership
+- 📝 Academic networking features
+- 📝 Student-to-student connections
 
 ### Phase 3: Content & Interaction (Planned)
-- Post creation and interaction  
-- Q&A system for academic help  
-- Real-time messaging  
-- Extended user profiles  
+
+- 📝 Post creation and interaction
+- 📝 Q&A system for academic help
+- 📝 Real-time messaging between users
+- 📝 Extended user profiles with interests and skills
 
 ### Phase 4: Advanced Features (Planned)
-- Email verification  
-- Rate limiting and security improvements  
-- File sharing capabilities  
-- Advanced search and filtering  
-- Analytics and insights  
 
+- 📝 Email verification for accounts
+- 📝 Rate limiting and enhanced security
+- 📝 File sharing capabilities for study materials
+- 📝 Advanced search and filtering
+- 📝 Analytics and insights dashboard
 
 ---
 
 ## Contributing
-This is an academic project focused on learning C++ backend development patterns and security practices. Contributions are welcome, but please note this is not intended for production deployment without further hardening.
 
-## License
-Educational use only — not intended for production deployment without additional security auditing.
+Sohbet is an **academic project** designed for learning C++ backend development and security practices. 
+
+**We welcome contributions**, but please keep in mind:
+- This project is focused on educational purposes
+- It's not intended for production deployment without additional security hardening
+- Contributions should maintain the educational value of the codebase
+
+**How to Contribute:**
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with clear commit messages
+4. Test your changes thoroughly
+5. Submit a pull request with a description of your changes
+
+---
+
+## License and Usage
+
+**Educational Use Only**
+
+This project is intended for educational and learning purposes. It demonstrates modern software development practices but is **not production-ready** without additional security auditing and hardening.
+
+**Key Points:**
+- ✅ Free to use for learning and educational projects
+- ✅ Feel free to study and modify the code
+- ⚠️ Not recommended for production deployment without security review
+- ⚠️ Use at your own risk
+
+---
+
+## Additional Resources
+
+### Documentation Files
+
+- **[3rd-Party Service Integration.md](3rd-Party Service Integration.md)** - Information about voice/video integration with Murmur
+- **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Summary of the Murmur integration implementation
+- **[docs/ACADEMIC_FEATURES.md](docs/ACADEMIC_FEATURES.md)** - Details about academic features and future enhancements
+- **[docs/VOICE_INTEGRATION.md](docs/VOICE_INTEGRATION.md)** - Developer guide for voice integration
+- **[frontend/README.md](frontend/README.md)** - Frontend-specific documentation
+
+### Getting Help
+
+If you run into issues or have questions:
+
+1. **Check the Troubleshooting section** above
+2. **Review the documentation files** for detailed information
+3. **Check existing GitHub issues** for similar problems
+4. **Create a new issue** with:
+   - Clear description of the problem
+   - Steps to reproduce
+   - Your system information (OS, compiler version, etc.)
+   - Error messages or logs
+
+### Contact
+
+This is an open-source educational project. For questions or collaboration:
+- Open an issue on GitHub
+- Check the documentation
+- Review the code and tests for examples
+
+---
+
+**Thank you for your interest in Sohbet!** 🎓
