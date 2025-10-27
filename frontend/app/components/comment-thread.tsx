@@ -72,7 +72,18 @@ export function CommentThread({ postId, currentUserId }: CommentThreadProps) {
         },
       })
       if (response.ok) {
-        setComments(comments.filter(c => c.id !== commentId))
+        // Remove the comment and all its replies
+        const removeCommentAndReplies = (comments: Comment[], idToRemove: number): Comment[] => {
+          const filtered = comments.filter(c => c.id !== idToRemove)
+          // Find and remove all replies to this comment
+          const replyIds = comments.filter(c => c.parent_id === idToRemove).map(c => c.id)
+          let result = filtered
+          for (const replyId of replyIds) {
+            result = removeCommentAndReplies(result, replyId)
+          }
+          return result
+        }
+        setComments(removeCommentAndReplies(comments, commentId))
       }
     } catch (error) {
       console.error('Error deleting comment:', error)

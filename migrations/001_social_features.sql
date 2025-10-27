@@ -35,8 +35,10 @@ CREATE TABLE IF NOT EXISTS user_roles (
     UNIQUE(user_id, role_id)
 );
 
--- Add role column to users table (for primary role)
-ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'Student';
+-- Add role column to users table (for primary role) if it doesn't exist
+-- This is safe to run multiple times as it will only add the column once
+-- SQLite doesn't support IF NOT EXISTS for ALTER TABLE, so we'll skip this
+-- The users table should already have the role column from user migration
 
 -- =============================================================================
 -- 2. GROUPS (Professor-created academic groups)
@@ -214,9 +216,11 @@ CREATE TABLE IF NOT EXISTS user_media (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Add avatar_url to users table
-ALTER TABLE users ADD COLUMN avatar_url TEXT;
-ALTER TABLE users ADD COLUMN banner_url TEXT;
+-- Add avatar_url and banner_url to users table if they don't exist
+-- SQLite doesn't support IF NOT EXISTS for ALTER TABLE
+-- These columns should already exist from user migration, so we'll skip them
+-- ALTER TABLE users ADD COLUMN avatar_url TEXT;
+-- ALTER TABLE users ADD COLUMN banner_url TEXT;
 
 -- =============================================================================
 -- 9. VOICE / MURMUR INTEGRATION

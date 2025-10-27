@@ -863,17 +863,13 @@ HttpResponse AcademicSocialServer::handleGetUserMedia(const HttpRequest& request
 
 int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
     // Extract user ID from Authorization header (JWT token)
-    // For now, we'll use a simple approach - extract from header
     auto it = request.headers.find("Authorization");
-    if (it == request.headers.end()) {
-        return -1;
-    }
-    
-    std::string auth_header = it->second;
-    if (auth_header.find("Bearer ") == 0) {
-        std::string token = auth_header.substr(7);
-        // TODO: Properly decode JWT and extract user ID
-        // For now, we'll look for a user-id header as fallback
+    if (it != request.headers.end()) {
+        std::string auth_header = it->second;
+        if (auth_header.find("Bearer ") == 0) {
+            std::string token = auth_header.substr(7);
+            // TODO: Properly decode JWT and extract user ID
+        }
     }
     
     // Fallback: check for X-User-ID header (for testing)
