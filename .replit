@@ -1,10 +1,10 @@
-modules = ["cpp-clang14", "nodejs-20", "bash"]
+modules = ["cpp-clang14", "nodejs-20", "bash", "python-3.11", "postgresql-16"]
 [agent]
 expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["cmake", "sqlite", "openssl", "pkg-config"]
+packages = ["cargo", "cmake", "libiconv", "openssl", "pkg-config", "rustc", "sqlite"]
 
 [workflows]
 runButton = "Project"
