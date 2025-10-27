@@ -2,6 +2,7 @@
  * WebSocket Service for real-time communication
  * Manages WebSocket connections, message handling, and reconnection logic
  */
+'use client';
 
 export type WebSocketMessageType = 
   | 'chat:send'
@@ -30,7 +31,9 @@ class WebSocketService {
 
   constructor(url?: string) {
     // Default to localhost WebSocket server on port 8081
-    this.url = url || `ws://${window.location.hostname}:8081`;
+    // Only access window on client-side
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    this.url = url || `ws://${hostname}:8081`;
   }
 
   /**

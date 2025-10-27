@@ -62,13 +62,24 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
       - Server fails fast if secret is not configured (prevents accidental insecure deployment)
       - Documentation: `SECURITY_UPDATE.md` and `.env.example`
     - 🎨 **Frontend UI Components**: Created missing Radix UI wrapper components
-      - Added `dialog.tsx`, `label.tsx`, `skeleton.tsx` to `frontend/app/components/ui/`
-      - Installed dependencies: `@radix-ui/react-dialog`, `@radix-ui/react-label`
+      - Added `dialog.tsx`, `label.tsx`, `skeleton.tsx`, `dropdown-menu.tsx` to `frontend/app/components/ui/`
+      - Installed dependencies: `@radix-ui/react-dialog`, `@radix-ui/react-label`, `@radix-ui/react-dropdown-menu`
       - Components follow existing shadcn/Radix UI patterns
     - 🔧 **Import Path Corrections**: Fixed inconsistent import paths
       - Updated `messages/page.tsx`, `chat-window.tsx`, `chat-list.tsx`
       - Standardized all UI component imports to `@/app/components/ui/...`
       - Resolved Next.js build module resolution errors
+    - ✅ **Frontend Build Resolution** (October 27, 2025):
+      - Fixed TypeScript compilation errors in 10+ component files
+      - `calendar.tsx`: Updated for react-day-picker v9 API (IconLeft/IconRight → Chevron)
+      - `chart.tsx`: Fixed Recharts payload typing for tooltip and legend components
+      - `select.tsx`: Corrected Radix UI import (@radix-ui/react-scroll-area)
+      - `resizable.tsx` & `sonner.tsx`: Removed hardcoded package version numbers
+      - `api-client.ts`: Fixed HeadersInit typing (changed to Record<string, string>)
+      - **SSR Fix**: Added `'use client'` to `api-client.ts` and `websocket-service.ts`
+      - **SSR Fix**: Added `export const dynamic = 'force-dynamic'` to `layout.tsx`
+      - All window access now properly guarded with `typeof window !== 'undefined'`
+      - **Build Status**: ✓ Production build passing, all workflows running successfully
 
 ## Project Architecture
 
