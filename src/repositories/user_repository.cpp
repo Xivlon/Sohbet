@@ -28,6 +28,9 @@ bool UserRepository::migrate() {
             warnings INTEGER DEFAULT 0,
             primary_language TEXT,
             additional_languages TEXT,
+            role TEXT DEFAULT 'Student',
+            avatar_url TEXT,
+            banner_url TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     )";
@@ -89,7 +92,7 @@ std::optional<User> UserRepository::findByUsername(const std::string& username) 
     const std::string sql = R"(
         SELECT id, username, email, password_hash, name, position, phone_number,
                university, department, enrollment_year, warnings, 
-               primary_language, additional_languages, created_at
+               primary_language, additional_languages, role, avatar_url, banner_url, created_at
         FROM users WHERE username = ?
     )";
 
@@ -111,7 +114,7 @@ std::optional<User> UserRepository::findByEmail(const std::string& email) {
     const std::string sql = R"(
         SELECT id, username, email, password_hash, name, position, phone_number,
                university, department, enrollment_year, warnings,
-               primary_language, additional_languages, created_at
+               primary_language, additional_languages, role, avatar_url, banner_url, created_at
         FROM users WHERE email = ?
     )";
 
@@ -133,7 +136,7 @@ std::optional<User> UserRepository::findById(int id) {
     const std::string sql = R"(
         SELECT id, username, email, password_hash, name, position, phone_number,
                university, department, enrollment_year, warnings,
-               primary_language, additional_languages, created_at
+               primary_language, additional_languages, role, avatar_url, banner_url, created_at
         FROM users WHERE id = ?
     )";
 
@@ -167,7 +170,7 @@ std::vector<User> UserRepository::findAll(int limit, int offset) {
     const std::string sql = R"(
         SELECT id, username, email, password_hash, name, position, phone_number,
                university, department, enrollment_year, warnings,
-               primary_language, additional_languages, created_at
+               primary_language, additional_languages, role, avatar_url, banner_url, created_at
         FROM users
         ORDER BY id
         LIMIT ? OFFSET ?
@@ -278,6 +281,15 @@ User UserRepository::userFromStatement(db::Statement& stmt) {
 
     std::string created = stmt.getText(13);
     if (!created.empty()) user.setCreatedAt(created);
+
+    std::string role = stmt.getText(14);
+    if (!role.empty()) user.setRole(role);
+
+    std::string avatar_url = stmt.getText(15);
+    if (!avatar_url.empty()) user.setAvatarUrl(avatar_url);
+
+    std::string banner_url = stmt.getText(16);
+    if (!banner_url.empty()) user.setBannerUrl(banner_url);
 
     return user;
 }
