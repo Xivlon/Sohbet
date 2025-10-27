@@ -1,0 +1,744 @@
+*Kate-Neo IDE Development Master Plan*
+Project Overview
+
+Vision: Create a high-performance, extensible IDE with modern development workflows and exceptional user experience.
+
+Core Principles:
+
+    Performance-first architecture
+
+    Cross-platform compatibility
+
+    Extensible through plugins
+
+    Developer ergonomics focus
+
+    Open and community-driven
+
+Current Repository Structure
+text
+
+kate-neo/
+├── client/                 # React/TypeScript frontend
+├── server/                 # Rust backend
+├── shared/                 # Shared types/interfaces
+├── Cargo.toml
+├── package.json
+└── README.md
+
+Phase 1: Foundation & Core Architecture
+1.1 Kate Engine Integration
+
+Implementation Details:
+
+(rust)
+
+// server/src/kate_engine/mod.rs
+pub struct KateEngine {
+    workspace: WorkspaceManager,
+    documents: DocumentManager,
+    fs: FileSystem,
+    event_bus: EventBus,
+}
+
+impl KateEngine {
+    pub fn new(workspace_path: PathBuf) -> Result<Self> {
+        // Initialize core subsystems
+        let fs = FileSystem::new(workspace_path);
+        let documents = DocumentManager::new();
+        let workspace = WorkspaceManager::new(fs.clone());
+        let event_bus = EventBus::new();
+        
+        Ok(Self { workspace, documents, fs, event_bus })
+    }
+    
+    pub fn open_document(&mut self, path: PathBuf) -> Result<DocumentHandle> {
+        // Implementation for opening and tracking documents
+    }
+    
+    pub fn create_editor_session(&self) -> EditorSession {
+        // Create a new editing context
+    }
+}
+
+Integration Points:
+
+    Document lifecycle management
+
+    File system watchers
+
+    Workspace configuration loading
+
+    Editor state persistence
+
+1.2 LSP Deep Integration
+
+Architecture:
+typescript
+
+// client/src/lsp/LSPManager.ts
+export class LSPManager {
+    private servers: Map<string, LanguageServer>;
+    private client: LSPClient;
+    
+    async initializeServer(languageId: string): Promise<void> {
+        // Start language server process
+        // Establish JSON-RPC connection
+        // Initialize capabilities
+    }
+    
+    async provideCompletions(
+        document: TextDocument, 
+        position: Position
+    ): Promise<CompletionItem[]> {
+        // Bridge between Monaco and LSP
+    }
+}
+
+(rust)
+// server/src/lsp/mod.rs
+pub struct LSPService {
+    servers: HashMap<String, Box<dyn LanguageServer>>,
+    capabilities: ServerCapabilities,
+}
+
+impl LSPService {
+    pub async fn send_request<T: LSPRequest>(
+        &self, 
+        language: &str, 
+        request: T
+    ) -> Result<T::Response> {
+        // Route LSP requests to appropriate server
+    }
+    
+    pub fn handle_did_open(&mut self, document: TextDocumentItem) {
+        // Notify language servers of document changes
+    }
+}
+
+Key Features to Implement:
+
+    Completion providers with detailed information
+
+    Hover tooltips with type information
+
+    Diagnostic reporting and squiggles
+
+    Document formatting and code actions
+
+    Signature help and parameter hints
+
+    Document symbols and outline
+
+1.3 Tree-sitter Integration
+
+Implementation Strategy:
+(rust)
+// server/src/tree_sitter/mod.rs
+pub struct TreeSitterService {
+    parsers: HashMap<String, Parser>,
+    queries: HashMap<String, Query>,
+}
+
+impl TreeSitterService {
+    pub fn parse_document(&self, text: &str, language: &str) -> Result<SyntaxTree> {
+        let parser = self.get_parser(language)?;
+        parser.parse(text, None)
+            .ok_or_else(|| Error::msg("Failed to parse"))
+    }
+    
+    pub fn highlight_syntax(
+        &self, 
+        tree: &SyntaxTree, 
+        theme: &Theme
+    ) -> Vec<Highlight> {
+        // Generate syntax highlights using tree queries
+    }
+    
+    pub fn get_outline(&self, tree: &SyntaxTree) -> Vec<DocumentSymbol> {
+        // Extract document structure for outline view
+    }
+}
+
+Tree-sitter Queries:
+scheme
+
+; highlights.scm
+(function_definition
+  name: (identifier) @function)
+
+(class_definition
+  name: (identifier) @class)
+
+(call
+  function: (identifier) @function.call)
+
+1.4 Frontend Component System
+
+Core Components:
+typescript
+
+// client/src/components/Workspace.tsx
+export const Workspace: React.FC = () => {
+  const [panels, setPanels] = usePanelState();
+  const [editors, setEditors] = useEditorState();
+  
+  return (
+    <div className="workspace">
+      <Sidebar panels={panels} />
+      <EditorArea editors={editors} />
+      <StatusBar />
+      <CommandPalette />
+    </div>
+  );
+};
+
+// client/src/components/FileExplorer.tsx
+export const FileExplorer: React.FC = () => {
+  const [fileTree, setFileTree] = useFileTree();
+  const { openFile } = useWorkspace();
+  
+  return (
+    <VirtualizedTree
+      items={fileTree}
+      onSelect={openFile}
+      renderItem={FileTreeNode}
+    />
+  );
+};
+
+Phase 2: Essential IDE Features
+2.1 Debugging System (DAP Integration)
+
+Architecture:
+(rust)
+
+// server/src/debug/mod.rs
+pub struct DebugAdapterManager {
+    adapters: HashMap<String, DebugAdapter>,
+    sessions: HashMap<DebugSessionId, DebugSession>,
+}
+
+pub struct DebugSession {
+    id: DebugSessionId,
+    adapter: DebugAdapter,
+    state: DebugState,
+    breakpoints: Vec<Breakpoint>,
+}
+
+impl DebugSession {
+    pub async fn set_breakpoints(
+        &mut self,
+        source: Source,
+        breakpoints: Vec<SourceBreakpoint>,
+    ) -> Result<Vec<Breakpoint>> {
+        // Send breakpoints to debug adapter
+    }
+    
+    pub async fn continue_execution(&mut self) -> Result<()> {
+        // Resume program execution
+    }
+}
+
+Frontend Debug UI:
+typescript
+
+// client/src/debug/DebugSession.ts
+export class DebugSession {
+    private connection: DAPConnection;
+    private state: DebugState;
+    
+    async start(config: DebugConfiguration): Promise<void> {
+        // Launch debug adapter
+        // Initialize debug session
+        // Set initial breakpoints
+    }
+    
+    async onBreakpointHit(threadId: number): Promise<void> {
+        // Update UI with stack trace, variables, etc.
+        this.emit('stopped', { threadId });
+    }
+}
+
+2.2 Version Control Integration
+
+Git Integration:
+(rust)
+
+// server/src/git/mod.rs
+pub struct GitService {
+    repo: Option<git2::Repository>,
+    watcher: FileWatcher,
+}
+
+impl GitService {
+    pub fn get_status(&self) -> Result<Vec<FileStatus>> {
+        // Get changed files, staged files, etc.
+    }
+    
+    pub async fn get_file_diff(&self, path: &Path) -> Result<String> {
+        // Generate unified diff for file
+    }
+    
+    pub fn stage_file(&self, path: &Path) -> Result<()> {
+        // Stage specific file
+    }
+}
+
+UI Components:
+typescript
+
+// client/src/components/SourceControl.tsx
+export const SourceControl: React.FC = () => {
+  const { changes, staged, branches } = useGit();
+  const { stageFile, commit, checkoutBranch } = useGitActions();
+  
+  return (
+    <div className="source-control">
+      <BranchSelector branches={branches} onChange={checkoutBranch} />
+      <ChangesList changes={changes} onStage={stageFile} />
+      <StagedChanges changes={staged} />
+      <CommitBox onCommit={commit} />
+    </div>
+  );
+};
+
+2.3 Terminal Integration
+
+Implementation:
+(rust)
+
+// server/src/terminal/mod.rs
+pub struct TerminalService {
+    sessions: HashMap<TerminalId, TerminalSession>,
+    pty_manager: PtyManager,
+}
+
+pub struct TerminalSession {
+    id: TerminalId,
+    pty: Pty,
+    title: String,
+    dimensions: TerminalDimensions,
+}
+
+impl TerminalService {
+    pub fn create_session(
+        &mut self,
+        shell: Option<String>,
+        env: HashMap<String, String>,
+    ) -> Result<TerminalId> {
+        // Spawn new terminal process
+        // Setup PTY with correct dimensions
+    }
+    
+    pub fn resize_session(
+        &mut self,
+        id: TerminalId,
+        dimensions: TerminalDimensions,
+    ) -> Result<()> {
+        // Handle terminal resize
+    }
+}
+
+Phase 3: Advanced Features & Polish
+3.1 Extension System
+
+Extension API Design:
+typescript
+
+// shared/types/extension.ts
+export interface ExtensionAPI {
+    readonly workspace: WorkspaceAPI;
+    readonly languages: LanguageAPI;
+    readonly window: WindowAPI;
+    readonly commands: CommandAPI;
+}
+
+export interface ContributionPoint {
+    activate(api: ExtensionAPI): void;
+    deactivate(): void;
+}
+
+// Example extension
+export class GitExtension implements ContributionPoint {
+    activate(api: ExtensionAPI) {
+        api.workspace.registerFileSystemProvider('git', new GitFS());
+        api.languages.registerCodeLensProvider(['*'], new GitLensProvider());
+    }
+}
+
+Extension Host:
+(rust)
+
+// server/src/extensions/host.rs
+pub struct ExtensionHost {
+    extensions: HashMap<String, Box<dyn Extension>>,
+    api: ExtensionAPI,
+}
+
+impl ExtensionHost {
+    pub fn load_extension(&mut self, manifest: ExtensionManifest) -> Result<()> {
+        // Load extension WASM or JS bundle
+        // Initialize extension context
+        // Activate contribution points
+    }
+    
+    pub fn execute_command(
+        &self, 
+        command: String, 
+        args: Vec<Value>
+    ) -> Result<Value> {
+        // Route command to appropriate extension
+    }
+}
+
+3.2 Performance Optimization
+
+Large File Handling:
+(rust)
+
+// server/src/documents/large_file.rs
+pub struct LargeFileManager {
+    chunk_size: usize,
+    line_offsets: Vec<usize>,
+}
+
+impl LargeFileManager {
+    pub fn get_chunk(&self, start_line: usize, line_count: usize) -> TextChunk {
+        // Return only visible portion of large file
+        // Implement incremental loading
+    }
+    
+    pub fn find_line_offset(&self, line: usize) -> Option<usize> {
+        // Binary search through line offsets
+    }
+}
+
+Virtualized UI Components:
+typescript
+
+// client/src/components/VirtualizedTree.tsx
+export const VirtualizedTree: React.FC<VirtualizedTreeProps> = ({
+  items,
+  height,
+  itemHeight,
+  renderItem,
+}) => {
+  const [scrollTop, setScrollTop] = useState(0);
+  const visibleRange = calculateVisibleRange(items.length, height, itemHeight, scrollTop);
+  
+  return (
+    <div onScroll={handleScroll} style={{ height }}>
+      <div style={{ height: totalHeight }}>
+        {visibleRange.map(index => (
+          <div key={index} style={{ transform: `translateY(${index * itemHeight}px)` }}>
+            {renderItem(items[index])}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+Phase 4: Production Ready
+4.1 Settings & Configuration
+
+Configuration Schema:
+json
+
+{
+  "$schema": "./kate-schema.json",
+  "editor": {
+    "fontSize": 14,
+    "fontFamily": "Fira Code",
+    "lineNumbers": "relative",
+    "minimap": {
+      "enabled": true,
+      "maxColumn": 120
+    }
+  },
+  "languages": {
+    "rust": {
+      "clippy": {
+        "enabled": true,
+        "allFeatures": true
+      }
+    }
+  },
+  "extensions": {
+    "autoUpdate": true,
+    "allowedIds": ["*"]
+  }
+}
+
+Settings Management:
+(rust)
+
+// server/src/settings/mod.rs
+pub struct SettingsManager {
+    global: Settings,
+    workspace: HashMap<PathBuf, Settings>,
+    schema: JsonSchema,
+}
+
+impl SettingsManager {
+    pub fn update_setting<T: Serialize>(
+        &mut self,
+        key: &str,
+        value: T,
+        scope: SettingsScope,
+    ) -> Result<()> {
+        // Validate against schema
+        // Update appropriate config layer
+        // Notify subscribers of change
+    }
+    
+    pub fn get_setting<T: DeserializeOwned>(&self, key: &str) -> Option<T> {
+        // Merge settings from different scopes
+        // Return typed value
+    }
+}
+
+4.2 Internationalization
+
+Implementation:
+(rust)
+
+// server/src/i18n/mod.rs
+pub struct I18nService {
+    locale: Locale,
+    bundles: HashMap<String, FluentBundle>,
+}
+
+impl I18nService {
+    pub fn t(&self, message_id: &str, args: Option<FluentArgs>) -> String {
+        // Look up translated message
+        // Format with arguments
+    }
+    
+    pub fn set_locale(&mut self, locale: Locale) -> Result<()> {
+        // Load appropriate translation bundle
+        // Notify UI of locale change
+    }
+}
+
+Testing Strategy
+Automated Testing Pyramid
+
+Unit Tests (Rust):
+rust
+
+// server/src/documents/mod_test.rs
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_document_open() {
+        let mut manager = DocumentManager::new();
+        let doc = manager.open(Path::new("test.rs"), "fn main() {}");
+        assert!(doc.is_ok());
+    }
+    
+    #[tokio::test]
+    async fn test_lsp_completion() {
+        let lsp = LSPService::new();
+        let completions = lsp.get_completions("test.rs", Position::new(0, 0)).await;
+        assert!(completions.is_ok());
+    }
+}
+
+Integration Tests:
+
+(rust)
+
+// tests/integration/workspace_test.rs
+#[tokio::test]
+async fn test_workspace_operations() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let workspace = WorkspaceManager::new(temp_dir.path());
+    
+    // Test file operations across multiple components
+}
+
+E2E Tests (Playwright):
+typescript
+
+// tests/e2e/editor.test.ts
+test('should open file and show syntax highlighting', async ({ page }) => {
+  await page.goto('/');
+  await page.click('[data-testid="file-explorer"]');
+  await page.dblclick('test.py');
+  
+  await expect(page.locator('.monaco-editor')).toBeVisible();
+  await expect(page.locator('.syntax-highlight.function')).toHaveCount(1);
+});
+
+Performance Benchmarks
+
+Key Metrics to Track:
+
+    Startup time (cold/warm)
+
+    Memory usage per document
+
+    LSP request latency
+
+    UI responsiveness (FPS)
+
+    Large file scrolling performance
+
+Benchmark Suite:
+
+(rust)
+
+// benchmarks/startup_benchmark.rs
+#[divan::bench]
+fn startup_benchmark(bencher: divan::Bencher) {
+    bencher.bench(|| {
+        let app = KateApp::new();
+        app.initialize()
+    });
+}
+
+Deployment & Distribution
+Packaging Strategy
+
+Platform-specific Packages:
+
+    Windows: MSI installer + portable zip
+
+    macOS: .app bundle + Homebrew cask
+
+    Linux: AppImage, Snap, Flatpak, DEB/RPM
+
+Auto-update Mechanism:
+
+(rust)
+
+// server/src/updater/mod.rs
+pub struct UpdateService {
+    current_version: Version,
+    channel: UpdateChannel,
+}
+
+impl UpdateService {
+    pub async fn check_for_updates(&self) -> Result<Option<Update>> {
+        // Query update server
+        // Compare versions
+        // Download update if available
+    }
+    
+    pub async fn apply_update(&self, update: Update) -> Result<()> {
+        // Verify update signature
+        // Apply update
+        // Restart application
+    }
+}
+
+Community & Ecosystem
+Extension Development Kit
+
+Template Repository:
+text
+
+kate-extension-template/
+├── src/
+│   ├── extension.ts
+│   └── contributions/
+├── package.json
+├── kate-extension.json
+└── README.md
+
+Development Tools:
+
+    Extension debugger
+
+    Hot reload for extensions
+
+    API documentation generator
+
+    Extension validator
+
+Contribution Guidelines
+
+Development Workflow:
+
+    Fork repository
+
+    Create feature branch
+
+    Follow coding standards
+
+    Add tests for new features
+
+    Submit PR with detailed description
+
+Code Standards:
+
+    Rust: Follow Rustfmt and Clippy
+
+    TypeScript: ESLint + Prettier
+
+    Commit messages: Conventional commits
+
+    Documentation: Comprehensive doc comments
+
+Timeline & Milestones
+Milestone 1: Basic Editor (Month 1-2)
+
+    Kate engine core integration
+
+    Basic text editing with Monaco
+
+    File explorer
+
+    Syntax highlighting with Tree-sitter
+
+Milestone 2: LSP Integration (Month 3-4)
+
+    Language server lifecycle
+
+    Completion, hover, diagnostics
+
+    Basic debugging support
+
+    Git integration
+
+Milestone 3: Polish & Performance (Month 5-6)
+
+    Extension system
+
+    Settings UI
+
+    Performance optimizations
+
+    Theme system
+
+Milestone 4: Production Ready (Month 7-8)
+
+    Comprehensive testing
+
+    Packaging and distribution
+
+    Documentation
+
+    Extension marketplace
+
+Risk Assessment & Mitigation
+
+Technical Risks:
+
+    Performance bottlenecks: Regular profiling, optimization sprints
+
+    Cross-platform issues: CI testing on all platforms, early user testing
+
+    LSP protocol complexity: Focus on most used features first, gradual implementation
+
+Project Risks:
+
+    Scope creep: Strict prioritization, MVP focus
+
+    Community engagement: Regular updates, good documentation, responsive issue handling
+
+This master plan provides a comprehensive roadmap for developing Kate-Neo into a production-ready IDE. The phased approach ensures steady progress while maintaining code quality and user experience focus.
