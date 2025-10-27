@@ -67,6 +67,20 @@ public:
      * @return true if exists, false otherwise
      */
     bool emailExists(const std::string& email);
+    
+    /**
+     * Find all users with pagination
+     * @param limit Maximum number of users to return
+     * @param offset Number of users to skip
+     * @return Vector of User objects
+     */
+    std::vector<User> findAll(int limit = 50, int offset = 0);
+    
+    /**
+     * Count total number of users
+     * @return Total count of users in database
+     */
+    int countAll();
 
 private:
     std::shared_ptr<db::Database> database_;

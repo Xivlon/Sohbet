@@ -158,6 +158,50 @@ bool UserRepository::emailExists(const std::string& email) {
     return findByEmail(email).has_value();
 }
 
+// Find all users with pagination
+std::vector<User> UserRepository::findAll(int limit, int offset) {
+    std::vector<User> users;
+    
+    if (!database_ || !database_->isOpen()) return users;
+
+    const std::string sql = R"(
+        SELECT id, username, email, password_hash, name, position, phone_number,
+               university, department, enrollment_year, warnings,
+               primary_language, additional_languages, created_at
+        FROM users
+        ORDER BY id
+        LIMIT ? OFFSET ?
+    )";
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return users;
+
+    stmt.bindInt(1, limit);
+    stmt.bindInt(2, offset);
+
+    while (stmt.step() == SQLITE_ROW) {
+        users.push_back(userFromStatement(stmt));
+    }
+
+    return users;
+}
+
+// Count total number of users
+int UserRepository::countAll() {
+    if (!database_ || !database_->isOpen()) return 0;
+
+    const std::string sql = "SELECT COUNT(*) FROM users";
+    db::Statement stmt(*database_, sql);
+    
+    if (!stmt.isValid()) return 0;
+    
+    if (stmt.step() == SQLITE_ROW) {
+        return stmt.getInt(0);
+    }
+    
+    return 0;
+}
+
 // Build User object from a DB row
 User UserRepository::userFromStatement(db::Statement& stmt) {
     User user;

@@ -92,6 +92,7 @@ private:
     
     // Route handlers
     HttpResponse handleStatus(const HttpRequest& request);
+    HttpResponse handleGetUsers(const HttpRequest& request);
     HttpResponse handleUsersDemo(const HttpRequest& request);
     HttpResponse handleCreateUser(const HttpRequest& request);
     HttpResponse handleLogin(const HttpRequest& request);
