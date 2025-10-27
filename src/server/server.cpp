@@ -5,6 +5,7 @@
 #include "utils/hash.h"
 #include "utils/multipart_parser.h"
 #include <iostream>
+#include <fstream>
 #include <regex>
 #include <sstream>
 #include <cstring>
@@ -34,6 +35,21 @@ bool AcademicSocialServer::initialize() {
     if (!user_repository_->migrate()) {
         std::cerr << "Failed to run database migrations" << std::endl;
         return false;
+    }
+    
+    // Run social features migration if needed
+    std::ifstream migration_file("migrations/001_social_features.sql");
+    if (migration_file.is_open()) {
+        std::stringstream buffer;
+        buffer << migration_file.rdbuf();
+        std::string migration_sql = buffer.str();
+        migration_file.close();
+        
+        if (!database_->execute(migration_sql)) {
+            std::cerr << "Warning: Social features migration failed (may already be applied)" << std::endl;
+        } else {
+            std::cout << "Social features migration applied successfully" << std::endl;
+        }
     }
 
     // Ensure demo user exists for demo/testing purposes
@@ -137,18 +153,73 @@ bool AcademicSocialServer::initializeSocket() {
 }
 
 void AcademicSocialServer::handleClient(int client_socket) {
-    const int BUFFER_SIZE = 4096;
-    char buffer[BUFFER_SIZE];
+    const int INITIAL_BUFFER_SIZE = 8192;
+    std::vector<char> buffer(INITIAL_BUFFER_SIZE);
+    std::string raw_request;
     
-    // Read request
-    ssize_t bytes_read = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-    if (bytes_read <= 0) {
+    // Read request data
+    ssize_t total_bytes = 0;
+    ssize_t bytes_read;
+    
+    while ((bytes_read = recv(client_socket, buffer.data() + total_bytes, 
+                               buffer.size() - total_bytes, 0)) > 0) {
+        total_bytes += bytes_read;
+        
+        // Check if we've read the headers (look for \r\n\r\n)
+        std::string current_data(buffer.data(), total_bytes);
+        size_t headers_end = current_data.find("\r\n\r\n");
+        
+        if (headers_end != std::string::npos) {
+            // Parse headers to get Content-Length
+            std::istringstream header_stream(current_data.substr(0, headers_end));
+            std::string line;
+            size_t content_length = 0;
+            bool has_content_length = false;
+            
+            while (std::getline(header_stream, line)) {
+                if (line.find("Content-Length:") == 0) {
+                    std::string length_str = line.substr(15);
+                    // Trim whitespace
+                    length_str.erase(0, length_str.find_first_not_of(" \t\r\n"));
+                    length_str.erase(length_str.find_last_not_of(" \t\r\n") + 1);
+                    content_length = std::stoull(length_str);
+                    has_content_length = true;
+                    break;
+                }
+            }
+            
+            if (has_content_length) {
+                size_t expected_total = headers_end + 4 + content_length; // +4 for \r\n\r\n
+                
+                // Resize buffer if needed
+                if (expected_total > buffer.size()) {
+                    buffer.resize(expected_total);
+                }
+                
+                // Keep reading until we have all the data
+                while (total_bytes < static_cast<ssize_t>(expected_total)) {
+                    bytes_read = recv(client_socket, buffer.data() + total_bytes,
+                                     expected_total - total_bytes, 0);
+                    if (bytes_read <= 0) break;
+                    total_bytes += bytes_read;
+                }
+            }
+            
+            break; // We have the full request
+        }
+        
+        // Expand buffer if needed
+        if (total_bytes >= static_cast<ssize_t>(buffer.size())) {
+            buffer.resize(buffer.size() * 2);
+        }
+    }
+    
+    if (total_bytes <= 0) {
         close(client_socket);
         return;
     }
     
-    buffer[bytes_read] = '\0';
-    std::string raw_request(buffer);
+    raw_request = std::string(buffer.data(), total_bytes);
     
     // Parse HTTP request
     HttpRequest request = parseHttpRequest(raw_request);
