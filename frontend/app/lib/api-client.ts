@@ -295,6 +295,11 @@ class ApiClient {
     });
   }
 
+  // Users API
+  async getUserById(userId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/users/${userId}`);
+  }
+
   // Conversations/Chat API
   async getConversations(): Promise<ApiResponse<{ conversations: any[]; total: number }>> {
     return this.request('/api/conversations');

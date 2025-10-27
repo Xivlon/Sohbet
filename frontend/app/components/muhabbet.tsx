@@ -8,7 +8,7 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
 import { apiClient } from '@/app/lib/api-client';
-import { useAuth } from '@/app/lib/auth-context';
+import { useAuth } from '@/app/contexts/auth-context';
 
 interface Chat {
   id: number;
@@ -76,8 +76,8 @@ export function Muhabbet() {
             const otherUserId = conv.user1_id === currentUserId ? conv.user2_id : conv.user1_id;
             
             try {
-              const userResponse = await apiClient.getUser(otherUserId);
-              if (userResponse.data) {
+              const userResponse = await apiClient.getUserById(otherUserId);
+              if (userResponse && userResponse.data) {
                 return {
                   ...conv,
                   other_user: {
