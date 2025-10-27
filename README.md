@@ -549,10 +549,8 @@ cmake --build build --target test
 - **Authentication**: JWT tokens with HMAC-SHA256 signatures
 - **Data Protection**: No sensitive data in API responses
 - **Input Validation**: Comprehensive validation and sanitization
-### Security Notice
-⚠️ **WARNING**: The current implementation uses a placeholder hashing mechanism (std::hash + salt) for password
 
-**Previous security warning resolved**: Placeholder std::hash implementation has been completely replaced with secure bcrypt.
+**Security Implementation**: The backend uses industry-standard bcrypt (via libbcrypt) for secure password hashing and JWT (HS256) for stateless authentication. All security tests pass and verify no password leakage in API responses.
 ## Architecture
 
 ### Components
