@@ -19,6 +19,12 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
     - Desktop: Left sidebar navigation with full labels and descriptions, enhanced header
     - Mobile: Bottom navigation bar with compact icons, streamlined header
     - Responsive feed layout that adapts to screen size (max-width 768px breakpoint)
+  - **Backend Integration Completed**:
+    - Compiled C++ backend server with CMake
+    - Set up dual-workflow architecture: Frontend (port 5000) + Backend API (port 8080)
+    - Implemented full authentication system with JWT tokens
+    - Created API client utilities for frontend-backend communication
+    - Added login/registration UI components with Turkish localization
 
 ## Project Architecture
 
@@ -35,30 +41,73 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
 - **Theming**: next-themes for dark/light mode
 - **Styling Utilities**: class-variance-authority, tailwind-merge
 
-### Backend Components (C++)
-The project also includes a C++ backend with:
-- Voice integration using Mumble (murmur)
-- Database layer with SQLite
-- User authentication with bcrypt and JWT
-- RESTful server implementation
+### Backend Structure
+- **Location**: `src/`, `include/`, `build/` directories
+- **Language**: C++17 with Clang 14
+- **Build System**: CMake 3.16+
+- **Database**: SQLite3 with custom ORM
+- **Authentication**: bcrypt password hashing + JWT token-based auth
+- **HTTP Server**: Custom HTTP/1.1 server implementation on port 8080
+
+### Backend API Endpoints
+- `GET /api/status` - Server health check
+- `GET /api/users/demo` - Demo user data
+- `POST /api/users` - User registration
+- `POST /api/login` - User authentication (returns JWT token)
+
+### Full-Stack Integration
+- **Frontend-Backend Communication**: 
+  - API client utility (`frontend/app/lib/api-client.ts`) handles all HTTP requests
+  - Authentication context (`frontend/app/contexts/auth-context.tsx`) manages user session
+  - Environment variable `NEXT_PUBLIC_API_URL` configures backend URL (default: http://localhost:8080)
+- **Authentication Flow**:
+  1. User registers/logs in via AuthModal component
+  2. Backend validates credentials and returns JWT token
+  3. Frontend stores token in localStorage and includes it in API requests
+  4. User session persists across page reloads
+- **Security**: CORS enabled on backend, bcrypt for password hashing, JWT for stateless auth
+
+### C++ Dependencies
+- **SQLite3**: Database operations
+- **OpenSSL**: Cryptographic functions for JWT
+- **bcrypt**: Password hashing (via libbcrypt)
+- **pkg-config**: Build dependency resolution
 
 ## Development
 
 ### Running the Application
-The Next.js development server is configured to run automatically:
+Two workflows run concurrently:
+
+**1. Frontend (Next.js)**
 - **Port**: 5000
 - **Host**: 0.0.0.0 (required for Replit compatibility)
 - **Command**: `cd frontend && npm run dev`
+- **Environment**: Node.js 20, automatically loads `.env.local`
 
-### Scripts Available
+**2. Backend API (C++)**
+- **Port**: 8080
+- **Host**: 0.0.0.0
+- **Command**: `cd build && ./sohbet`
+- **Database**: SQLite file at `build/academic.db`
+
+### Frontend Scripts
 - `npm run dev`: Start development server on port 5000
 - `npm run build`: Build production bundle
 - `npm run start`: Start production server on port 5000
 - `npm run lint`: Run ESLint
 
-### Environment
-- **Node.js**: Version 20
-- **Dependencies**: Automatically installed via npm
+### Backend Build
+```bash
+mkdir -p build && cd build
+cmake ..
+make sohbet -j$(nproc)
+./sohbet  # Starts server on port 8080
+```
+
+### System Dependencies
+- **C++ Toolchain**: cpp-clang14
+- **Build Tools**: cmake, pkg-config
+- **Libraries**: sqlite, openssl
 
 ## Deployment Configuration
 - **Target**: Autoscale (stateless deployment)

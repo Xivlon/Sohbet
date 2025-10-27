@@ -193,6 +193,7 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
     switch (response.status_code) {
         case 200: oss << "OK"; break;
         case 201: oss << "Created"; break;
+        case 204: oss << "No Content"; break;
         case 400: oss << "Bad Request"; break;
         case 401: oss << "Unauthorized"; break;
         case 404: oss << "Not Found"; break;
@@ -216,7 +217,9 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
 // -------------------- Request Handlers --------------------
 
 HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
-    if (request.method == "GET" && request.path == "/api/status") {
+    if (request.method == "OPTIONS") {
+        return HttpResponse(204, "text/plain", "");
+    } else if (request.method == "GET" && request.path == "/api/status") {
         return handleStatus(request);
     } else if (request.method == "GET" && request.path == "/api/users/demo") {
         return handleUsersDemo(request);
