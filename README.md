@@ -175,6 +175,45 @@ Content-Type: application/json
 ```
 
 ### User Retrieval
+This returns a valid JWT token and user data for the demo account.
+
+### Authentication Flow
+
+**Backend Flow**
+1. **Registration** (`POST /api/users`):
+   - Client sends user data with password over HTTPS (plain-text in transit, encrypted by TLS)
+   - Server validates input (username pattern, email format, password strength)
+   - Password is hashed using bcrypt (12 rounds)
+   - User record stored in SQLite database
+   - Server responds with user data (password hash excluded)
+
+2. **Login** (`POST /api/login`):
+   - Client sends username and password over HTTPS
+   - Server looks up user by username
+   - Password verified using bcrypt comparison
+   - JWT token generated using HS256 (HMAC-SHA256 with shared secret)
+   - Token payload includes: username, user_id, expiration (24h)
+   - Server responds with `{ "token": "...", "user": { ... } }`
+
+**Frontend Flow** (React + TypeScript)
+1. User enters credentials in `LoginForm.tsx`
+2. `ApiService.login()` calls backend `/api/login` endpoint
+3. On success, JWT token stored and set in axios headers
+4. Token included in `Authorization: Bearer <token>` header for authenticated requests
+5. User data displayed in dashboard components
+
+**Security Practices**
+- Password hashes never returned in API responses (verified by tests)
+- Input validation enforced on both frontend and backend
+- JWT tokens signed with HS256 using a shared secret (server-side only)
+- Tokens include expiration to limit validity window
+- **Production Note**: Use HTTPS to encrypt password transmission; current implementation assumes secure transport layer
+
+**Roadmap**
+
+Phase 2: Friendships and messaging
+
+Phase 3: News feed and groups
 
 Get user profile information:
 
@@ -471,6 +510,56 @@ Sohbet is built with a clean separation of concerns:
 - **Security**: bcrypt password hashing and JWT token management
 - **Server**: HTTP request handlers and API endpoint routing
 - **Utils**: Hashing utilities and input validation helpers
+- **Password Hashing**: Production-ready bcrypt with 12 rounds
+- **Authentication**: JWT tokens with HMAC-SHA256 signatures
+- **Data Protection**: No sensitive data in API responses
+- **Input Validation**: Comprehensive validation and sanitization
+
+**Security Implementation**: The backend uses industry-standard bcrypt (via libbcrypt) for secure password hashing and JWT (HS256) for stateless authentication. All security tests pass and verify no password leakage in API responses.
+
+## Test Coverage ✅
+
+Comprehensive unit and integration tests ensure authentication security and correctness.
+
+### Authentication Tests (`tests/test_authentication.cpp`)
+
+**User Registration**
+- ✅ Successful registration returns user data with ID
+- ✅ Password hashes are never exposed in API responses
+- ✅ User data properly serialized without sensitive fields
+
+**User Login**
+- ✅ Successful login with valid credentials returns JWT token and user data
+- ✅ Failed login with wrong password returns 401 error
+- ✅ Failed login with non-existent user returns 401 error
+- ✅ Error responses never contain tokens
+
+**JWT Token Management**
+- ✅ Token generation creates valid JWT with correct structure
+- ✅ Token verification decodes and validates payload (username, user_id)
+- ✅ Invalid tokens are properly rejected
+- ✅ Token expiration is set and enforced
+
+**Demo User**
+- ✅ Demo user auto-created on server initialization
+- ✅ Login with demo credentials (demo_student / demo123) succeeds
+- ✅ Login with wrong demo password fails with 401
+
+### Other Test Suites
+- **BcryptTest**: Password hashing, verification, and legacy compatibility
+- **UserTest**: User model validation and JSON serialization
+- **UserRepositoryTest**: Database CRUD operations and uniqueness constraints
+- **VoiceServiceTest**: Voice channel configuration and token generation
+
+### Running Tests
+```bash
+cd build
+ctest --output-on-failure
+```
+
+All tests are registered in CMakeLists.txt and run via CTest. Tests use in-memory databases to ensure isolation and repeatability.
+
+## Architecture
 
 ### Project Structure
 
