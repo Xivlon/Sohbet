@@ -70,6 +70,7 @@ public:
 
     // Column getters
     int getInt(int index) const;
+    sqlite3_int64 getInt64(int index) const;
     std::string getText(int index) const;
     bool isNull(int index) const;
 

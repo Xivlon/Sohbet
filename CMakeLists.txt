@@ -35,6 +35,8 @@ set(SOURCES
     src/models/comment.cpp
     src/models/group.cpp
     src/models/organization.cpp
+    src/models/conversation.cpp
+    src/models/message.cpp
     src/db/database.cpp
     src/repositories/user_repository.cpp
     src/repositories/role_repository.cpp
@@ -44,6 +46,8 @@ set(SOURCES
     src/repositories/comment_repository.cpp
     src/repositories/group_repository.cpp
     src/repositories/organization_repository.cpp
+    src/repositories/conversation_repository.cpp
+    src/repositories/message_repository.cpp
     src/services/permission_service.cpp
     src/services/storage_service.cpp
     src/utils/hash.cpp
