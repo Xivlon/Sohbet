@@ -4,6 +4,9 @@ import { useEffect, useState } from "react"
 import { GroupCard } from "./group-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { Skeleton } from "@/app/components/ui/skeleton"
+import { apiClient } from "@/app/lib/api-client"
+import { Button } from "@/app/components/ui/button"
+import { Card, CardContent } from "@/app/components/ui/card"
 
 interface Group {
   id: number
@@ -25,6 +28,7 @@ export function GroupList({ currentUserId, onGroupSelect }: GroupListProps) {
   const [allGroups, setAllGroups] = useState<Group[]>([])
   const [myGroups, setMyGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("all")
 
   useEffect(() => {
@@ -38,30 +42,23 @@ export function GroupList({ currentUserId, onGroupSelect }: GroupListProps) {
     }
 
     setLoading(true)
+    setError(null)
+    
     try {
-      // Fetch all groups
-      const allResponse = await fetch('/api/groups', {
-        headers: {
-          'X-User-ID': String(currentUserId),
-        },
-      })
-      if (allResponse.ok) {
-        const data = await allResponse.json()
-        setAllGroups(data)
+      const response = await apiClient.getGroups(50, 0)
+      if (response.data) {
+        const groups = response.data.groups || []
+        setAllGroups(groups)
+        
+        // Filter my groups (where user is a member)
+        const myGroupsList = groups.filter((g: Group) => g.user_role)
+        setMyGroups(myGroupsList)
+      } else {
+        setError(response.error || 'Gruplar yüklenemedi')
       }
-
-      // Fetch my groups
-      const myResponse = await fetch('/api/groups?my_groups=true', {
-        headers: {
-          'X-User-ID': String(currentUserId),
-        },
-      })
-      if (myResponse.ok) {
-        const data = await myResponse.json()
-        setMyGroups(data)
-      }
-    } catch (error) {
-      console.error('Error fetching groups:', error)
+    } catch (err) {
+      setError('Bir hata oluştu. Lütfen tekrar deneyin.')
+      console.error('Error fetching groups:', err)
     } finally {
       setLoading(false)
     }
@@ -71,25 +68,16 @@ export function GroupList({ currentUserId, onGroupSelect }: GroupListProps) {
     if (!currentUserId) return
 
     try {
-      const response = await fetch(`/api/groups/${groupId}/members`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-ID': String(currentUserId),
-        },
-        body: JSON.stringify({ user_id: currentUserId, role: 'member' }),
-      })
-
-      if (response.ok) {
+      const response = await apiClient.joinGroup(groupId, currentUserId)
+      if (response.data) {
         // Refresh groups
         await fetchGroups()
       } else {
-        const error = await response.json()
-        alert(error.error || 'Failed to join group')
+        alert('Gruba katılma başarısız: ' + (response.error || 'Bilinmeyen hata'))
       }
     } catch (error) {
       console.error('Error joining group:', error)
-      alert('Failed to join group')
+      alert('Gruba katılma başarısız. Lütfen tekrar deneyin.')
     }
   }
 
@@ -116,47 +104,64 @@ export function GroupList({ currentUserId, onGroupSelect }: GroupListProps) {
     )
   }
 
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <p className="text-destructive mb-4">{error}</p>
+          <Button onClick={fetchGroups}>Tekrar Dene</Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="all">All Groups</TabsTrigger>
-        <TabsTrigger value="my">My Groups</TabsTrigger>
+        <TabsTrigger value="all">Tüm Gruplar</TabsTrigger>
+        <TabsTrigger value="my">Gruplarım</TabsTrigger>
       </TabsList>
+      
       <TabsContent value="all" className="mt-6">
         {allGroups.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            No groups available yet.
-          </div>
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">Henüz grup yok.</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {allGroups.map((group) => (
               <GroupCard
                 key={group.id}
                 group={group}
+                onJoin={() => handleJoin(group.id)}
+                onManage={() => handleManage(group.id)}
+                onView={() => handleView(group.id)}
                 currentUserId={currentUserId}
-                onJoin={handleJoin}
-                onManage={handleManage}
-                onView={handleView}
               />
             ))}
           </div>
         )}
       </TabsContent>
+      
       <TabsContent value="my" className="mt-6">
         {myGroups.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            You haven't joined any groups yet.
-          </div>
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">Henüz hiçbir gruba katılmadınız.</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {myGroups.map((group) => (
               <GroupCard
                 key={group.id}
                 group={group}
+                onJoin={() => handleJoin(group.id)}
+                onManage={() => handleManage(group.id)}
+                onView={() => handleView(group.id)}
                 currentUserId={currentUserId}
-                onJoin={handleJoin}
-                onManage={handleManage}
-                onView={handleView}
               />
             ))}
           </div>

@@ -257,6 +257,43 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Groups API
+  async getGroups(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ groups: any[]; total: number }>> {
+    return this.request(`/api/groups?limit=${limit}&offset=${offset}`);
+  }
+
+  async createGroup(name: string, description: string): Promise<ApiResponse<any>> {
+    return this.request('/api/groups', {
+      method: 'POST',
+      body: JSON.stringify({ name, description }),
+    });
+  }
+
+  async joinGroup(groupId: number, userId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/groups/${groupId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, role: 'member' }),
+    });
+  }
+
+  async leaveGroup(groupId: number, userId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/groups/${groupId}/members/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Organizations API
+  async getOrganizations(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ organizations: any[]; total: number }>> {
+    return this.request(`/api/organizations?limit=${limit}&offset=${offset}`);
+  }
+
+  async createOrganization(name: string, description: string, category: string): Promise<ApiResponse<any>> {
+    return this.request('/api/organizations', {
+      method: 'POST',
+      body: JSON.stringify({ name, description, category }),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
