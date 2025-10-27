@@ -4,6 +4,7 @@
 #include "models/group.h"
 #include "models/organization.h"
 #include "security/jwt.h"
+#include "config/env.h"
 #include "utils/hash.h"
 #include "utils/multipart_parser.h"
 #include <iostream>
@@ -659,7 +660,9 @@ HttpResponse AcademicSocialServer::handleLogin(const HttpRequest& request) {
         }
 
         std::string user_role = user.getRole().value_or("Student");
-        std::string token = security::generate_jwt_token(username, user.getId().value(), user_role);
+        std::string jwt_secret = config::get_jwt_secret();
+        int expiry_hours = config::get_jwt_expiry_hours();
+        std::string token = security::generate_jwt_token(username, user.getId().value(), user_role, jwt_secret, expiry_hours);
 
         std::ostringstream oss;
         oss << "{ \"token\":\"" << token << "\", \"user\":" << user.toJson() << " }";
