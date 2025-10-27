@@ -25,6 +25,12 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
     - Implemented full authentication system with JWT tokens
     - Created API client utilities for frontend-backend communication
     - Added login/registration UI components with Turkish localization
+  - **User Data Import System**:
+    - Extended User model with professional academic fields: name, position, phone_number, created_at, warnings
+    - Updated database schema to support complete academic profiles
+    - Created Python import script for bulk user data loading
+    - Imported 25 Turkish academic users (researchers, professors, engineers, students)
+    - Implemented paginated user listing API with query parameter support
 
 ## Project Architecture
 
@@ -51,9 +57,25 @@ Sohbet is a Next.js-based social media platform designed for academic discussion
 
 ### Backend API Endpoints
 - `GET /api/status` - Server health check
+- `GET /api/users?limit=50&offset=0` - List all users with pagination (default limit: 50, max: 100)
 - `GET /api/users/demo` - Demo user data
 - `POST /api/users` - User registration
 - `POST /api/login` - User authentication (returns JWT token)
+
+### User Data Model
+Each user profile includes:
+- **Core Fields**: id, username, email, password_hash
+- **Personal Info**: name (full name)
+- **Professional Info**: position (Researcher, Professor, Engineer, Technician, Student), phone_number
+- **Academic Info**: university, department, enrollment_year
+- **Metadata**: created_at, warnings, primary_language, additional_languages
+
+### Sample User Data
+The database contains 27 users including:
+- 2 demo/test users (demo_student, ali_student)
+- 25 imported Turkish academics from major universities (Istanbul University, Ankara University, Ege University, Bilkent University, Marmara University)
+- Diverse positions: Professors, Researchers, Engineers, Technicians, Students
+- Specializations: Mathematics, Computer Science, Biology, Physics, Chemistry, Mechanical Engineering
 
 ### Full-Stack Integration
 - **Frontend-Backend Communication**: 
@@ -104,10 +126,19 @@ make sohbet -j$(nproc)
 ./sohbet  # Starts server on port 8080
 ```
 
+### Data Import
+To import user data from SQL files:
+```bash
+python3 scripts/import_users.py
+```
+Default password for all imported users: `[username]123`  
+Example: User `ahmet_yilmaz` has password `ahmet_yilmaz123`
+
 ### System Dependencies
 - **C++ Toolchain**: cpp-clang14
 - **Build Tools**: cmake, pkg-config
 - **Libraries**: sqlite, openssl
+- **Python**: Python 3.11 with bcrypt for data import scripts
 
 ## Deployment Configuration
 - **Target**: Autoscale (stateless deployment)
