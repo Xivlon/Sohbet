@@ -164,6 +164,36 @@ curl -X POST -H "Content-Type: application/json" \
 
 This returns a valid JWT token and user data for the demo account.
 
+### Authentication Flow
+
+**Backend Flow**
+1. **Registration** (`POST /api/users`):
+   - Client sends user data with plain-text password
+   - Server validates input (username pattern, email format, password strength)
+   - Password is hashed using bcrypt (12 rounds)
+   - User record stored in SQLite database
+   - Server responds with user data (password hash excluded)
+
+2. **Login** (`POST /api/login`):
+   - Client sends username and password
+   - Server looks up user by username
+   - Password verified using bcrypt comparison
+   - JWT token generated (HS256, includes username and user_id, 24h expiration)
+   - Server responds with `{ "token": "...", "user": { ... } }`
+
+**Frontend Flow** (React + TypeScript)
+1. User enters credentials in `LoginForm.tsx`
+2. `ApiService.login()` calls backend `/api/login` endpoint
+3. On success, JWT token stored and set in axios headers
+4. Token included in `Authorization: Bearer <token>` header for authenticated requests
+5. User data displayed in dashboard components
+
+**Security Practices**
+- Password hashes never returned in API responses (verified by tests)
+- Input validation enforced on both frontend and backend
+- JWT tokens signed and verified with secret key
+- Tokens include expiration to limit validity window
+
 **Roadmap**
 
 Phase 2: Friendships and messaging
