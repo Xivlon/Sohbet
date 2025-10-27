@@ -103,11 +103,13 @@ This document outlines the technical details for future academic features in Soh
 
 ### Success Criteria for Next Release (v0.3.0)
 
-- ✅ Course and study group tables created
-- ✅ Basic post API operational
-- ✅ Authentication coverage expanded in tests
-- ✅ Initial rate limiting implemented
-- ✅ Updated developer documentation
+These are the goals for the upcoming release:
+
+- [ ] Course and study group tables created
+- [ ] Basic post API operational
+- [ ] Authentication coverage expanded in tests
+- [ ] Initial rate limiting implemented
+- [ ] Updated developer documentation
 
 ---
 
@@ -164,4 +166,6 @@ This project serves as a practical learning platform for:
 
 ---
 
-**This is a living document** - it will be updated as the project evolves.  
+**This is a living document** - it will be updated as the project evolves.
+
+**Last Updated**: October 2025 (Documentation formatting update)  
