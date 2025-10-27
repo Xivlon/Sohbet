@@ -1,8 +1,11 @@
 #include "server/server.h"
 #include "models/user.h"
+#include "models/media.h"
 #include "security/jwt.h"
 #include "utils/hash.h"
+#include "utils/multipart_parser.h"
 #include <iostream>
+#include <fstream>
 #include <regex>
 #include <sstream>
 #include <cstring>
@@ -26,10 +29,29 @@ bool AcademicSocialServer::initialize() {
     }
 
     user_repository_ = std::make_shared<repositories::UserRepository>(database_);
+    media_repository_ = std::make_shared<repositories::MediaRepository>(database_);
+    storage_service_ = std::make_shared<services::StorageService>("uploads/");
 
     if (!user_repository_->migrate()) {
         std::cerr << "Failed to run database migrations" << std::endl;
         return false;
+    }
+    
+    // Run social features migration if needed
+    // Use a relative path from the current working directory
+    const std::string migration_path = "migrations/001_social_features.sql";
+    std::ifstream migration_file(migration_path);
+    if (migration_file.is_open()) {
+        std::stringstream buffer;
+        buffer << migration_file.rdbuf();
+        std::string migration_sql = buffer.str();
+        migration_file.close();
+        
+        if (!database_->execute(migration_sql)) {
+            std::cerr << "Warning: Social features migration failed (may already be applied)" << std::endl;
+        } else {
+            std::cout << "Social features migration applied successfully" << std::endl;
+        }
     }
 
     // Ensure demo user exists for demo/testing purposes
@@ -58,6 +80,9 @@ bool AcademicSocialServer::start() {
     std::cout << "  POST /api/users (registration)" << std::endl;
     std::cout << "  POST /api/login" << std::endl;
     std::cout << "  PUT  /api/users/:id (update profile)" << std::endl;
+    std::cout << "  POST /api/media/upload (file upload)" << std::endl;
+    std::cout << "  GET  /api/media/file/:key (retrieve file)" << std::endl;
+    std::cout << "  GET  /api/users/:id/media (user's media)" << std::endl;
     std::cout << "Server ready to handle requests" << std::endl;
     
     // Accept connections
@@ -130,18 +155,118 @@ bool AcademicSocialServer::initializeSocket() {
 }
 
 void AcademicSocialServer::handleClient(int client_socket) {
-    const int BUFFER_SIZE = 4096;
-    char buffer[BUFFER_SIZE];
+    const int INITIAL_BUFFER_SIZE = 8192;
+    const size_t MAX_REQUEST_SIZE = 10 * 1024 * 1024; // 10MB max request size
+    std::vector<char> buffer(INITIAL_BUFFER_SIZE);
+    std::string raw_request;
     
-    // Read request
-    ssize_t bytes_read = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-    if (bytes_read <= 0) {
+    // Set socket timeout to prevent indefinite blocking
+    struct timeval timeout;
+    timeout.tv_sec = 30;  // 30 second timeout
+    timeout.tv_usec = 0;
+    setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    
+    // Read request data
+    ssize_t total_bytes = 0;
+    ssize_t bytes_read;
+    bool headers_found = false;
+    size_t headers_end = 0;
+    
+    while ((bytes_read = recv(client_socket, buffer.data() + total_bytes, 
+                               buffer.size() - total_bytes, 0)) > 0) {
+        total_bytes += bytes_read;
+        
+        // Only search for headers if we haven't found them yet
+        if (!headers_found) {
+            // Use string_view-like approach to avoid creating new strings
+            const char* data_ptr = buffer.data();
+            for (size_t i = 0; i + 3 < static_cast<size_t>(total_bytes); ++i) {
+                if (data_ptr[i] == '\r' && data_ptr[i+1] == '\n' && 
+                    data_ptr[i+2] == '\r' && data_ptr[i+3] == '\n') {
+                    headers_end = i;
+                    headers_found = true;
+                    break;
+                }
+            }
+        }
+        
+        if (headers_found) {
+            // Parse headers to get Content-Length
+            std::string headers_section(buffer.data(), headers_end);
+            std::istringstream header_stream(headers_section);
+            std::string line;
+            size_t content_length = 0;
+            bool has_content_length = false;
+            
+            while (std::getline(header_stream, line)) {
+                if (line.find("Content-Length:") == 0) {
+                    std::string length_str = line.substr(15);
+                    // Trim whitespace
+                    length_str.erase(0, length_str.find_first_not_of(" \t\r\n"));
+                    length_str.erase(length_str.find_last_not_of(" \t\r\n") + 1);
+                    
+                    try {
+                        content_length = std::stoull(length_str);
+                        has_content_length = true;
+                    } catch (const std::exception&) {
+                        // Invalid Content-Length, close connection
+                        close(client_socket);
+                        return;
+                    }
+                    break;
+                }
+            }
+            
+            if (has_content_length) {
+                size_t expected_total = headers_end + 4 + content_length; // +4 for \r\n\r\n
+                
+                // Enforce maximum request size
+                if (expected_total > MAX_REQUEST_SIZE) {
+                    // Send 413 Payload Too Large
+                    std::string error_response = 
+                        "HTTP/1.1 413 Payload Too Large\r\n"
+                        "Content-Type: application/json\r\n"
+                        "Content-Length: 38\r\n"
+                        "Connection: close\r\n\r\n"
+                        "{\"error\":\"Request too large (max 10MB)\"}";
+                    send(client_socket, error_response.c_str(), error_response.length(), 0);
+                    close(client_socket);
+                    return;
+                }
+                
+                // Resize buffer if needed
+                if (expected_total > buffer.size()) {
+                    buffer.resize(expected_total);
+                }
+                
+                // Keep reading until we have all the data
+                while (total_bytes < static_cast<ssize_t>(expected_total)) {
+                    bytes_read = recv(client_socket, buffer.data() + total_bytes,
+                                     expected_total - total_bytes, 0);
+                    if (bytes_read <= 0) break;
+                    total_bytes += bytes_read;
+                }
+            }
+            
+            break; // We have the full request
+        }
+        
+        // Expand buffer if needed, but enforce max size
+        if (total_bytes >= static_cast<ssize_t>(buffer.size())) {
+            if (buffer.size() * 2 > MAX_REQUEST_SIZE) {
+                close(client_socket);
+                return;
+            }
+            buffer.resize(buffer.size() * 2);
+        }
+    }
+    
+    if (total_bytes <= 0) {
         close(client_socket);
         return;
     }
     
-    buffer[bytes_read] = '\0';
-    std::string raw_request(buffer);
+    raw_request = std::string(buffer.data(), total_bytes);
     
     // Parse HTTP request
     HttpRequest request = parseHttpRequest(raw_request);
@@ -166,13 +291,34 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
     std::string method, path, version;
     request_line >> method >> path >> version;
     
-    // Skip headers until empty line
-    std::string body;
+    HttpRequest request(method, path, "");
+    
+    // Parse headers
     bool headers_done = false;
     while (std::getline(stream, line)) {
         if (line == "\r" || line.empty()) {
             headers_done = true;
             break;
+        }
+        
+        // Remove \r if present
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        
+        // Parse header (Name: Value)
+        size_t colon_pos = line.find(':');
+        if (colon_pos != std::string::npos) {
+            std::string header_name = line.substr(0, colon_pos);
+            std::string header_value = line.substr(colon_pos + 1);
+            
+            // Trim whitespace from value
+            size_t start = header_value.find_first_not_of(" \t");
+            if (start != std::string::npos) {
+                header_value = header_value.substr(start);
+            }
+            
+            request.headers[header_name] = header_value;
         }
     }
     
@@ -180,11 +326,11 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
     if (headers_done) {
         std::string remaining;
         while (std::getline(stream, line)) {
-            body += line + "\n";
+            request.body += line + "\n";
         }
     }
     
-    return HttpRequest(method, path, body);
+    return request;
 }
 
 std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& response) {
@@ -239,6 +385,12 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleLogin(request);
     } else if (request.method == "PUT" && base_path.find("/api/users/") == 0) {
         return handleUpdateUser(request);
+    } else if (request.method == "POST" && base_path == "/api/media/upload") {
+        return handleUploadMedia(request);
+    } else if (request.method == "GET" && base_path.find("/api/media/file/") == 0) {
+        return handleGetMediaFile(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/media") != std::string::npos) {
+        return handleGetUserMedia(request);
     } else {
         return handleNotFound(request);
     }
@@ -499,6 +651,167 @@ void AcademicSocialServer::ensureDemoUserExists() {
     } else {
         std::cerr << "Warning: Failed to create demo user" << std::endl;
     }
+}
+
+// -------------------- Media Endpoints --------------------
+
+HttpResponse AcademicSocialServer::handleUploadMedia(const HttpRequest& request) {
+    // Check Content-Type for multipart/form-data
+    auto content_type_it = request.headers.find("Content-Type");
+    if (content_type_it == request.headers.end()) {
+        return createErrorResponse(400, "Content-Type header is required");
+    }
+    
+    std::string content_type = content_type_it->second;
+    if (content_type.find("multipart/form-data") == std::string::npos) {
+        return createErrorResponse(400, "Content-Type must be multipart/form-data");
+    }
+    
+    // Extract boundary
+    auto boundary_opt = utils::MultipartParser::extractBoundary(content_type);
+    if (!boundary_opt.has_value()) {
+        return createErrorResponse(400, "Missing boundary in Content-Type");
+    }
+    
+    // Parse multipart data
+    auto parts = utils::MultipartParser::parse(request.body, boundary_opt.value());
+    
+    // Validate required fields
+    if (parts.find("file") == parts.end()) {
+        return createErrorResponse(400, "Missing 'file' field");
+    }
+    
+    if (parts.find("media_type") == parts.end()) {
+        return createErrorResponse(400, "Missing 'media_type' field");
+    }
+    
+    if (parts.find("user_id") == parts.end()) {
+        return createErrorResponse(400, "Missing 'user_id' field");
+    }
+    
+    // Extract fields
+    auto& file_part = parts["file"];
+    std::string media_type_str(parts["media_type"].data.begin(), parts["media_type"].data.end());
+    std::string user_id_str(parts["user_id"].data.begin(), parts["user_id"].data.end());
+    
+    // Parse user_id
+    int user_id;
+    try {
+        user_id = std::stoi(user_id_str);
+    } catch (...) {
+        return createErrorResponse(400, "Invalid user_id");
+    }
+    
+    // Validate file type (allow common image types for now)
+    std::vector<std::string> allowed_types = {
+        "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"
+    };
+    
+    if (!services::StorageService::validateFileType(file_part.content_type, allowed_types)) {
+        return createErrorResponse(400, "Invalid file type. Allowed: JPEG, PNG, GIF, WebP");
+    }
+    
+    // Validate file size (5MB max)
+    const size_t MAX_FILE_SIZE = 5 * 1024 * 1024;
+    if (!services::StorageService::validateFileSize(file_part.data.size(), MAX_FILE_SIZE)) {
+        return createErrorResponse(400, "File too large. Maximum size: 5MB");
+    }
+    
+    // Store file
+    auto metadata_opt = storage_service_->storeFile(
+        file_part.data,
+        file_part.filename,
+        file_part.content_type,
+        user_id,
+        media_type_str
+    );
+    
+    if (!metadata_opt.has_value()) {
+        return createErrorResponse(500, "Failed to store file");
+    }
+    
+    auto& metadata = metadata_opt.value();
+    
+    // Create media record in database
+    Media media(user_id, media_type_str, metadata.storage_key);
+    media.setFileName(metadata.file_name);
+    media.setFileSize(static_cast<int>(metadata.file_size));
+    media.setMimeType(metadata.mime_type);
+    media.setUrl(metadata.url);
+    
+    auto created_media = media_repository_->create(media);
+    if (!created_media.has_value()) {
+        // Cleanup stored file
+        storage_service_->deleteFile(metadata.storage_key);
+        return createErrorResponse(500, "Failed to create media record");
+    }
+    
+    return createJsonResponse(201, created_media->toJson());
+}
+
+HttpResponse AcademicSocialServer::handleGetMediaFile(const HttpRequest& request) {
+    // Extract storage key from path: /api/media/file/{storage_key}
+    std::string prefix = "/api/media/file/";
+    if (request.path.find(prefix) != 0) {
+        return createErrorResponse(404, "Invalid path");
+    }
+    
+    std::string storage_key = request.path.substr(prefix.length());
+    
+    // Remove query string if present
+    size_t query_pos = storage_key.find('?');
+    if (query_pos != std::string::npos) {
+        storage_key = storage_key.substr(0, query_pos);
+    }
+    
+    // Retrieve file
+    auto file_data = storage_service_->retrieveFile(storage_key);
+    if (!file_data.has_value()) {
+        return createErrorResponse(404, "File not found");
+    }
+    
+    // Determine content type from storage key extension
+    std::string content_type = "application/octet-stream";
+    if (storage_key.find(".jpg") != std::string::npos || storage_key.find(".jpeg") != std::string::npos) {
+        content_type = "image/jpeg";
+    } else if (storage_key.find(".png") != std::string::npos) {
+        content_type = "image/png";
+    } else if (storage_key.find(".gif") != std::string::npos) {
+        content_type = "image/gif";
+    } else if (storage_key.find(".webp") != std::string::npos) {
+        content_type = "image/webp";
+    }
+    
+    // Convert binary data to string for response
+    std::string body(file_data->begin(), file_data->end());
+    
+    return HttpResponse(200, content_type, body);
+}
+
+HttpResponse AcademicSocialServer::handleGetUserMedia(const HttpRequest& request) {
+    // Extract user ID from path: /api/users/{id}/media
+    std::regex user_media_regex("/api/users/(\\d+)/media");
+    std::smatch match;
+    
+    if (!std::regex_match(request.path, match, user_media_regex)) {
+        return createErrorResponse(404, "Invalid path");
+    }
+    
+    int user_id = std::stoi(match[1].str());
+    
+    // Get user's media
+    auto media_list = media_repository_->findByUser(user_id);
+    
+    // Build JSON array
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < media_list.size(); ++i) {
+        if (i > 0) oss << ",";
+        oss << media_list[i].toJson();
+    }
+    oss << "]";
+    
+    return createJsonResponse(200, oss.str());
 }
 
 } // namespace server

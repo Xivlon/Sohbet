@@ -35,7 +35,9 @@ set(SOURCES
     src/repositories/role_repository.cpp
     src/repositories/media_repository.cpp
     src/services/permission_service.cpp
+    src/services/storage_service.cpp
     src/utils/hash.cpp
+    src/utils/multipart_parser.cpp
     src/security/bcrypt_wrapper.cpp
     src/security/jwt.cpp
     src/server/server.cpp
@@ -76,6 +78,14 @@ add_executable(test_voice_service tests/test_voice_service.cpp)
 target_link_libraries(test_voice_service sohbet_lib)
 add_test(NAME VoiceServiceTest COMMAND test_voice_service)
 
+add_executable(test_storage_service tests/test_storage_service.cpp)
+target_link_libraries(test_storage_service sohbet_lib)
+add_test(NAME StorageServiceTest COMMAND test_storage_service)
+
+add_executable(test_multipart_parser tests/test_multipart_parser.cpp)
+target_link_libraries(test_multipart_parser sohbet_lib)
+add_test(NAME MultipartParserTest COMMAND test_multipart_parser)
+
 # Compiler flags
 target_compile_options(sohbet_lib PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(sohbet PRIVATE -Wall -Wextra -Wpedantic)
@@ -84,3 +94,5 @@ target_compile_options(test_user_repository PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(test_bcrypt PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(test_authentication PRIVATE -Wall -Wextra -Wpedantic)
 target_compile_options(test_voice_service PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_storage_service PRIVATE -Wall -Wextra -Wpedantic)
+target_compile_options(test_multipart_parser PRIVATE -Wall -Wextra -Wpedantic)
