@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, MoreVertical, Send, Paperclip, Smile, Phone, Video, Users, ArrowLeft } from 'lucide-react';
-import { Card, CardContent, CardHeader } from './ui/card';
+import { Search, Plus, MoreVertical, Send, Paperclip, Smile, Phone, Video, ArrowLeft } from 'lucide-react';
+import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
+import { apiClient } from '@/app/lib/api-client';
+import { useAuth } from '@/app/lib/auth-context';
 
 interface Chat {
   id: number;
@@ -38,44 +39,50 @@ export function Muhabbet() {
   const [newMessage, setNewMessage] = useState('');
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [currentUserId] = useState<number>(1); // TODO: Get from auth context
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  
+  const { user } = useAuth();
+  const currentUserId = user?.id;
 
   useEffect(() => {
-    fetchConversations();
-  }, []);
+    if (currentUserId) {
+      fetchConversations();
+    }
+  }, [currentUserId]);
 
   useEffect(() => {
-    if (selectedChat) {
+    if (selectedChat && currentUserId) {
       fetchMessages(selectedChat.id);
     }
-  }, [selectedChat]);
+  }, [selectedChat, currentUserId]);
 
   const fetchConversations = async () => {
+    if (!currentUserId) return;
+    
+    setLoading(true);
+    setError(null);
+    
     try {
-      const response = await fetch('/api/conversations', {
-        headers: {
-          'X-User-ID': currentUserId.toString()
-        }
-      });
+      const response = await apiClient.getConversations();
       
-      if (response.ok) {
-        const data = await response.json();
+      if (response.data) {
+        const conversations = response.data.conversations || [];
         
         // Fetch user details for each conversation
         const conversationsWithUsers = await Promise.all(
-          data.conversations.map(async (conv: Chat) => {
+          conversations.map(async (conv: Chat) => {
             const otherUserId = conv.user1_id === currentUserId ? conv.user2_id : conv.user1_id;
             
             try {
-              const userResponse = await fetch(`/api/users/${otherUserId}`);
-              if (userResponse.ok) {
-                const userData = await userResponse.json();
+              const userResponse = await apiClient.getUser(otherUserId);
+              if (userResponse.data) {
                 return {
                   ...conv,
                   other_user: {
                     id: otherUserId,
-                    username: userData.username || 'Unknown User'
+                    username: userResponse.data.username || 'Bilinmeyen Kullanıcı'
                   }
                 };
               }
@@ -87,33 +94,33 @@ export function Muhabbet() {
               ...conv,
               other_user: {
                 id: otherUserId,
-                username: 'Unknown User'
+                username: 'Bilinmeyen Kullanıcı'
               }
             };
           })
         );
         
         setChats(conversationsWithUsers);
+      } else {
+        setError(response.error || 'Sohbetler yüklenemedi');
       }
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
+    } catch (err) {
+      setError('Bir hata oluştu. Lütfen tekrar deneyin.');
+      console.error('Error fetching conversations:', err);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchMessages = async (conversationId: number) => {
+    if (!currentUserId) return;
+    
     try {
-      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
-        headers: {
-          'X-User-ID': currentUserId.toString()
-        }
-      });
+      const response = await apiClient.getMessages(conversationId, 100, 0);
       
-      if (response.ok) {
-        const data = await response.json();
+      if (response.data) {
         // Reverse to show oldest first
-        setMessages(data.messages.reverse());
+        setMessages(response.data.messages.reverse());
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -125,34 +132,50 @@ export function Muhabbet() {
   );
 
   const sendMessage = async () => {
-    if (newMessage.trim() && selectedChat) {
-      try {
-        const response = await fetch(`/api/conversations/${selectedChat.id}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-ID': currentUserId.toString()
-          },
-          body: JSON.stringify({
-            content: newMessage.trim()
-          })
-        });
+    if (!newMessage.trim() || !selectedChat || !currentUserId) return;
+
+    setSendingMessage(true);
+    const messageContent = newMessage.trim();
+    
+    // Optimistic update
+    const tempMessage: Message = {
+      id: Date.now(),
+      conversation_id: selectedChat.id,
+      sender_id: currentUserId,
+      content: messageContent,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages([...messages, tempMessage]);
+    setNewMessage('');
+    
+    try {
+      const response = await apiClient.sendMessage(selectedChat.id, messageContent);
+      
+      if (response.data) {
+        // Replace temp message with real one
+        setMessages(prev => 
+          prev.map(msg => msg.id === tempMessage.id ? response.data : msg)
+        );
         
-        if (response.ok) {
-          const message = await response.json();
-          setMessages([...messages, message]);
-          setNewMessage('');
-          
-          // Update conversation's last_message_at in the list
-          setChats(chats.map(chat => 
-            chat.id === selectedChat.id 
-              ? { ...chat, last_message_at: new Date().toISOString() }
-              : chat
-          ));
-        }
-      } catch (error) {
-        console.error('Error sending message:', error);
+        // Update conversation's last_message_at
+        setChats(chats.map(chat => 
+          chat.id === selectedChat.id 
+            ? { ...chat, last_message_at: new Date().toISOString() }
+            : chat
+        ));
+      } else {
+        // Remove temp message on error
+        setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+        alert('Mesaj gönderilemedi: ' + (response.error || 'Bilinmeyen hata'));
       }
+    } catch (err) {
+      // Remove temp message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      alert('Mesaj gönderilemedi. Lütfen tekrar deneyin.');
+      console.error('Error sending message:', err);
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -176,6 +199,14 @@ export function Muhabbet() {
       return date.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' });
     }
   };
+
+  if (!currentUserId) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-muted-foreground">Lütfen giriş yapın</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-background pb-20">
@@ -202,7 +233,7 @@ export function Muhabbet() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-medium">{selectedChat.other_user?.username || 'Unknown User'}</h3>
+                  <h3 className="font-medium">{selectedChat.other_user?.username || 'Bilinmeyen Kullanıcı'}</h3>
                   <p className="text-sm text-muted-foreground">
                     Son görülme: {formatTimestamp(selectedChat.last_message_at)}
                   </p>
@@ -273,6 +304,7 @@ export function Muhabbet() {
                   onKeyPress={handleKeyPress}
                   className="min-h-10 max-h-32 resize-none"
                   rows={1}
+                  disabled={sendingMessage}
                 />
               </div>
               
@@ -280,7 +312,10 @@ export function Muhabbet() {
                 <Smile className="w-4 h-4" />
               </Button>
               
-              <Button onClick={sendMessage} disabled={!newMessage.trim()}>
+              <Button 
+                onClick={sendMessage} 
+                disabled={!newMessage.trim() || sendingMessage}
+              >
                 <Send className="w-4 h-4" />
               </Button>
             </div>
@@ -320,6 +355,13 @@ export function Muhabbet() {
                 <div className="p-4 text-center text-muted-foreground">
                   Yükleniyor...
                 </div>
+              ) : error ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <p className="text-destructive mb-4">{error}</p>
+                    <Button onClick={fetchConversations}>Tekrar Dene</Button>
+                  </CardContent>
+                </Card>
               ) : filteredChats.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
                   {searchTerm ? 'Sohbet bulunamadı' : 'Henüz mesajınız yok'}
@@ -342,7 +384,7 @@ export function Muhabbet() {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium truncate">{chat.other_user?.username || 'Unknown User'}</h4>
+                          <h4 className="font-medium truncate">{chat.other_user?.username || 'Bilinmeyen Kullanıcı'}</h4>
                           <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
                             {formatTimestamp(chat.last_message_at)}
                           </span>

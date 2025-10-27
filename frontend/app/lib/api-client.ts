@@ -294,6 +294,29 @@ class ApiClient {
       body: JSON.stringify({ name, description, category }),
     });
   }
+
+  // Conversations/Chat API
+  async getConversations(): Promise<ApiResponse<{ conversations: any[]; total: number }>> {
+    return this.request('/api/conversations');
+  }
+
+  async createConversation(otherUserId: number): Promise<ApiResponse<any>> {
+    return this.request('/api/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ other_user_id: otherUserId }),
+    });
+  }
+
+  async getMessages(conversationId: number, limit: number = 50, offset: number = 0): Promise<ApiResponse<{ messages: any[] }>> {
+    return this.request(`/api/conversations/${conversationId}/messages?limit=${limit}&offset=${offset}`);
+  }
+
+  async sendMessage(conversationId: number, content: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
