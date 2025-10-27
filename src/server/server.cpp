@@ -960,7 +960,18 @@ int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
         std::string auth_header = it->second;
         if (auth_header.find("Bearer ") == 0) {
             std::string token = auth_header.substr(7);
-            // TODO: Properly decode JWT and extract user ID
+            
+            // Verify and decode JWT token
+            try {
+                std::string jwt_secret = config::get_jwt_secret();
+                auto payload = security::verify_jwt_token(token, jwt_secret);
+                if (payload.has_value()) {
+                    return payload->user_id;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "JWT verification error: " << e.what() << std::endl;
+                return -1;
+            }
         }
     }
     

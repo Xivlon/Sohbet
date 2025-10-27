@@ -38,13 +38,12 @@ outputType = "webview"
 name = "Backend API Server"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd build && ./sohbet"
-waitForPort = 8080
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "export SOHBET_JWT_SECRET=\"sohbet_development_secret_key_2024_very_secure_random_string\" && cd build && ./sohbet"
 
 [[ports]]
 localPort = 5000
@@ -53,6 +52,14 @@ externalPort = 80
 [[ports]]
 localPort = 8080
 externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 37597
+externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"
