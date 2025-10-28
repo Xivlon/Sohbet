@@ -50,6 +50,9 @@ set(SOURCES
     src/models/conversation.cpp
     src/models/message.cpp
     src/db/database.cpp
+    src/db/migration_runner.cpp
+    src/init/database_initializer.cpp
+    src/helpers/user_helpers.cpp
     src/repositories/user_repository.cpp
     src/repositories/role_repository.cpp
     src/repositories/media_repository.cpp
@@ -125,3 +128,15 @@ add_test(NAME WebSocketServerTest COMMAND test_websocket_server)
 add_executable(test_config_env tests/test_config_env.cpp)
 target_link_libraries(test_config_env sohbet_lib)
 add_test(NAME ConfigEnvTest COMMAND test_config_env)
+
+add_executable(test_user_helpers tests/test_user_helpers.cpp)
+target_link_libraries(test_user_helpers sohbet_lib)
+add_test(NAME UserHelpersTest COMMAND test_user_helpers)
+
+add_executable(test_migration_runner tests/test_migration_runner.cpp)
+target_link_libraries(test_migration_runner sohbet_lib)
+add_test(NAME MigrationRunnerTest COMMAND test_migration_runner)
+
+# Example programs
+add_executable(user_management_example examples/user_management_example.cpp)
+target_link_libraries(user_management_example sohbet_lib)
