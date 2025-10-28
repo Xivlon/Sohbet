@@ -121,3 +121,7 @@ add_test(NAME MultipartParserTest COMMAND test_multipart_parser)
 add_executable(test_websocket_server tests/test_websocket_server.cpp)
 target_link_libraries(test_websocket_server sohbet_lib)
 add_test(NAME WebSocketServerTest COMMAND test_websocket_server)
+
+add_executable(test_config_env tests/test_config_env.cpp)
+target_link_libraries(test_config_env sohbet_lib)
+add_test(NAME ConfigEnvTest COMMAND test_config_env)
