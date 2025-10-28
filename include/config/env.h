@@ -45,5 +45,14 @@ inline int get_websocket_port() {
     return std::atoi(port);
 }
 
+inline std::string get_cors_origin() {
+    const char* origin = std::getenv("CORS_ORIGIN");
+    if (!origin || std::string(origin).empty()) {
+        // Default to allowing all origins for development
+        return "*";
+    }
+    return std::string(origin);
+}
+
 } // namespace config
 } // namespace sohbet

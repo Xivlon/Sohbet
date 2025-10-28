@@ -386,9 +386,13 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
     oss << "\r\n";
     oss << "Content-Type: " << response.content_type << "\r\n";
     oss << "Content-Length: " << response.body.length() << "\r\n";
-    oss << "Access-Control-Allow-Origin: *\r\n";
+    
+    // CORS headers - use environment variable or allow all origins
+    std::string cors_origin = config::get_cors_origin();
+    oss << "Access-Control-Allow-Origin: " << cors_origin << "\r\n";
     oss << "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n";
     oss << "Access-Control-Allow-Headers: Content-Type, Authorization\r\n";
+    oss << "Access-Control-Allow-Credentials: true\r\n";
     oss << "Connection: close\r\n";
     oss << "\r\n";
     oss << response.body;

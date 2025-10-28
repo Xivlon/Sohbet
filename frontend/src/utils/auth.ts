@@ -4,11 +4,12 @@ const API_BASE = envBase.replace(/\/+$/, ''); // remove trailing slashes
 export type LoginResult = { token: string; user: unknown };
 
 async function request(path: string, options: RequestInit = {}) {
-  const base =
-    API_BASE ||
-    (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '');
-  if (!base) throw new Error('API base URL not configured (NEXT_PUBLIC_API_URL)');
-  const url = `${base}${path.startsWith('/') ? path : `/${path}`}`;
+  // Use configured API base URL, do not fallback to window.location
+  if (!API_BASE) {
+    throw new Error('API base URL not configured. Set NEXT_PUBLIC_API_URL environment variable.');
+  }
+  
+  const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
   const res = await fetch(url, options);
   return res;
 }

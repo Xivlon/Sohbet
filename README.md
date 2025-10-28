@@ -79,6 +79,14 @@ npm install
 npm start
 ```
 
+### Production Deployment
+
+For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the comprehensive [Deployment Guide](DEPLOYMENT_GUIDE.md) which covers:
+- Environment variable configuration
+- Frontend and backend setup
+- Security considerations
+- Troubleshooting common deployment issues
+
 ---
 
 ## Current Features
