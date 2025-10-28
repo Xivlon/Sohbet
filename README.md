@@ -1,4 +1,4 @@
-<img src="attached_assets/sohbet.png" alt="Sohbet">
+![Sohbet](attached_assets/sohbet.png)
 
 # Sohbet
 
