@@ -1,4 +1,5 @@
 #include "server/server.h"
+#include "config/env.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -18,8 +19,11 @@ void signalHandler(int signal) {
 int main() {
     std::cout << "Starting Sohbet Academic Social Backend v0.3.0-academic" << std::endl;
 
-    // Create server instance on port 8080 with database file
-    sohbet::server::AcademicSocialServer server(8080, "academic.db");
+    // Get HTTP port from environment or use default
+    int http_port = sohbet::config::get_http_port();
+    
+    // Create server instance with configurable port and database file
+    sohbet::server::AcademicSocialServer server(http_port, "academic.db");
     global_server = &server;
     
     // Set up signal handlers for graceful shutdown

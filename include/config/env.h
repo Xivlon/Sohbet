@@ -29,5 +29,21 @@ inline int get_jwt_expiry_hours() {
     return std::atoi(expiry);
 }
 
+inline int get_http_port() {
+    const char* port = std::getenv("PORT");
+    if (!port) {
+        return 8080;
+    }
+    return std::atoi(port);
+}
+
+inline int get_websocket_port() {
+    const char* port = std::getenv("WS_PORT");
+    if (!port) {
+        return 8081;
+    }
+    return std::atoi(port);
+}
+
 } // namespace config
 } // namespace sohbet

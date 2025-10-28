@@ -49,8 +49,9 @@ bool AcademicSocialServer::initialize() {
     voice_config.enabled = true;
     voice_service_ = std::make_shared<VoiceServiceStub>(voice_config);
     
-    // Initialize WebSocket server
-    websocket_server_ = std::make_shared<WebSocketServer>(8081);
+    // Initialize WebSocket server with configurable port
+    int ws_port = config::get_websocket_port();
+    websocket_server_ = std::make_shared<WebSocketServer>(ws_port);
     setupWebSocketHandlers();
 
     if (!user_repository_->migrate()) {
