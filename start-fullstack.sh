@@ -51,8 +51,8 @@ cd ..
 
 echo ""
 echo "✅ Both servers started!"
-echo "📱 Frontend: http://localhost:3000"
-echo "🔧 Backend API: http://localhost:8080/api/status"
+echo "📱 Frontend: http://0.0.0.0:5000"
+echo "🔧 Backend API: http://0.0.0.0:8080/api/status"
 echo ""
 echo "Press Ctrl+C to stop all servers"
 

@@ -100,7 +100,7 @@ bool AcademicSocialServer::start() {
     }
     
     running_ = true;
-    std::cout << "🌐 HTTP Server listening on http://localhost:" << port_ << std::endl;
+    std::cout << "🌐 HTTP Server listening on http://0.0.0.0:" << port_ << std::endl;
     std::cout << "Available endpoints:" << std::endl;
     std::cout << "  GET  /api/status" << std::endl;
     std::cout << "  GET  /api/users (list all users)" << std::endl;

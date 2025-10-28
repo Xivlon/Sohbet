@@ -103,7 +103,7 @@ bool WebSocketServer::start() {
     running_ = true;
     accept_thread_ = std::thread(&WebSocketServer::acceptConnections, this);
     
-    std::cout << "🔌 WebSocket server listening on ws://localhost:" << port_ << std::endl;
+    std::cout << "🔌 WebSocket server listening on ws://0.0.0.0:" << port_ << std::endl;
     return true;
 }
 
