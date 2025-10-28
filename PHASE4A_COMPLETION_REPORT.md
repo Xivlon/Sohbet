@@ -279,8 +279,8 @@ Total Test time (real) = 4.97 sec
 **Server Startup**: ✅ Successful
 ```
 Starting WebSocket server on port 8081
-🔌 WebSocket server listening on ws://localhost:8081
-🌐 HTTP Server listening on http://localhost:8080
+🔌 WebSocket server listening on ws://0.0.0.0:8081
+🌐 HTTP Server listening on http://0.0.0.0:8080
 Server ready to handle requests
 ```
 

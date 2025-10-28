@@ -217,7 +217,7 @@ Set these environment variables to enable and configure voice features:
 export SOHBET_VOICE_ENABLED=true
 
 # Murmur server settings
-export SOHBET_MURMUR_HOST=localhost
+export SOHBET_MURMUR_HOST=0.0.0.0
 export SOHBET_MURMUR_PORT=64738
 export SOHBET_MURMUR_ADMIN_PASSWORD=your_secure_password
 

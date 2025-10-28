@@ -175,7 +175,7 @@ WebSocket connections are authenticated using JWT tokens:
 1. Client obtains JWT token from login endpoint
 2. Client connects to WebSocket with token as query parameter:
    ```
-   ws://localhost:8081/?token=eyJhbGciOiJIUzI1NiIs...
+   ws://0.0.0.0:8081/?token=eyJhbGciOiJIUzI1NiIs...
    ```
 3. Server validates token and extracts user_id
 4. Connection is established and associated with user_id
@@ -287,7 +287,7 @@ cd build
 2. Connect with a WebSocket client (e.g., browser console):
 ```javascript
 const token = 'your_jwt_token_here';
-const ws = new WebSocket(`ws://localhost:8081/?token=${token}`);
+const ws = new WebSocket(`ws://0.0.0.0:8081/?token=${token}`);
 
 ws.onmessage = (event) => {
   console.log('Received:', event.data);

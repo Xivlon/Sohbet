@@ -5,7 +5,7 @@ namespace sohbet {
 
 VoiceConfig::VoiceConfig()
     : enabled(false),
-      murmur_host("localhost"),
+      murmur_host("0.0.0.0"),
       murmur_port(64738),
       murmur_admin_password(""),
       token_expiry_seconds(300),

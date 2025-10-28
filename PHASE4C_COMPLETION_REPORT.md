@@ -125,7 +125,7 @@ create_channel(name, channel_type, group_id=0, organization_id=0)
      "session_id": 1,
      "channel_id": 1,
      "connection_token": "...",
-     "murmur_host": "localhost",
+     "murmur_host": "0.0.0.0",
      "murmur_port": 64738,
      "expires_at": "2025-10-27T22:00:00Z"
    }
@@ -486,7 +486,7 @@ Test project /home/runner/work/Sohbet/Sohbet/build
 ### Create a Channel
 
 ```bash
-curl -X POST http://localhost:8080/api/voice/channels \
+curl -X POST http://0.0.0.0:8080/api/voice/channels \
   -H "Content-Type: application/json" \
   -H "X-User-ID: 1" \
   -d '{"name":"CS Study Room","channel_type":"public"}'
@@ -495,20 +495,20 @@ curl -X POST http://localhost:8080/api/voice/channels \
 ### List All Channels
 
 ```bash
-curl http://localhost:8080/api/voice/channels
+curl http://0.0.0.0:8080/api/voice/channels
 ```
 
 ### Join a Channel
 
 ```bash
-curl -X POST http://localhost:8080/api/voice/channels/1/join \
+curl -X POST http://0.0.0.0:8080/api/voice/channels/1/join \
   -H "X-User-ID: 1"
 ```
 
 ### Leave a Channel
 
 ```bash
-curl -X DELETE http://localhost:8080/api/voice/channels/1/leave \
+curl -X DELETE http://0.0.0.0:8080/api/voice/channels/1/leave \
   -H "X-User-ID: 1"
 ```
 

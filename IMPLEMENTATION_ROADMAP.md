@@ -437,7 +437,7 @@ Voice Channels:
 ✅ GET /api/voice/channels/:id/users - List active users
 
 WebSocket (Real-time):
-✅ ws://localhost:8081/?token={jwt} - WebSocket connection
+✅ ws://0.0.0.0:8081/?token={jwt} - WebSocket connection
   Events:
   - chat:send - Send message
   - chat:message - Receive message

@@ -57,7 +57,7 @@ Here's a simple example to get started:
 // Step 1: Create configuration
 VoiceConfig config;
 config.enabled = true;
-config.murmur_host = "localhost";
+config.murmur_host = "0.0.0.0";
 config.murmur_port = 64738;
 
 // Step 2: Create service (using stub for testing)
@@ -155,7 +155,7 @@ Set these environment variables to configure the voice service:
 export SOHBET_VOICE_ENABLED=true
 
 # Murmur server settings
-export SOHBET_MURMUR_HOST=localhost
+export SOHBET_MURMUR_HOST=0.0.0.0
 export SOHBET_MURMUR_PORT=64738
 export SOHBET_MURMUR_ADMIN_PASSWORD=your_password
 

@@ -127,7 +127,7 @@ cd build && ./sohbet
 
 ### 3. Test login:
 ```bash
-curl -X POST http://localhost:8080/api/login \
+curl -X POST http://0.0.0.0:8080/api/login \
   -H "Content-Type: application/json" \
   -d '{"username":"demo_student","password":"demo123"}'
 ```
