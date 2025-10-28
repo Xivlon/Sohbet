@@ -1,4 +1,4 @@
-!(https://raw.githubusercontent.com/Xivlon/Sohbet/main/Sohbetlogo.png)
+![sohbet.png](https://raw.githubusercontent.com/attached_assets/sohbet.png)
 
 # Sohbet
 
