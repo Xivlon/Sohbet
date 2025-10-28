@@ -115,6 +115,15 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    // Validate that API URL is configured
+    if (!this.baseUrl) {
+      console.error('API base URL not configured. Set NEXT_PUBLIC_API_URL environment variable.');
+      return {
+        error: 'API base URL not configured',
+        status: 0,
+      };
+    }
+    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options.headers as Record<string, string>,
@@ -125,7 +134,10 @@ class ApiClient {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      const fullUrl = `${this.baseUrl}${endpoint}`;
+      console.log('API Request:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
         ...options,
         headers,
       });

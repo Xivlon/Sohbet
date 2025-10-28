@@ -30,10 +30,21 @@ class WebSocketService {
   private connectionListeners: Set<(connected: boolean) => void> = new Set();
 
   constructor(url?: string) {
-    // Default to 0.0.0.0 WebSocket server on port 8081
-    // Only access window on client-side
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : '0.0.0.0';
-    this.url = url || `ws://${hostname}:8081`;
+    // Use environment variable for WebSocket URL
+    const envWsUrl = process.env.NEXT_PUBLIC_WS_URL;
+    
+    if (url) {
+      this.url = url;
+    } else if (envWsUrl) {
+      // If NEXT_PUBLIC_WS_URL is set, use it
+      // Convert https:// to wss:// if needed
+      this.url = envWsUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://');
+    } else {
+      // Fallback: Only access window on client-side
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : '0.0.0.0';
+      const protocol = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      this.url = `${protocol}//${hostname}:8081`;
+    }
   }
 
   /**
@@ -57,6 +68,20 @@ class WebSocketService {
       try {
         // Include token in URL as query parameter
         const wsUrl = `${this.url}/?token=${encodeURIComponent(token)}`;
+        
+        // Check for insecure connection on HTTPS pages
+        if (typeof window !== 'undefined' && 
+            window.location.protocol === 'https:' && 
+            wsUrl.startsWith('ws://')) {
+          const error = new Error(
+            'Cannot establish insecure WebSocket connection (ws://) from secure page (https://). ' +
+            'Please configure NEXT_PUBLIC_WS_URL environment variable with a secure WebSocket URL (wss://)'
+          );
+          console.error(error.message);
+          reject(error);
+          return;
+        }
+        
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
