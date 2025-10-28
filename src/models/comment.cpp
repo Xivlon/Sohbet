@@ -51,9 +51,9 @@ std::string Comment::toJson() const {
 }
 
 Comment Comment::fromJson(const std::string& json) {
+    (void)json; // Unused - TODO: Implement proper JSON parsing
     // Basic JSON parsing (in production, use a proper JSON library)
     Comment comment;
-    // TODO: Implement proper JSON parsing
     return comment;
 }
 

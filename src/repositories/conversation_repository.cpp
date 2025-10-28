@@ -67,8 +67,7 @@ Conversation ConversationRepository::createConversation(int user1_id, int user2_
     stmt.bindInt(2, user2_id);
     
     if (stmt.step() == SQLITE_DONE) {
-        int conversation_id = database_->lastInsertRowId();
-        
+        // Conversation created successfully
         // Retrieve the created conversation
         auto created = findConversation(user1_id, user2_id);
         if (created) {
