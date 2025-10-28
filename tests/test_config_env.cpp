@@ -2,9 +2,29 @@
 #include <iostream>
 #include <cstdlib>
 #include <cassert>
+#include <cstring>
+
+// Helper to save environment variable
+std::string save_env(const char* name) {
+    const char* value = std::getenv(name);
+    return value ? std::string(value) : "";
+}
+
+// Helper to restore environment variable
+void restore_env(const char* name, const std::string& value) {
+    if (value.empty()) {
+        unsetenv(name);
+    } else {
+        setenv(name, value.c_str(), 1);
+    }
+}
 
 int main() {
     std::cout << "Testing environment configuration..." << std::endl;
+    
+    // Save original environment
+    std::string orig_port = save_env("PORT");
+    std::string orig_ws_port = save_env("WS_PORT");
     
     // Test default HTTP port
     unsetenv("PORT");
@@ -36,6 +56,10 @@ int main() {
     assert(sohbet::config::get_http_port() == 3000);
     assert(sohbet::config::get_websocket_port() == 3001);
     std::cout << "✓ Port configuration from environment variables works correctly" << std::endl;
+    
+    // Restore original environment
+    restore_env("PORT", orig_port);
+    restore_env("WS_PORT", orig_ws_port);
     
     std::cout << "All environment configuration tests passed!" << std::endl;
     return 0;
