@@ -31,6 +31,7 @@ bool UserRepository::migrate() {
             role TEXT DEFAULT 'Student',
             avatar_url TEXT,
             banner_url TEXT,
+            email_verified INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     )";
