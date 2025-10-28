@@ -1,4 +1,4 @@
-![sohbet.png](https://raw.githubusercontent.com/attached_assets/sohbet.png)
+![sohbet.png]([https://raw.githubusercontent.com/attached_assets/sohbet.png])
 
 # Sohbet
 
