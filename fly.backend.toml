@@ -1,0 +1,41 @@
+app = "sohbet-backend"
+primary_region = "ams"  # Amsterdam (Europe, good for Turkish users)
+
+[build]
+dockerfile = "Dockerfile.backend"
+args = {}
+
+[env]
+  SOHBET_JWT_SECRET = "CHANGE_ME_TO_SECURE_SECRET"  # Override at deploy time
+
+[[services]]
+  internal_port = 8080
+  processes = ["app"]
+  protocol = "tcp"
+  auto_stop_machines = true
+  auto_start_machines = true
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[[services]]
+  internal_port = 8081
+  processes = ["app"]
+  protocol = "tcp"
+  
+  [[services.ports]]
+    port = 8081
+    handlers = ["tcp"]
+
+[checks]
+  [checks.http_check]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/api/health"
+    protocol = "http"
+    timeout = "5s"
