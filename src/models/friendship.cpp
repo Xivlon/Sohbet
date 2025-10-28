@@ -33,9 +33,9 @@ std::string Friendship::toJson() const {
 }
 
 Friendship Friendship::fromJson(const std::string& json) {
+    (void)json; // Unused - TODO: Implement proper JSON parsing
     // Basic JSON parsing (in production, use a proper JSON library)
     Friendship friendship;
-    // TODO: Implement proper JSON parsing
     return friendship;
 }
 

@@ -53,9 +53,9 @@ std::string Post::toJson() const {
 }
 
 Post Post::fromJson(const std::string& json) {
+    (void)json; // Unused - TODO: Implement proper JSON parsing
     // Basic JSON parsing (in production, use a proper JSON library)
     Post post;
-    // TODO: Implement proper JSON parsing
     return post;
 }
 

@@ -30,8 +30,8 @@ std::string Role::toJson() const {
 
 // Simplified fromJson - in production, use a proper JSON library
 Role Role::fromJson(const std::string& json) {
+    (void)json; // Unused - TODO: Implement proper JSON parsing
     Role role;
-    // TODO: Implement proper JSON parsing
     return role;
 }
 
