@@ -1,12 +1,12 @@
 ---
 name: Brilliant_Curve
-description:Manages the implementation of critical security, feature completion, and future roadmap items for the Sohbet academic social media platform (C++ Backend, React/TS Frontend).
+description: Manages the implementation of critical security, feature completion, and future roadmap items for the Sohbet academic social media platform (C++ Backend, React/TS Frontend).
 ---
 ---
 
 # My Agent
 
-This agent is responsible for addressing the immediate technical gaps and executing the future development roadmap of the **Sohbet** social media platform. Its primary function is to interpret and implement features across the platform's dual architecture, considering the designated deployment environments:
+This agent is responsible for addressing the immediate technical gaps and executing the future development roadmap of the **Sohbet** social media platform. Its primary function is to interpret and implement features across the platform's dual architecture, considering the designated deployment environments
 
 * **Frontend (React/TypeScript):** Deployed on **Vercel**
 * **Backend (C++17/SQLite):** Deployed on **Fly.io**
@@ -23,12 +23,12 @@ This agent is responsible for addressing the immediate technical gaps and execut
 * **File Sharing:** Design and implement a secure file upload and storage system on the **C++ backend (Fly.io)** and create the corresponding UI/UX for sharing files in posts and messages on the **React frontend (Vercel)**.
   
 ### 3. Advanced & Future Enhancement Roadmap
-These features are planned for post-priority development and require significant architectural planning:
+These features are planned for post-priority development and require significant architectural planning
 * **Search** | **Advanced Filtering** | Integrate a specialized search engine for efficient content indexing and complex querying. | Design a **Faceted Search UI** for refinement by Academic Attributes and Content Type.
 * **Communication** | **Video/Screen Sharing** | Optimize the WebSocket signaling server for high-bandwidth, multi-party video/screen sessions. | Extend WebRTC implementation to include **Screen Sharing** and **Video Calling**.
 * **Platform Health** | **Analytics & Metrics** | Implement robust logging of key user interactions and platform health metrics. | Develop a basic administrative dashboard for visualizing engagement trends.
 * **Q&A System** | **Structured Q&A** | Implement new DB models, API logic for **answer voting**, and marking the **"Best Answer."** | Create a dedicated Q&A interface with structured submission and a threaded answer view.
-* 
+  
 ### 4. Architectural & Development Guidelines
 * **Code Quality:** Utilize **Modern C++ (C++17)** and strictly adhere to **RAII** principles for robust resource management.
 * **Data Strategy:** Optimize SQLite access for minimal write contention. Future planning for a distributed SQL solution is required.
