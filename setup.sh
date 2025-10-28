@@ -184,8 +184,8 @@ echo ""
 echo "🧪 Testing API Endpoints..."
 
 # Test /api/status endpoint
-if test_endpoint "http://localhost:8080/api/status"; then
-    RESPONSE=$(curl -s http://localhost:8080/api/status)
+if test_endpoint "http://0.0.0.0:8080/api/status"; then
+    RESPONSE=$(curl -s http://0.0.0.0:8080/api/status)
     print_status "GET /api/status response: $RESPONSE"
 else
     print_error "Status endpoint test failed"
@@ -195,8 +195,8 @@ else
 fi
 
 # Test /api/users/demo endpoint
-if test_endpoint "http://localhost:8080/api/users/demo"; then
-    RESPONSE=$(curl -s http://localhost:8080/api/users/demo)
+if test_endpoint "http://0.0.0.0:8080/api/users/demo"; then
+    RESPONSE=$(curl -s http://0.0.0.0:8080/api/users/demo)
     print_status "GET /api/users/demo response: $RESPONSE"
 else
     print_error "Demo users endpoint test failed"
@@ -207,7 +207,7 @@ fi
 print_info "Testing POST /api/users endpoint..."
 RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
     -d '{"username":"setup_test_user","email":"test@setup.edu","password":"TestPass123","university":"Setup University","department":"Test","enrollment_year":2023,"primary_language":"English"}' \
-    http://localhost:8080/api/users)
+    http://0.0.0.0:8080/api/users)
 
 if echo "$RESPONSE" | grep -q '"id"'; then
     print_status "POST /api/users test successful: $RESPONSE"
@@ -218,17 +218,17 @@ fi
 echo ""
 print_status "🎉 Backend Setup Completed Successfully!"
 echo ""
-echo "Backend server is running on http://localhost:8080"
+echo "Backend server is running on http://0.0.0.0:8080"
 echo "Available endpoints:"
-echo "  GET  http://localhost:8080/api/status"
-echo "  GET  http://localhost:8080/api/users/demo"
-echo "  POST http://localhost:8080/api/users"
-echo "  POST http://localhost:8080/api/login"
+echo "  GET  http://0.0.0.0:8080/api/status"
+echo "  GET  http://0.0.0.0:8080/api/users/demo"
+echo "  POST http://0.0.0.0:8080/api/users"
+echo "  POST http://0.0.0.0:8080/api/login"
 echo ""
-echo "Frontend connects directly to C++ backend: http://localhost:8080"
+echo "Frontend connects directly to C++ backend: http://0.0.0.0:8080"
 echo ""
 echo "🔧 Troubleshooting Commands:"
-echo "  - Check server status: curl http://localhost:8080/api/status"
+echo "  - Check server status: curl http://0.0.0.0:8080/api/status"
 echo "  - View server logs: tail -f build/server_output.log"
 echo "  - Check port usage: lsof -i :8080"
 echo "  - Stop server: kill $SERVER_PID"

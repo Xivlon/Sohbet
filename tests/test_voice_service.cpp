@@ -12,7 +12,7 @@ void test_voice_config() {
     
     // Test default values
     assert(config.enabled == false);
-    assert(config.murmur_host == "localhost");
+    assert(config.murmur_host == "0.0.0.0");
     assert(config.murmur_port == 64738);
     assert(config.token_expiry_seconds == 300);
     assert(config.max_users_per_channel == 25);

@@ -55,7 +55,7 @@ export SOHBET_JWT_SECRET="your-secret-here"
 # Server starts successfully
 
 unset SOHBET_JWT_SECRET
-curl -X POST http://localhost:8080/api/login -d '{"username":"demo","password":"demo123"}'
+curl -X POST http://0.0.0.0:8080/api/login -d '{"username":"demo","password":"demo123"}'
 # Returns error when JWT secret is not configured
 ```
 

@@ -30,9 +30,9 @@ class WebSocketService {
   private connectionListeners: Set<(connected: boolean) => void> = new Set();
 
   constructor(url?: string) {
-    // Default to localhost WebSocket server on port 8081
+    // Default to 0.0.0.0 WebSocket server on port 8081
     // Only access window on client-side
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '0.0.0.0';
     this.url = url || `ws://${hostname}:8081`;
   }
 

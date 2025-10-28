@@ -48,7 +48,7 @@ cd Sohbet
 This simple command will:
 1. Set up everything automatically
 2. Start the application
-3. Open Sohbet in your web browser at http://localhost:3000
+3. Open Sohbet in your web browser at http://0.0.0.0:3000
 
 You can then create an account or use the demo login:
 - **Username**: `demo_student`
@@ -305,7 +305,7 @@ A demo account is automatically created for testing:
 ```bash
 curl -X POST -H "Content-Type: application/json" \
   -d '{"username":"demo_student","password":"demo123"}' \
-  http://localhost:8080/api/login
+  http://0.0.0.0:8080/api/login
 ```
 
 ### Error Responses
@@ -363,8 +363,8 @@ cd build
 
 #### Test the API
 ```bash
-curl http://localhost:8080/api/status
-curl http://localhost:8080/api/users/demo
+curl http://0.0.0.0:8080/api/status
+curl http://0.0.0.0:8080/api/users/demo
 ```
 
 ### Running Tests
@@ -405,7 +405,7 @@ Having issues? Here are common problems and solutions:
 
 1. **Verify the server is running:**
    ```bash
-   curl http://localhost:8080/api/status
+   curl http://0.0.0.0:8080/api/status
    # Should return: {"status":"ok","version":"0.3.0-academic",...}
    ```
 
@@ -522,8 +522,8 @@ pkill -f sohbet
 
 **Verification Steps:**
 
-1. Backend server is running: `curl http://localhost:8080/api/status`
-2. Frontend proxy is configured: Check `frontend/package.json` for `"proxy": "http://localhost:8080"`
+1. Backend server is running: `curl http://0.0.0.0:8080/api/status`
+2. Frontend proxy is configured: Check `frontend/package.json` for `"proxy": "http://0.0.0.0:8080"`
 3. CORS headers are present: Server should return `Access-Control-Allow-Origin: *`
 
 **Solution:**
@@ -539,16 +539,16 @@ Run these commands to verify everything is working:
 
 ```bash
 # Test all endpoints
-curl -v http://localhost:8080/api/status
-curl -v http://localhost:8080/api/users/demo
+curl -v http://0.0.0.0:8080/api/status
+curl -v http://0.0.0.0:8080/api/users/demo
 
 # Test user registration
 curl -v -X POST -H "Content-Type: application/json" \
   -d '{"username":"test","email":"test@example.edu","password":"TestPass123"}' \
-  http://localhost:8080/api/users
+  http://0.0.0.0:8080/api/users
 
 # Check server health (with formatted output)
-curl -s http://localhost:8080/api/status | python3 -m json.tool
+curl -s http://0.0.0.0:8080/api/status | python3 -m json.tool
 ```
 
 ---
