@@ -21,7 +21,7 @@ std::optional<User> UserHelpers::createUser(
 
     // Validate username
     if (!User::isValidUsername(username)) {
-        setError("Invalid username: must be 3-32 alphanumeric characters");
+        setError("Invalid username: must be 3-32 alphanumeric characters or underscores");
         return std::nullopt;
     }
 

@@ -24,7 +24,7 @@ public:
 
     /**
      * Create a new user with automatic password hashing and validation
-     * @param username User's username (3-32 alphanumeric characters)
+     * @param username User's username (3-32 alphanumeric characters or underscores)
      * @param email User's email address
      * @param password Plain text password (minimum 8 characters)
      * @param name Optional full name
