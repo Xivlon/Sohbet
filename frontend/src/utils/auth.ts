@@ -35,7 +35,7 @@ export async function login(username: string, password: string): Promise<LoginRe
   const data = await res.json();
   if (!data || !data.token) throw new Error('Login response did not include a token.');
   try {
-    localStorage.setItem('authToken', data.token);
+    localStorage.setItem('auth_token', data.token);
   } catch {
     console.warn('Could not store token');
   }
@@ -44,7 +44,7 @@ export async function login(username: string, password: string): Promise<LoginRe
 
 export function logout() {
   try {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('auth_token');
   } catch {
     /* ignore */
   }
