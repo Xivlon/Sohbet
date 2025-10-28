@@ -179,7 +179,6 @@ src/server/server.cpp                 |   6 +-
 
 ## References
 
-- [Problem Statement Issue](https://github.com/Xivlon/Sohbet/issues/...)
 - [Deployment Guide](DEPLOYMENT_GUIDE.md)
 - [Vercel Environment Variables](https://vercel.com/docs/environment-variables)
 - [Fly.io Secrets](https://fly.io/docs/reference/secrets/)
