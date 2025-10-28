@@ -1,19 +1,16 @@
 app = "sohbet-backend"
-primary_region = "ams"  # Amsterdam (Europe, good for Turkish users)
+primary_region = "ams"
 
 [build]
-dockerfile = "Dockerfile.backend"
-args = {}
+dockerfile = "Dockerfile.backend"  # This tells Fly to use Dockerfile.backend
 
 [env]
-  SOHBET_JWT_SECRET = "CHANGE_ME_TO_SECURE_SECRET"  # Override at deploy time
+  SOHBET_JWT_SECRET = "your-secret-here"
 
 [[services]]
   internal_port = 8080
   processes = ["app"]
   protocol = "tcp"
-  auto_stop_machines = true
-  auto_start_machines = true
 
   [[services.ports]]
     port = 80
