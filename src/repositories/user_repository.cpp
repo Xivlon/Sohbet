@@ -92,7 +92,8 @@ std::optional<User> UserRepository::findByUsername(const std::string& username) 
     const std::string sql = R"(
         SELECT id, username, email, password_hash, name, position, phone_number,
                university, department, enrollment_year, warnings, 
-               primary_language, additional_languages, role, avatar_url, banner_url, created_at
+               primary_language, additional_languages, role, avatar_url, banner_url, created_at,
+               COALESCE(email_verified, 0) as email_verified
         FROM users WHERE username = ?
     )";
 
@@ -114,7 +115,8 @@ std::optional<User> UserRepository::findByEmail(const std::string& email) {
     const std::string sql = R"(
         SELECT id, username, email, password_hash, name, position, phone_number,
                university, department, enrollment_year, warnings,
-               primary_language, additional_languages, role, avatar_url, banner_url, created_at
+               primary_language, additional_languages, role, avatar_url, banner_url, created_at,
+               COALESCE(email_verified, 0) as email_verified
         FROM users WHERE email = ?
     )";
 
@@ -290,6 +292,10 @@ User UserRepository::userFromStatement(db::Statement& stmt) {
 
     std::string banner_url = stmt.getText(16);
     if (!banner_url.empty()) user.setBannerUrl(banner_url);
+
+    // email_verified (column 17)
+    int email_verified = stmt.getInt(18);
+    user.setEmailVerified(email_verified != 0);
 
     return user;
 }
