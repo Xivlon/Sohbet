@@ -431,37 +431,5 @@ public:
         print(f"🎉 DEVELOPMENT COMPLETED: {features_developed} features built")
         print(f"📊 REMAINING: {len(missing_features) - features_developed} features")
         
-        # 5. Auto-chain if enabled and features remain
-        remaining_features = len(missing_features) - features_developed
-        if self.AUTO_CHAIN_RUNS and remaining_features > 0:
-            print(f"\n🔗 {remaining_features} FEATURES REMAINING - INITIATING AUTO-CHAIN")
-            chain_success = self.trigger_next_run()
-            
-            if chain_success:
-                print("🔄 AUTO-CHAINING INITIATED SUCCESSFULLY")
-            else:
-                print("📋 Manual intervention required for next run")
-        
-        return True
-
-def main():
-    developer = AutoChainingDeveloper()
-    
-    print("🤖 BRILLIANT CURVE - AUTO-CHAINING DEVELOPER")
-    print("=============================================")
-    
-    success = developer.execute_development()
-    
-    if success:
-        print("\n" + "=" * 50)
-        print("🚀 DEVELOPMENT CYCLE COMPLETED!")
-        roadmap, pending_count = developer.load_roadmap()
-        if pending_count > 0:
-            print(f"🔗 {pending_count} features remaining - check for auto-chain")
-        else:
-            print("✅ ALL ROADMAP FEATURES COMPLETED!")
-    else:
-        print("❌ Development failed")
-
 if __name__ == "__main__":
     main()
