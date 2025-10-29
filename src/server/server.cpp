@@ -672,7 +672,11 @@ HttpResponse AcademicSocialServer::handleLogin(const HttpRequest& request) {
         std::ostringstream oss;
         oss << "{ \"token\":\"" << token << "\", \"user\":" << user.toJson() << " }";
         return createJsonResponse(200, oss.str());
+    } catch (const std::exception& e) {
+        std::cerr << "Login error: " << e.what() << std::endl;
+        return createErrorResponse(500, "Internal server error");
     } catch (...) {
+        std::cerr << "Login error: Unknown exception" << std::endl;
         return createErrorResponse(500, "Internal server error");
     }
 }

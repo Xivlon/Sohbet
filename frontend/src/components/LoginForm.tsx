@@ -13,6 +13,24 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleDemoLogin = async () => {
+    setError('');
+    setIsLoading(true);
+    setUsername('demo_student');
+    setPassword('demo123');
+
+    try {
+      await login('demo_student', 'demo123');
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Demo login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -79,6 +97,19 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
           {isLoading ? 'İşleniyor...' : 'Giriş Yap'}
         </button>
       </form>
+
+      <div className="mt-3">
+        <button
+          onClick={handleDemoLogin}
+          disabled={isLoading}
+          className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 dark:border-gray-600"
+        >
+          🎓 Demo Hesabı Kullan
+        </button>
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+          Uygulamayı denemek için demo hesabıyla giriş yapın
+        </p>
+      </div>
 
       {onSwitchToRegister && (
         <div className="mt-4 text-center">
