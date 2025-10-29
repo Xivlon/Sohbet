@@ -261,12 +261,17 @@ bool WebSocketServer::performWebSocketHandshake(int client_socket, std::string& 
     SHA1((unsigned char*)accept_string.c_str(), accept_string.length(), hash);
     std::string accept_key = base64_encode(hash, SHA_DIGEST_LENGTH);
     
-    // Send handshake response
+    // Get CORS origin from environment
+    std::string cors_origin = config::get_cors_origin();
+    
+    // Send handshake response with CORS headers
     std::ostringstream response;
     response << "HTTP/1.1 101 Switching Protocols\r\n";
     response << "Upgrade: websocket\r\n";
     response << "Connection: Upgrade\r\n";
     response << "Sec-WebSocket-Accept: " << accept_key << "\r\n";
+    response << "Access-Control-Allow-Origin: " << cors_origin << "\r\n";
+    response << "Access-Control-Allow-Credentials: true\r\n";
     response << "\r\n";
     
     std::string response_str = response.str();
