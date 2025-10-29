@@ -1,57 +1,44 @@
-name: Brilliant_Curve Agent Runner
-
-on:
-  workflow_dispatch: # Manual trigger
-  schedule:
-    - cron: '0 0 * * *' # Daily at midnight UTC
-  issue_comment:
-    types: [created] # Respond to issue comments
+name: Brilliant_Curve Agent
 permissions:
   contents: write
   issues: write
-  
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+  issue_comment:
+    types: [created]
+
 jobs:
-  run-agent:
-    # Only run when the comment contains an agent command
+  ai-developer:
     if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'schedule' ||
-      contains(github.event.comment.body, '/execute-all-core-goals') ||
-      contains(github.event.comment.body, '/implement-') ||
-      contains(github.event.comment.body, '/add-') ||
-      contains(github.event.comment.body, '/secure-') ||
-      contains(github.event.comment.body, '/finalize-') ||
-      contains(github.event.comment.body, '/configure-') ||
-      contains(github.event.comment.body, '/build-') ||
-      contains(github.event.comment.body, '/optimize-') ||
-      contains(github.event.comment.body, '/update-') ||
-      contains(github.event.comment.body, '/apply-') ||
-      contains(github.event.comment.body, '/synchronize-') ||
-      contains(github.event.comment.body, '/validate-') ||
-      contains(github.event.comment.body, '/enforce-')
-    
+      contains(github.event.comment.body, '/develop') ||
+      contains(github.event.comment.body, '/implement') ||
+      contains(github.event.comment.body, '/execute-all-core-goals')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout codebase
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
+        
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install pyyaml
-
-      - name: Run Brilliant_Curve agent
-        run: python3 .github/agents/run_agent.py
-
-      - name: Commit and push agent updates
+          
+      - name: Install Python dependencies
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          pip install requests pyyaml
+          
+      - name: Analyze and Develop
+        run: |
+          echo "🤖 AI Developer Agent Activating..."
+          python .github/agents/run_agent.py "${{ github.event.comment.body }}"
+          
+      - name: Commit AI-generated code
+        run: |
+          git config --local user.email "ai-developer@github.com"
+          git config --local user.name "Brilliant Curve AI"
           git add .
-          git diff --staged --quiet || git commit -m "[agent] Updated progress tracker"
+          git diff --staged --quiet || git commit -m "🤖 AI: Implemented features from ${{ github.event.comment.body }}"
           git push
