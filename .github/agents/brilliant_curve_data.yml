@@ -17,6 +17,7 @@ command_library:
   - implement-email-verification
   - add-rate-limiting
   - secure-jwt-authentication
+  - Implement CORS Support
   System Integration:
   - synchronize-deployments
   - validate-cross-platform-auth
