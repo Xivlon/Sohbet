@@ -431,5 +431,3 @@ public:
         print(f"🎉 DEVELOPMENT COMPLETED: {features_developed} features built")
         print(f"📊 REMAINING: {len(missing_features) - features_developed} features")
         
-if __name__ == "__main__":
-    main()
