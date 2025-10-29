@@ -18,8 +18,6 @@ class AutoChainingDeveloper:
         
         # CONFIGURABLE SETTINGS
         self.FEATURES_PER_RUN = 5 # Features to build per run
-        self.AUTO_CHAIN_RUNS = True  # Enable auto-chaining
-        self.CHAIN_DELAY = 10  # Seconds to wait before next run
         
     def load_roadmap(self):
         """Load and analyze your actual roadmap"""
