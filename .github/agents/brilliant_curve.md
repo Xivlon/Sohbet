@@ -112,8 +112,4 @@ Each command updates its Progress Tracker row using GNOME icons instead of emoji
   - to **`edit-delete-symbolic`** if an error occurs  
 - The agent commits updates to the same file with the message:
   > `[agent] <command>: updated progress tracker status`
-
----
-
-# Example Usage
-
+  > 
