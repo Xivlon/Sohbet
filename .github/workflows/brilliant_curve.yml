@@ -1,24 +1,54 @@
 name: Brilliant_Curve Agent Runner
 
 on:
-  workflow_dispatch: # Allows manual run
+  workflow_dispatch: # Manual trigger
   schedule:
-    - cron: '0 0 * * *' # Optional: daily run at midnight UTC
+    - cron: '0 0 * * *' # Daily at midnight UTC
+  issue_comment:
+    types: [created] # Respond to issue comments
 
 jobs:
   run-agent:
+    # Only run when the comment contains an agent command
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      contains(github.event.comment.body, '/execute-all-core-goals') ||
+      contains(github.event.comment.body, '/implement-') ||
+      contains(github.event.comment.body, '/add-') ||
+      contains(github.event.comment.body, '/secure-') ||
+      contains(github.event.comment.body, '/finalize-') ||
+      contains(github.event.comment.body, '/configure-') ||
+      contains(github.event.comment.body, '/build-') ||
+      contains(github.event.comment.body, '/optimize-') ||
+      contains(github.event.comment.body, '/update-') ||
+      contains(github.event.comment.body, '/apply-') ||
+      contains(github.event.comment.body, '/synchronize-') ||
+      contains(github.event.comment.body, '/validate-') ||
+      contains(github.event.comment.body, '/enforce-')
+    
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: Install PyYAML
+      - name: Install dependencies
         run: pip install pyyaml
 
       - name: Run Brilliant_Curve agent
-        run: python3 .github/agents/run_brilliant_curve.py
+        run: python3 .github/agents/run_agent.py
+
+      - name: Commit and push agent updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git diff --staged --quiet || git commit -m "[agent] Updated progress tracker"
+          git push
