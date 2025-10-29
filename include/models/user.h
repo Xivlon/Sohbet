@@ -29,6 +29,7 @@ public:
     const std::optional<std::string>& getRole() const { return role_; }
     const std::optional<std::string>& getAvatarUrl() const { return avatar_url_; }
     const std::optional<std::string>& getBannerUrl() const { return banner_url_; }
+    bool getEmailVerified() const { return email_verified_; }
 
     // Setters
     void setId(int id) { id_ = id; }
@@ -47,6 +48,7 @@ public:
     void setRole(const std::optional<std::string>& role) { role_ = role; }
     void setAvatarUrl(const std::optional<std::string>& avatar_url) { avatar_url_ = avatar_url; }
     void setBannerUrl(const std::optional<std::string>& banner_url) { banner_url_ = banner_url; }
+    void setEmailVerified(bool verified) { email_verified_ = verified; }
 
     // Password management (internal only, not serialized)
     void setPasswordHash(const std::string& password_hash) { password_hash_ = password_hash; }
@@ -78,6 +80,7 @@ private:
     std::optional<std::string> role_;
     std::optional<std::string> avatar_url_;
     std::optional<std::string> banner_url_;
+    bool email_verified_ = false;
     std::string password_hash_; // Not serialized in JSON
 };
 

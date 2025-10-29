@@ -80,6 +80,8 @@ std::string User::toJson() const {
         oss << ",\"banner_url\":\"" << banner_url_.value() << "\"";
     }
 
+    oss << ",\"email_verified\":" << (email_verified_ ? "true" : "false");
+
     oss << "}";
     return oss.str();
 }
