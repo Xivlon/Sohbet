@@ -1,4 +1,3 @@
-# .github/agents/brilliant_curve.agent.yml
 name: Brilliant_Curve
 description: Autonomous AI development agent that actually writes code
 permissions:
@@ -11,24 +10,29 @@ on:
 
 jobs:
   ai-developer:
-    if: ${{ contains(github.event.comment.body, '/develop') || contains(github.event.comment.body, '/implement') }}
+    if: |
+      contains(github.event.comment.body, '/develop') ||
+      contains(github.event.comment.body, '/implement') ||
+      contains(github.event.comment.body, '/execute-all-core-goals')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codebase
         uses: actions/checkout@v4
         
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          
       - name: Analyze and Develop
         run: |
           echo "🤖 AI Developer Agent Activating..."
-          echo "🔍 Analyzing Sohbet codebase structure..."
-          echo "🛠️ Implementing real features..."
-          # This would call an AI API to analyze and generate code
-          python .github/agents/ai_developer.py
+          python .github/agents/ai_developer.py "${{ github.event.comment.body }}"
           
       - name: Commit AI-generated code
         run: |
           git config --local user.email "ai-developer@github.com"
           git config --local user.name "Brilliant Curve AI"
           git add .
-          git diff --staged --quiet || git commit -m "🤖 AI: Implemented features"
+          git diff --staged --quiet || git commit -m "🤖 AI: Implemented features from ${{ github.event.comment.body }}"
           git push
