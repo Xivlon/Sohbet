@@ -52,17 +52,17 @@ progress_tracker:
 - icon: document-save-symbolic
   status: Completed
   task: Configure Deployment Communication
-- icon: document-save-symbolic
-  status: Completed
+- icon: document-new-symbolic
+  status: Pending
   task: Implement Advanced Search
 - icon: document-save-symbolic
   status: Completed
   task: Extend WebRTC Video Sharing
-- icon: document-save-symbolic
-  status: Completed
+- icon: document-new-symbolic
+  status: Pending
   task: Build Analytics Dashboard
-- icon: document-save-symbolic
-  status: Completed
+- icon: document-new-symbolic
+  status: Pending
   task: Add Structured Q&A System
 - icon: document-save-symbolic
   status: Completed
