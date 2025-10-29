@@ -30,7 +30,7 @@ jobs:
           
       - name: Install Python dependencies
         run: |
-          pip install pyyaml
+          pip install requests pyyaml
           
       - name: Configure Git
         run: |
