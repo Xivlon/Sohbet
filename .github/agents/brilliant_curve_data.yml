@@ -70,8 +70,8 @@ progress_tracker:
 - icon: document-save-symbolic
   status: Completed
   task: Optimize SQLite Performance
-- icon: document-new-symbolic
-  status: Pending
+- icon: document-save-symbolic
+  status: Completed
   task: Update API Documentation
 - icon: document-new-symbolic
   status: Pending
