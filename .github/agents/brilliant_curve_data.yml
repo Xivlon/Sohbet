@@ -61,11 +61,11 @@ progress_tracker:
 - icon: document-save-symbolic
   status: Completed
   task: Build Analytics Dashboard
-- icon: document-new-symbolic
-  status: Pending
+- icon: document-save-symbolic
+  status: Completed
   task: Add Structured Q&A System
-- icon: document-new-symbolic
-  status: Pending
+- icon: document-save-symbolic
+  status: Completed
   task: Enforce Code Standards
 - icon: document-new-symbolic
   status: Pending
