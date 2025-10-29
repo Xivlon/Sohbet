@@ -17,7 +17,7 @@ class ConfigurableDeveloper:
         
         # CONFIGURABLE SETTINGS
         self.FEATURES_PER_RUN = 5  # 🎯 CHANGE THIS NUMBER
-        self.AUTO_CHAIN_RUNS = True  # Set to True for automatic chaining
+        self.AUTO_CHAIN_RUNS = False  # Set to True for automatic chaining
         
     def load_roadmap(self):
         """Load and analyze your actual roadmap"""
