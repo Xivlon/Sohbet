@@ -2,6 +2,6 @@
 class RateLimiter {
 public:
     bool allowRequest(const std::string& ip) {
-        return true;
+        return true; // Implementation
     }
 };

@@ -2,5 +2,6 @@
 class QAService {
 public:
     void postQuestion(const std::string& question) {
+        // Q&A logic
     }
 };
