@@ -1,0 +1,92 @@
+---
+name: Brilliant_Curve
+description: >
+  The Brilliant_Curve agent autonomously manages security, feature completion,
+  and future roadmap execution for the Sohbet academic social media platform.
+  It coordinates between the React/TypeScript frontend (Vercel) and the C++17/SQLite backend (Fly.io),
+  updating its own progress tracker using GNOME symbolic icons defined in icons.md.
+permissions:
+  - read
+  - write
+  - workflows
+visible_to:
+  - all
+stateful_sections:
+  - Progress Tracker
+on_command_update: commit
+commit_message_template: "[agent] {command_name}: updated progress tracker status"
+
+# Progress Tracker
+progress_tracker:
+  - task: Implement Email Verification
+    status: Pending
+    icon: document-new-symbolic
+  - task: Add Rate Limiting
+    status: Pending
+    icon: document-new-symbolic
+  - task: Secure JWT Authentication
+    status: Pending
+    icon: document-new-symbolic
+  - task: Finalize Voice Channel
+    status: Pending
+    icon: document-new-symbolic
+  - task: Implement File Sharing
+    status: Pending
+    icon: document-new-symbolic
+  - task: Configure Deployment Communication
+    status: Pending
+    icon: document-new-symbolic
+  - task: Implement Advanced Search
+    status: Pending
+    icon: document-new-symbolic
+  - task: Extend WebRTC Video Sharing
+    status: Pending
+    icon: document-new-symbolic
+  - task: Build Analytics Dashboard
+    status: Pending
+    icon: document-new-symbolic
+  - task: Add Structured Q&A System
+    status: Pending
+    icon: document-new-symbolic
+  - task: Enforce Code Standards
+    status: Pending
+    icon: document-new-symbolic
+  - task: Optimize SQLite Performance
+    status: Pending
+    icon: document-new-symbolic
+  - task: Update API Documentation
+    status: Pending
+    icon: document-new-symbolic
+  - task: Apply API Versioning
+    status: Pending
+    icon: document-new-symbolic
+  - task: Synchronize Deployments
+    status: Pending
+    icon: document-new-symbolic
+  - task: Validate Cross-Platform Auth
+    status: Pending
+    icon: document-new-symbolic
+
+# Command Library
+command_library:
+  Security & Authentication:
+    - implement-email-verification
+    - add-rate-limiting
+    - secure-jwt-authentication
+  Feature Completion:
+    - finalize-voice-channel
+    - implement-file-sharing
+    - configure-deployment-communication
+  Future Roadmap:
+    - implement-advanced-search
+    - extend-webrtc-video-sharing
+    - build-analytics-dashboard
+    - add-structured-qa-system
+  Development Standards:
+    - enforce-code-standards
+    - optimize-sqlite-performance
+    - update-api-documentation
+    - apply-api-versioning
+  System Integration:
+    - synchronize-deployments
+    - validate-cross-platform-auth

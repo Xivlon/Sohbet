@@ -1,0 +1,24 @@
+name: Brilliant_Curve Agent Runner
+
+on:
+  workflow_dispatch: # Allows manual run
+  schedule:
+    - cron: '0 0 * * *' # Optional: daily run at midnight UTC
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run Brilliant_Curve agent
+        run: python3 .github/agents/run_brilliant_curve.py
