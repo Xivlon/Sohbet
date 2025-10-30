@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { OrganizationCard } from "./organization-card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import { apiClient } from "@/app/lib/api-client"
 import { Button } from "@/app/components/ui/button"

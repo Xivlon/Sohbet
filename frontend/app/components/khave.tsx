@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Mic, MicOff, PhoneCall, PhoneOff, Users, Volume2, Settings, Plus } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Volume2, Settings, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { Slider } from './ui/slider';
 import { voiceService, VoiceChannel } from '@/app/lib/voice-service';
@@ -26,7 +25,6 @@ const mockParticipants: Participant[] = [
 ];
 
 export function Khave() {
-  const [activeTab, setActiveTab] = useState<'local' | 'global'>('local');
   const [channels, setChannels] = useState<VoiceChannel[]>([]);
   const [currentChannel, setCurrentChannel] = useState<VoiceChannel | null>(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -37,10 +35,11 @@ export function Khave() {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
 
-  // Load channels on mount and tab change
+  // Load channels on mount
   useEffect(() => {
     loadChannels();
-  }, [activeTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadChannels = async () => {
     setLoading(true);

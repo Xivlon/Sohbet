@@ -24,7 +24,7 @@ interface OrganizationCardProps {
   onView?: (orgId: number) => void
 }
 
-export function OrganizationCard({ organization, currentUserId, canManage, onManage, onView }: OrganizationCardProps) {
+export function OrganizationCard({ organization, canManage, onManage, onView }: OrganizationCardProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'club':

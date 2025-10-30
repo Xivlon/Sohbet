@@ -1,19 +1,16 @@
 "use client"
 
 import { useEffect, useState, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
+import { CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { Button } from '@/app/components/ui/button'
 import { Input } from '@/app/components/ui/input'
 import { ScrollArea } from '@/app/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/app/components/avatar'
 import { Send } from 'lucide-react'
-import { useChatWebSocket } from '../lib/use-websocket'
+import { useChatWebSocket, ChatMessagePayload } from '../lib/use-websocket'
 
-interface Message {
+interface Message extends ChatMessagePayload {
   id: number
-  conversation_id: number
-  sender_id: number
-  content: string
   media_url?: string
   read_at?: string
   delivered_at?: string
@@ -37,15 +34,25 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Callback to handle incoming WebSocket messages
-  const handleIncomingMessage = (incomingMessage: any) => {
+  const handleIncomingMessage = (incomingMessage: ChatMessagePayload) => {
     console.log('Adding incoming message to UI:', incomingMessage)
+    // Only add messages with id
+    if (!incomingMessage.id) {
+      console.warn('Received message without id, skipping')
+      return
+    }
+    const message: Message = {
+      ...incomingMessage,
+      id: incomingMessage.id,
+      created_at: incomingMessage.created_at || new Date().toISOString()
+    }
     setMessages(prev => {
       // Avoid duplicates by checking if message already exists
-      const exists = prev.some(m => m.id === incomingMessage.id)
+      const exists = prev.some(m => m.id === message.id)
       if (exists) {
         return prev
       }
-      return [...prev, incomingMessage as Message]
+      return [...prev, message]
     })
   }
 

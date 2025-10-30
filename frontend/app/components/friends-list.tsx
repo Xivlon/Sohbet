@@ -14,6 +14,15 @@ interface Friend {
   department?: string
 }
 
+interface Friendship {
+  id: number
+  requester_id: number
+  addressee_id: number
+  status: string
+  created_at: string
+  updated_at: string
+}
+
 export function FriendsList() {
   const [friends, setFriends] = useState<Friend[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,9 +62,9 @@ export function FriendsList() {
       })
       
       if (response.ok) {
-        const friendships = await response.json()
+        const friendships: Friendship[] = await response.json()
         const friendship = friendships.find(
-          (f: any) => 
+          (f) => 
             (f.requester_id === 1 && f.addressee_id === friendId) ||
             (f.requester_id === friendId && f.addressee_id === 1)
         )

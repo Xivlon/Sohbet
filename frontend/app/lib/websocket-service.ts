@@ -11,9 +11,30 @@ export type WebSocketMessageType =
   | 'user:online'
   | 'user:offline';
 
+export interface ChatMessagePayload {
+  id?: number;
+  conversation_id: number;
+  sender_id: number;
+  content: string;
+  created_at?: string;
+}
+
+export interface TypingPayload {
+  conversation_id: number;
+  user_id: number;
+  username: string;
+}
+
+export interface UserStatusPayload {
+  user_id: number;
+  username: string;
+}
+
+export type MessagePayload = ChatMessagePayload | TypingPayload | UserStatusPayload | Record<string, unknown>;
+
 export interface WebSocketMessage {
   type: WebSocketMessageType;
-  payload: any;
+  payload: MessagePayload;
 }
 
 export type MessageHandler = (message: WebSocketMessage) => void;
@@ -135,7 +156,7 @@ class WebSocketService {
   /**
    * Send a message through WebSocket
    */
-  send(type: WebSocketMessageType, payload: any): boolean {
+  send(type: WebSocketMessageType, payload: MessagePayload): boolean {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.warn('WebSocket not connected, cannot send message');
       return false;
