@@ -93,7 +93,7 @@ progress_tracker:
   status: Completed
   task: Full Khave UI implementation
 - icon: document-save-symbolic
-  status: Pending
+  status: Completed
   task: Change all API endpoints from absolute URLs to relative paths
 stateful_sections:
 - Progress Tracker
