@@ -13,9 +13,9 @@ command_library:
   - extend-webrtc-video-sharing
   - build-analytics-dashboard
   - add-structured-qa-system
-  -  murmur server integration
-  -  WebRTC voice streaming
-  -  Full Khave UI implementation
+  - murmur server integration
+  - WebRTC voice streaming
+  - Full Khave UI implementation
   Security & Authentication:
   - implement-email-verification
   - add-rate-limiting
