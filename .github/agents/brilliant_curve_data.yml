@@ -92,6 +92,12 @@ progress_tracker:
 - icon: document-save-symbolic
   status: Completed
   task: Full Khave UI implementation
+ - icon: document-save-symbolic
+  status: Pending
+  task: Change all API endpoints from absolute URLs to relative paths
+ - icon: document-save-symbolic
+  status: Pending
+  task: Configure Next.js Proxy to destination: 'http://127.0.0.1:8080/api/:path*
 stateful_sections:
 - Progress Tracker
 visible_to:
