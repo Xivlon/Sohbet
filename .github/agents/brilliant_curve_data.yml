@@ -84,13 +84,13 @@ progress_tracker:
   status: Completed
   task: Validate Cross-Platform Auth
 - icon: document-save-symbolic
-  status: Pending
+  status: Completed
   task: murmur server integration
 - icon: document-save-symbolic
-  status: Pending
+  status: Completed
   task: WebRTC voice streaming
 - icon: document-save-symbolic
-  status: Pending 
+  status: Completed
   task: Full Khave UI implementation
 stateful_sections:
 - Progress Tracker
