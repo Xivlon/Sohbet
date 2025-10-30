@@ -49,7 +49,7 @@ export function Profile() {
     setSuccess('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://0.0.0.0:8080'}/api/users/${user.id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
