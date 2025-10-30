@@ -13,9 +13,6 @@ command_library:
   - extend-webrtc-video-sharing
   - build-analytics-dashboard
   - add-structured-qa-system
-  - murmur server integration
-  - WebRTC voice streaming
-  - Full Khave UI implementation
   Security & Authentication:
   - implement-email-verification
   - add-rate-limiting
@@ -86,6 +83,15 @@ progress_tracker:
 - icon: document-save-symbolic
   status: Completed
   task: Validate Cross-Platform Auth
+- icon: document-save-symbolic
+  status: Pending
+  task: murmur server integration
+- icon: document-save-symbolic
+  status: Pending
+  task: WebRTC voice streaming
+- icon: document-save-symbolic
+  status: Pending 
+  task: Full Khave UI implementation
 stateful_sections:
 - Progress Tracker
 visible_to:
