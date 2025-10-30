@@ -112,11 +112,11 @@ private:
     size_t burst_size_;
     
     struct IPBucketData {
-        std::unique_ptr<TokenBucket> bucket;
+        std::shared_ptr<TokenBucket> bucket;
         std::chrono::steady_clock::time_point last_access;
         
         IPBucketData(size_t capacity, double refill_rate)
-            : bucket(std::make_unique<TokenBucket>(capacity, refill_rate)),
+            : bucket(std::make_shared<TokenBucket>(capacity, refill_rate)),
               last_access(std::chrono::steady_clock::now()) {}
     };
     

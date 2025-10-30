@@ -70,8 +70,8 @@ bool RateLimiter::allowRequest(const std::string& ip_address, size_t tokens) {
         return false;
     }
     
-    // Get the bucket pointer while holding the lock
-    TokenBucket* bucket = nullptr;
+    // Get a shared_ptr to the bucket while holding the lock
+    std::shared_ptr<TokenBucket> bucket;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         
@@ -83,14 +83,14 @@ bool RateLimiter::allowRequest(const std::string& ip_address, size_t tokens) {
                 std::forward_as_tuple(ip_address),
                 std::forward_as_tuple(burst_size_, requests_per_second_)
             );
-            bucket = result.first->second.bucket.get();
+            bucket = result.first->second.bucket;
             result.first->second.last_access = std::chrono::steady_clock::now();
         } else {
-            bucket = it->second.bucket.get();
+            bucket = it->second.bucket;
             it->second.last_access = std::chrono::steady_clock::now();
         }
     }
-    // Lock is released here, then we call bucket->consume()
+    // Lock is released here, bucket is kept alive by shared_ptr
     return bucket->consume(tokens);
 }
 
@@ -99,7 +99,7 @@ double RateLimiter::getRemainingTokens(const std::string& ip_address) {
         return 0.0;
     }
     
-    TokenBucket* bucket = nullptr;
+    std::shared_ptr<TokenBucket> bucket;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         
@@ -109,25 +109,25 @@ double RateLimiter::getRemainingTokens(const std::string& ip_address) {
             return static_cast<double>(burst_size_);
         }
         
-        bucket = it->second.bucket.get();
+        bucket = it->second.bucket;
         it->second.last_access = std::chrono::steady_clock::now();
     }
-    // Lock is released here, then we call bucket->getTokens()
+    // Lock is released here, bucket is kept alive by shared_ptr
     return bucket->getTokens();
 }
 
 void RateLimiter::resetIP(const std::string& ip_address) {
-    TokenBucket* bucket = nullptr;
+    std::shared_ptr<TokenBucket> bucket;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         
         auto it = ip_buckets_.find(ip_address);
         if (it != ip_buckets_.end()) {
-            bucket = it->second.bucket.get();
+            bucket = it->second.bucket;
             it->second.last_access = std::chrono::steady_clock::now();
         }
     }
-    // Lock is released here, then we call bucket->reset()
+    // Lock is released here, bucket is kept alive by shared_ptr
     if (bucket) {
         bucket->reset();
     }
