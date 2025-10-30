@@ -15,19 +15,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const token = apiClient.getToken();
-    const storedUser = apiClient.getUser();
-    
-    if (token && storedUser) {
-      setUser(storedUser);
-    }
-    
-    setIsLoading(false);
-  }, []);
+  // Initialize state from localStorage to avoid setState in useEffect
+  const [user, setUser] = useState<User | null>(() => apiClient.getUser());
+  const [isLoading, setIsLoading] = useState(false);
 
   const login = async (data: LoginData): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);

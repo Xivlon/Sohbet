@@ -125,8 +125,9 @@ function ChartTooltipContent({
     indicator?: "line" | "dot" | "dashed";
     nameKey?: string;
     labelKey?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     payload?: any[];
-    label?: any;
+    label?: string | number;
   }) {
   const { config } = useChart();
 
@@ -259,6 +260,7 @@ function ChartLegendContent({
   verticalAlign = "bottom",
   nameKey,
 }: React.ComponentProps<"div"> & {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     payload?: any[];
     verticalAlign?: "top" | "middle" | "bottom";
     hideIcon?: boolean;

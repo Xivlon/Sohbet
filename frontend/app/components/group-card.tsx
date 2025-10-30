@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Users, Lock, Globe, Settings } from "lucide-react"
 import { Badge } from "@/app/components/ui/badge"
 

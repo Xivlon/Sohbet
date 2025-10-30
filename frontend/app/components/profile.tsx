@@ -68,7 +68,7 @@ export function Profile() {
       apiClient.setUser(data);
       setSuccess('Profil başarıyla güncellendi!');
       setIsEditing(false);
-    } catch (err) {
+    } catch {
       setError('Bir hata oluştu');
     } finally {
       setSaving(false);
