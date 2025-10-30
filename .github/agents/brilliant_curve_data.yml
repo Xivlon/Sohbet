@@ -13,6 +13,9 @@ command_library:
   - extend-webrtc-video-sharing
   - build-analytics-dashboard
   - add-structured-qa-system
+  -  murmur server integration
+  -  WebRTC voice streaming
+  -  Full Khave UI implementation
   Security & Authentication:
   - implement-email-verification
   - add-rate-limiting
@@ -21,9 +24,6 @@ command_library:
   System Integration:
   - synchronize-deployments
   - validate-cross-platform-auth
-  -murmur server integration (pending)
-  -WebRTC voice streaming (pending)
-  -Full Khave UI implementation (in progress)
 commit_message_template: '[agent] {command_name}: updated progress tracker status'
 description: 'The Brilliant_Curve agent autonomously manages security, feature completion,
   and future roadmap execution for the Sohbet academic social media platform. It coordinates
