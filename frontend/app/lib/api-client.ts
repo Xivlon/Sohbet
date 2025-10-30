@@ -1,6 +1,6 @@
 'use client';
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://0.0.0.0:8080').replace(/\/+$/, ''); // remove trailing slashes
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/+$/, ''); // remove trailing slashes
 
 export interface ApiResponse<T> {
   data?: T;
