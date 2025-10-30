@@ -58,10 +58,10 @@ int main() {
     assert(sohbet::config::get_websocket_port() == 3001);
     std::cout << "✓ Port configuration from environment variables works correctly" << std::endl;
     
-    // Test default CORS origin (should be "*")
+    // Test default CORS origin (should be "http://localhost:5000")
     unsetenv("CORS_ORIGIN");
     std::string default_cors = sohbet::config::get_cors_origin();
-    assert(default_cors == "*");
+    assert(default_cors == "http://localhost:5000");
     std::cout << "✓ Default CORS origin: " << default_cors << std::endl;
     
     // Test custom CORS origin

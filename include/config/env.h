@@ -50,8 +50,9 @@ inline int get_websocket_port() {
 inline std::string get_cors_origin() {
     const char* origin = std::getenv("CORS_ORIGIN");
     if (!origin || std::string(origin).empty()) {
-        // Default to allowing all origins for development
-        return "*";
+        // Default to localhost for development
+        // Note: When using Access-Control-Allow-Credentials, origin cannot be "*"
+        return "http://localhost:5000";
     }
     return std::string(origin);
 }
