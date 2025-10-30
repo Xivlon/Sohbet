@@ -147,3 +147,6 @@ add_test(NAME RateLimiterTest COMMAND test_rate_limiter)
 # Example programs
 add_executable(user_management_example examples/user_management_example.cpp)
 target_link_libraries(user_management_example sohbet_lib)
+
+add_executable(rate_limiter_example examples/rate_limiter_example.cpp)
+target_link_libraries(rate_limiter_example sohbet_lib)
