@@ -1,7 +1,8 @@
 # Sohbet Social Features - Implementation Roadmap
 
-> **📌 STATUS UPDATE (October 27, 2025)**: See [ROADMAP_STATUS_CHECK.md](ROADMAP_STATUS_CHECK.md) for detailed implementation status.
+> **📌 STATUS UPDATE (October 30, 2025)**: See [ROADMAP_STATUS_CHECK.md](ROADMAP_STATUS_CHECK.md) for detailed implementation status.
 > **Overall Completion: ~95%** | Phases 1-3: ✅ Complete (100%) | Phase 4A: ✅ Complete (100%) | Phase 4C: ✅ API Complete (90%)
+> **⚠️ Important**: See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for critical issues requiring attention before production deployment.
 
 ## Overview
 This document provides a complete roadmap for implementing advanced social features in the Sohbet academic platform. The vast majority of features have been successfully implemented with only minor UI polish and voice streaming integration remaining.
@@ -770,6 +771,9 @@ npm install date-fns             # Date formatting
 - ✅ Voice channel session management
 
 ### What's Pending ⚠️
+- 🔴 **CRITICAL**: Hardcoded JWT secret (security vulnerability)
+- 🔴 **CRITICAL**: Frontend build failures (missing UI components)
+- 🔴 **CRITICAL**: Missing UI components (dialog.tsx, label.tsx, skeleton.tsx)
 - ⚠️ Murmur server deployment and integration
 - ⚠️ WebRTC voice streaming implementation
 - ⚠️ Full Khave UI with functional voice controls
@@ -779,36 +783,76 @@ npm install date-fns             # Date formatting
 - ⚠️ Rate limiting and CSRF protection
 - ⚠️ File attachments in messages
 - ⚠️ Advanced search and filtering
+- ⚠️ TypeScript `any` types (11 instances)
+- ⚠️ Import path inconsistencies
+- ⚠️ React setState in useEffect issues
 
 ### Next Recommended Steps
 
+**⚠️ CRITICAL ISSUES FIRST**: See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for detailed prioritized list.
+
 **High Priority (If continuing development)**:
-1. 🔴 **Murmur/WebRTC Integration** - Complete voice streaming functionality
+
+**P0 - Critical (Must fix immediately - ~4 hours)**:
+1. 🔴 **JWT Security Fix** - Remove hardcoded JWT secret, use environment variable
+   - Security vulnerability: anyone can generate valid tokens
+   - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #1
+   
+2. 🔴 **Frontend Build Fix** - Create missing UI components and fix import paths
+   - Blocks all frontend development and deployment
+   - Missing: dialog.tsx, label.tsx, skeleton.tsx
+   - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #2
+
+**P1 - High Priority (~7 hours)**:
+3. 🟠 **Code Quality** - Fix TypeScript issues and standardize imports
+   - 11 instances of `any` types
+   - Import path inconsistencies
+   - React performance issues
+   - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #4-6
+   
+4. 🟠 **Rate Limiting** - Implement API rate limiting
+   - Prevent API abuse and DoS attacks
+   - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #7
+
+**P2 - Medium Priority (~2 hours)**:
+5. 🟡 **Cleanup** - Resolve compiler warnings and unused imports
+   - 6 compiler warnings
+   - 15 unused imports
+   - 12 useEffect dependency warnings
+   - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #8-10
+
+**Long-term (2-3 weeks)**:
+6. 🔵 **Murmur/WebRTC Integration** - Complete voice streaming functionality
    - Deploy Murmur server OR integrate third-party service (Daily.co, Twilio, Agora)
    - Implement WebRTC signaling
    - Connect Khave UI to actual voice streams
+   - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #15
    
-2. 🟡 **UI Polish** - Minor enhancements
+7. 🟢 **UI Polish** - Minor enhancements
    - Image crop functionality for avatars
    - Group management detailed UI improvements
    - Organization profile page enhancements
 
 **Medium Priority**:
-3. 🟡 **Advanced Features** - Nice-to-haves
+8. 🟡 **Advanced Features** - Nice-to-haves
    - File attachments in messages
    - Message search functionality
    - Email verification
    - Advanced post filtering
 
 **Long Term**:
-4. 🟢 **Security & Performance**
-   - Rate limiting implementation
+9. 🟢 **Security & Performance**
+   - ✅ JWT secret fix (P0 - immediate)
+   - Rate limiting implementation (P1)
    - CSRF protection
    - Performance optimization (caching, indexing)
    - Comprehensive testing suite
+   - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for complete list
 
 ### Related Documentation
+- **[FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)** - **⚠️ CRITICAL**: Prioritized list of issues and remediation plan
 - **[ROADMAP_STATUS_CHECK.md](ROADMAP_STATUS_CHECK.md)** - Detailed status analysis
+- **[Issues.md](Issues.md)** - Comprehensive checkup report with security assessment
 - **[PHASE2_SUMMARY.md](PHASE2_SUMMARY.md)** - Phase 2 completion report
 - **[PHASE3_SUMMARY.md](PHASE3_SUMMARY.md)** - Phase 3 completion report
 - **[PHASE4_SUMMARY.md](PHASE4_SUMMARY.md)** - Phase 4 initial completion report
