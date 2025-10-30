@@ -17,22 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize state from localStorage to avoid setState in useEffect
   const [user, setUser] = useState<User | null>(() => apiClient.getUser());
-  const [isLoading, setIsLoading] = useState(() => {
-    // Only loading if we need to validate the token
-    return false;
-  });
-
-  // No longer needed since we initialize state directly
-  // useEffect(() => {
-  //   const token = apiClient.getToken();
-  //   const storedUser = apiClient.getUser();
-  //   
-  //   if (token && storedUser) {
-  //     setUser(storedUser);
-  //   }
-  //   
-  //   setIsLoading(false);
-  // }, []);
+  const [isLoading, setIsLoading] = useState(false);
 
   const login = async (data: LoginData): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
