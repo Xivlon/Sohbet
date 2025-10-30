@@ -122,13 +122,6 @@ private:
     
     std::unordered_map<std::string, IPBucketData> ip_buckets_;
     mutable std::mutex mutex_;
-    
-    /**
-     * Get or create token bucket for an IP
-     * @param ip_address IP address
-     * @return Reference to token bucket
-     */
-    TokenBucket& getBucket(const std::string& ip_address);
 };
 
 } // namespace utils

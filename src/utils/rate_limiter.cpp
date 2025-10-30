@@ -65,32 +65,33 @@ RateLimiter::RateLimiter(double requests_per_second, size_t burst_size)
       burst_size_(burst_size) {
 }
 
-TokenBucket& RateLimiter::getBucket(const std::string& ip_address) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    auto it = ip_buckets_.find(ip_address);
-    if (it == ip_buckets_.end()) {
-        // Create new bucket for this IP
-        auto result = ip_buckets_.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(ip_address),
-            std::forward_as_tuple(burst_size_, requests_per_second_)
-        );
-        return *result.first->second.bucket;
-    }
-    
-    // Update last access time
-    it->second.last_access = std::chrono::steady_clock::now();
-    return *it->second.bucket;
-}
-
 bool RateLimiter::allowRequest(const std::string& ip_address, size_t tokens) {
     if (ip_address.empty()) {
         return false;
     }
     
-    TokenBucket& bucket = getBucket(ip_address);
-    return bucket.consume(tokens);
+    // Get the bucket pointer while holding the lock
+    TokenBucket* bucket = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        
+        auto it = ip_buckets_.find(ip_address);
+        if (it == ip_buckets_.end()) {
+            // Create new bucket for this IP
+            auto result = ip_buckets_.emplace(
+                std::piecewise_construct,
+                std::forward_as_tuple(ip_address),
+                std::forward_as_tuple(burst_size_, requests_per_second_)
+            );
+            bucket = result.first->second.bucket.get();
+            result.first->second.last_access = std::chrono::steady_clock::now();
+        } else {
+            bucket = it->second.bucket.get();
+            it->second.last_access = std::chrono::steady_clock::now();
+        }
+    }
+    // Lock is released here, then we call bucket->consume()
+    return bucket->consume(tokens);
 }
 
 double RateLimiter::getRemainingTokens(const std::string& ip_address) {
@@ -98,25 +99,37 @@ double RateLimiter::getRemainingTokens(const std::string& ip_address) {
         return 0.0;
     }
     
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    auto it = ip_buckets_.find(ip_address);
-    if (it == ip_buckets_.end()) {
-        // No bucket exists yet, so full capacity is available
-        return static_cast<double>(burst_size_);
+    TokenBucket* bucket = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        
+        auto it = ip_buckets_.find(ip_address);
+        if (it == ip_buckets_.end()) {
+            // No bucket exists yet, so full capacity is available
+            return static_cast<double>(burst_size_);
+        }
+        
+        bucket = it->second.bucket.get();
+        it->second.last_access = std::chrono::steady_clock::now();
     }
-    
-    it->second.last_access = std::chrono::steady_clock::now();
-    return it->second.bucket->getTokens();
+    // Lock is released here, then we call bucket->getTokens()
+    return bucket->getTokens();
 }
 
 void RateLimiter::resetIP(const std::string& ip_address) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    auto it = ip_buckets_.find(ip_address);
-    if (it != ip_buckets_.end()) {
-        it->second.bucket->reset();
-        it->second.last_access = std::chrono::steady_clock::now();
+    TokenBucket* bucket = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        
+        auto it = ip_buckets_.find(ip_address);
+        if (it != ip_buckets_.end()) {
+            bucket = it->second.bucket.get();
+            it->second.last_access = std::chrono::steady_clock::now();
+        }
+    }
+    // Lock is released here, then we call bucket->reset()
+    if (bucket) {
+        bucket->reset();
     }
 }
 
