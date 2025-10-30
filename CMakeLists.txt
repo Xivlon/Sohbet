@@ -70,6 +70,7 @@ set(SOURCES
     src/services/storage_service.cpp
     src/utils/hash.cpp
     src/utils/multipart_parser.cpp
+    src/utils/rate_limiter.cpp
     src/security/bcrypt_wrapper.cpp
     src/security/jwt.cpp
     src/server/server.cpp
@@ -139,6 +140,13 @@ add_executable(test_migration_runner tests/test_migration_runner.cpp)
 target_link_libraries(test_migration_runner sohbet_lib)
 add_test(NAME MigrationRunnerTest COMMAND test_migration_runner)
 
+add_executable(test_rate_limiter tests/test_rate_limiter.cpp)
+target_link_libraries(test_rate_limiter sohbet_lib)
+add_test(NAME RateLimiterTest COMMAND test_rate_limiter)
+
 # Example programs
 add_executable(user_management_example examples/user_management_example.cpp)
 target_link_libraries(user_management_example sohbet_lib)
+
+add_executable(rate_limiter_example examples/rate_limiter_example.cpp)
+target_link_libraries(rate_limiter_example sohbet_lib)
