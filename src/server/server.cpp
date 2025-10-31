@@ -801,6 +801,14 @@ void AcademicSocialServer::ensureDemoUserExists() {
     auto existing_user = user_repository_->findByUsername("demo_student");
     if (existing_user.has_value()) {
         std::cout << "Demo user already exists" << std::endl;
+        
+        // Ensure demo user has Admin role for full permissions
+        int demo_user_id = existing_user->getId().value();
+        auto admin_role = role_repository_->findByName("Admin");
+        if (admin_role.has_value()) {
+            role_repository_->assignRoleToUser(demo_user_id, admin_role->getId().value());
+            std::cout << "Demo user granted Admin permissions" << std::endl;
+        }
         return;
     }
 
@@ -813,7 +821,17 @@ void AcademicSocialServer::ensureDemoUserExists() {
 
     auto created_user = user_repository_->create(demo_user, "demo123");
     if (created_user.has_value()) {
-        std::cout << "Demo user created successfully (ID: " << created_user->getId().value() << ")" << std::endl;
+        int demo_user_id = created_user->getId().value();
+        std::cout << "Demo user created successfully (ID: " << demo_user_id << ")" << std::endl;
+        
+        // Assign Admin role to demo user for all permissions
+        auto admin_role = role_repository_->findByName("Admin");
+        if (admin_role.has_value()) {
+            role_repository_->assignRoleToUser(demo_user_id, admin_role->getId().value());
+            std::cout << "Demo user granted Admin permissions" << std::endl;
+        } else {
+            std::cerr << "Warning: Could not find Admin role for demo user" << std::endl;
+        }
     } else {
         std::cerr << "Warning: Failed to create demo user" << std::endl;
     }
@@ -1587,6 +1605,11 @@ HttpResponse AcademicSocialServer::handleCreateGroup(const HttpRequest& request)
     int user_id = getUserIdFromAuth(request);
     if (user_id < 0) {
         return createErrorResponse(401, "Unauthorized");
+    }
+    
+    // Check if user has permission to create groups (Professor or Admin)
+    if (!role_repository_->userHasPermission(user_id, "create_group")) {
+        return createErrorResponse(403, "Only professors and admins can create groups");
     }
     
     std::string name = extractJsonField(request.body, "name");
