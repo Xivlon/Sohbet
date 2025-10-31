@@ -1589,11 +1589,6 @@ HttpResponse AcademicSocialServer::handleCreateGroup(const HttpRequest& request)
         return createErrorResponse(401, "Unauthorized");
     }
     
-    // Check if user has permission to create groups (Professor or Admin)
-    if (!role_repository_->userHasPermission(user_id, "create_group")) {
-        return createErrorResponse(403, "Only professors and admins can create groups");
-    }
-    
     std::string name = extractJsonField(request.body, "name");
     std::string description = extractJsonField(request.body, "description");
     std::string privacy = extractJsonField(request.body, "privacy");
