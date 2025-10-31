@@ -798,21 +798,14 @@ bool AcademicSocialServer::validateUserRegistration(const std::string& username,
 
 void AcademicSocialServer::ensureDemoUserExists() {
     // Helper lambda to assign Admin role to a user
-    auto assignAdminRole = [this](int user_id) -> bool {
+    auto assignAdminRole = [this](int user_id) -> void {
         auto admin_role = role_repository_->findByName("Admin");
         if (admin_role.has_value()) {
-            // Check if user already has Admin role to avoid duplicate assignments
-            auto current_role = role_repository_->getUserRole(user_id);
-            if (!current_role.has_value() || current_role->getName() != "Admin") {
-                role_repository_->assignRoleToUser(user_id, admin_role->getId().value());
-                std::cout << "Demo user granted Admin permissions" << std::endl;
-            } else {
-                std::cout << "Demo user already has Admin permissions" << std::endl;
-            }
-            return true;
+            // assignRoleToUser uses INSERT OR IGNORE, so it won't create duplicates
+            role_repository_->assignRoleToUser(user_id, admin_role->getId().value());
+            std::cout << "Demo user ensured to have Admin permissions" << std::endl;
         } else {
             std::cerr << "Warning: Could not find Admin role for demo user" << std::endl;
-            return false;
         }
     };
     
