@@ -20,6 +20,14 @@ namespace server {
 // WebSocket GUID for handshake
 static const std::string WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+// Helper function to validate Origin header format
+static bool isValidOrigin(const std::string& origin) {
+    // Validate that the origin matches a proper URL format
+    // This prevents header injection attacks while still allowing all valid origins
+    std::regex origin_regex(R"(^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(:[0-9]{1,5})?$)");
+    return std::regex_match(origin, origin_regex);
+}
+
 // Base64 encoding helper
 static std::string base64_encode(const unsigned char* input, int length) {
     BIO *bio, *b64;
@@ -255,12 +263,16 @@ bool WebSocketServer::performWebSocketHandshake(int client_socket, std::string& 
     
     std::string key = matches[1].str();
     
-    // Extract Origin header for CORS
+    // Extract Origin header for CORS and validate it
     std::string cors_origin = "*";
     std::regex origin_regex("Origin: ([^\r\n]+)");
     std::smatch origin_matches;
     if (std::regex_search(request, origin_matches, origin_regex)) {
-        cors_origin = origin_matches[1].str();
+        std::string origin = origin_matches[1].str();
+        // Only use the origin if it's valid, otherwise fall back to wildcard
+        if (isValidOrigin(origin)) {
+            cors_origin = origin;
+        }
     }
     
     // Compute accept key

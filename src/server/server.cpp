@@ -367,6 +367,14 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
     return request;
 }
 
+// Helper function to validate and sanitize Origin header
+static bool isValidOrigin(const std::string& origin) {
+    // Validate that the origin matches a proper URL format
+    // This prevents header injection attacks while still allowing all valid origins
+    std::regex origin_regex(R"(^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(:[0-9]{1,5})?$)");
+    return std::regex_match(origin, origin_regex);
+}
+
 std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& response, const HttpRequest& request) {
     std::ostringstream oss;
     oss << "HTTP/1.1 " << response.status_code << " ";
@@ -388,9 +396,10 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
     oss << "Content-Length: " << response.body.length() << "\r\n";
     
     // CORS headers - allow ALL origins by echoing the Origin header
+    // Validate the origin to prevent header injection attacks
     std::string cors_origin = "*";
     auto origin_it = request.headers.find("Origin");
-    if (origin_it != request.headers.end()) {
+    if (origin_it != request.headers.end() && isValidOrigin(origin_it->second)) {
         cors_origin = origin_it->second;
     }
     
