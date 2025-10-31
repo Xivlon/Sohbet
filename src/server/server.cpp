@@ -309,7 +309,7 @@ void AcademicSocialServer::handleClient(int client_socket) {
     HttpResponse response = handleRequest(request);
     
     // Format and send response
-    std::string http_response = formatHttpResponse(response);
+    std::string http_response = formatHttpResponse(response, request);
     send(client_socket, http_response.c_str(), http_response.length(), 0);
     
     close(client_socket);
@@ -367,7 +367,16 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
     return request;
 }
 
-std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& response) {
+// Helper function to validate and sanitize Origin header
+static bool isValidOrigin(const std::string& origin) {
+    // Validate that the origin matches a proper URL format
+    // This prevents header injection attacks while still allowing all valid origins
+    // Use static regex to compile once and reuse for performance
+    static const std::regex origin_regex(R"(^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(:[0-9]{1,5})?$)");
+    return std::regex_match(origin, origin_regex);
+}
+
+std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& response, const HttpRequest& request) {
     std::ostringstream oss;
     oss << "HTTP/1.1 " << response.status_code << " ";
     
@@ -387,12 +396,23 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
     oss << "Content-Type: " << response.content_type << "\r\n";
     oss << "Content-Length: " << response.body.length() << "\r\n";
     
-    // CORS headers - use environment variable or allow all origins
-    std::string cors_origin = config::get_cors_origin();
+    // CORS headers - allow ALL origins by echoing the Origin header
+    // Validate the origin to prevent header injection attacks
+    std::string cors_origin = "*";
+    auto origin_it = request.headers.find("Origin");
+    if (origin_it != request.headers.end() && isValidOrigin(origin_it->second)) {
+        cors_origin = origin_it->second;
+    }
+    
     oss << "Access-Control-Allow-Origin: " << cors_origin << "\r\n";
     oss << "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n";
     oss << "Access-Control-Allow-Headers: Content-Type, Authorization\r\n";
-    oss << "Access-Control-Allow-Credentials: true\r\n";
+    
+    // Only add credentials header if origin is not "*"
+    if (cors_origin != "*") {
+        oss << "Access-Control-Allow-Credentials: true\r\n";
+    }
+    
     oss << "Connection: close\r\n";
     oss << "\r\n";
     oss << response.body;

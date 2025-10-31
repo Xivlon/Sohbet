@@ -116,7 +116,7 @@ private:
     bool initializeSocket();
     void handleClient(int client_socket);
     HttpRequest parseHttpRequest(const std::string& raw_request);
-    std::string formatHttpResponse(const HttpResponse& response);
+    std::string formatHttpResponse(const HttpResponse& response, const HttpRequest& request);
     
     // Route handlers
     HttpResponse handleStatus(const HttpRequest& request);
