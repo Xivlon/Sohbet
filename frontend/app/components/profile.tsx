@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/auth-context';
 import { apiClient } from '../lib/api-client';
+import { API_URL } from '../lib/config';
 import { User as UserIcon, Mail, Building2, BookOpen, GraduationCap, Phone, MapPin, Edit2, Save, X } from 'lucide-react';
 
 export function Profile() {
@@ -49,7 +50,7 @@ export function Profile() {
     setSuccess('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/users/${user.id}`, {
+      const response = await fetch(`${API_URL || 'http://localhost:8080'}/api/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
