@@ -255,14 +255,19 @@ bool WebSocketServer::performWebSocketHandshake(int client_socket, std::string& 
     
     std::string key = matches[1].str();
     
+    // Extract Origin header for CORS
+    std::string cors_origin = "*";
+    std::regex origin_regex("Origin: ([^\r\n]+)");
+    std::smatch origin_matches;
+    if (std::regex_search(request, origin_matches, origin_regex)) {
+        cors_origin = origin_matches[1].str();
+    }
+    
     // Compute accept key
     std::string accept_string = key + WEBSOCKET_GUID;
     unsigned char hash[SHA_DIGEST_LENGTH];
     SHA1((unsigned char*)accept_string.c_str(), accept_string.length(), hash);
     std::string accept_key = base64_encode(hash, SHA_DIGEST_LENGTH);
-    
-    // Get CORS origin from environment
-    std::string cors_origin = config::get_cors_origin();
     
     // Send handshake response with CORS headers
     std::ostringstream response;
@@ -271,7 +276,12 @@ bool WebSocketServer::performWebSocketHandshake(int client_socket, std::string& 
     response << "Connection: Upgrade\r\n";
     response << "Sec-WebSocket-Accept: " << accept_key << "\r\n";
     response << "Access-Control-Allow-Origin: " << cors_origin << "\r\n";
-    response << "Access-Control-Allow-Credentials: true\r\n";
+    
+    // Only add credentials header if origin is not "*"
+    if (cors_origin != "*") {
+        response << "Access-Control-Allow-Credentials: true\r\n";
+    }
+    
     response << "\r\n";
     
     std::string response_str = response.str();
