@@ -371,7 +371,8 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
 static bool isValidOrigin(const std::string& origin) {
     // Validate that the origin matches a proper URL format
     // This prevents header injection attacks while still allowing all valid origins
-    std::regex origin_regex(R"(^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(:[0-9]{1,5})?$)");
+    // Use static regex to compile once and reuse for performance
+    static const std::regex origin_regex(R"(^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(:[0-9]{1,5})?$)");
     return std::regex_match(origin, origin_regex);
 }
 
