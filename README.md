@@ -42,7 +42,7 @@ git clone https://github.com/Xivlon/Sohbet.git
 cd Sohbet
 
 # 2. Run the application
-./start-fullstack.sh
+./scripts/start-fullstack_Version2.sh
 ```
 
 This simple command will:
@@ -81,7 +81,7 @@ npm start
 
 ### Production Deployment
 
-For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the comprehensive [Deployment Guide](DEPLOYMENT_GUIDE.md) which covers:
+For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the comprehensive [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) which covers:
 - Environment variable configuration
 - Frontend and backend setup
 - Security considerations
@@ -334,7 +334,7 @@ The API returns standard HTTP status codes:
 The easiest way to build and start the server:
 
 ```bash
-./setup.sh
+./scripts/setup.sh
 ```
 
 This script will:
@@ -391,7 +391,7 @@ ctest -V
 To run both backend and frontend together:
 
 ```bash
-./start-fullstack.sh
+./scripts/start-fullstack_Version2.sh
 ```
 
 This starts:
@@ -426,7 +426,7 @@ Having issues? Here are common problems and solutions:
 3. **Restart the server:**
    ```bash
    pkill -f sohbet
-   ./setup.sh
+   ./scripts/setup.sh
    ```
 
 #### Problem: Server won't start
@@ -455,7 +455,7 @@ Having issues? Here are common problems and solutions:
 **Solution:**
 ```bash
 chmod +x build/sohbet
-chmod +x setup.sh
+chmod +x scripts/setup.sh
 ```
 
 #### Problem: Port 8080 already in use
@@ -538,7 +538,7 @@ pkill -f sohbet
 
 Use the full stack startup script which handles all configuration:
 ```bash
-./start-fullstack.sh
+./scripts/start-fullstack_Version2.sh
 ```
 
 ### Testing the Complete Setup
