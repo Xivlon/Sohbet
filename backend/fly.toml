@@ -8,13 +8,33 @@ primary_region = 'iad'
 
 [build]
 
-[http_service]
+# HTTP Service (port 8080)
+[[services]]
   internal_port = 8080
-  force_https = true
+  processes = ['app']
   auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+# WebSocket Service (port 8081)
+[[services]]
+  internal_port = 8081
   processes = ['app']
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 8081
+    handlers = ["http"]
 
 [[vm]]
   memory = '1gb'
