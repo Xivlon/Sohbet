@@ -11,7 +11,7 @@ Create a `.env.local` file in the `frontend/` directory with the following varia
 ```env
 # Production Backend URLs - Update with your actual deployment domain
 NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
-NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev
+NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
 **Important Notes:**
@@ -26,7 +26,7 @@ In your Vercel project settings, add these environment variables:
 
 ```
 NEXT_PUBLIC_API_URL=https://your-backend-domain.fly.dev
-NEXT_PUBLIC_WS_URL=wss://your-backend-domain.fly.dev
+NEXT_PUBLIC_WS_URL=wss://your-backend-domain.fly.dev:8081
 ```
 
 ### Backend (Fly.io/C++)
@@ -46,6 +46,28 @@ fly secrets set WS_PORT=8081
 - `CORS_ORIGIN`: Allowed origin for CORS requests (e.g., your frontend URL). Use `*` for development to allow all origins
 - `PORT`: HTTP server port (default: 8080)
 - `WS_PORT`: WebSocket server port (default: 8081)
+
+#### Fly.io Configuration for WebSocket TLS
+
+**Important**: The `backend/fly.toml` file must be configured to enable TLS/HTTPS on the WebSocket port (8081) for secure WebSocket connections (`wss://`) to work properly.
+
+Ensure your `fly.toml` includes TLS handlers for port 8081:
+
+```toml
+# WebSocket Service (port 8081)
+[[services]]
+  internal_port = 8081
+  processes = ['app']
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 8081
+    handlers = ["tls", "http"]  # TLS is required for wss:// connections
+```
+
+**Note**: Without `"tls"` in the handlers array, browsers will be unable to establish secure WebSocket connections (`wss://`) from HTTPS pages, resulting in connection failures.
 
 ## Security Considerations
 
@@ -120,11 +142,26 @@ If you see CORS errors in the browser console:
 
 ### WebSocket Connection Failures
 
-If WebSocket fails to connect:
-1. Verify `NEXT_PUBLIC_WS_URL` uses `wss://` (not `ws://`) for HTTPS sites
-2. Check that the WebSocket port (8081) is not blocked by firewall
-3. Ensure the backend WebSocket server is running
-4. Check browser console for specific error messages
+If WebSocket fails to connect with errors like "Firefox can't establish a connection to the server at wss://...":
+
+1. **Verify TLS handlers are configured** in `backend/fly.toml`:
+   - Port 8081 MUST have `handlers = ["tls", "http"]` to support secure WebSocket connections
+   - Without TLS handlers, `wss://` connections will fail from HTTPS pages
+   
+2. **Check environment variables**:
+   - Verify `NEXT_PUBLIC_WS_URL` uses `wss://` (not `ws://`) for HTTPS sites
+   - Ensure the WebSocket URL includes the correct port (`:8081`)
+   - Example: `wss://your-backend.fly.dev:8081`
+
+3. **Verify network connectivity**:
+   - Check that the WebSocket port (8081) is not blocked by firewall
+   - Ensure the backend WebSocket server is running
+   - Test the port is accessible: `nc -zv your-backend.fly.dev 8081`
+
+4. **Check browser console** for specific error messages:
+   - "Protocol mismatch" errors indicate trying to use `ws://` from HTTPS page
+   - "Connection refused" may indicate backend not running or port blocked
+   - Check the browser console for reconnection attempts and error details
 
 ### API 404 Errors
 
