@@ -1,4 +1,6 @@
-const envBase = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_API_URL || '' : '';
+import { API_URL } from '../../app/lib/config';
+
+const envBase = typeof process !== 'undefined' ? API_URL || '' : '';
 const API_BASE = envBase.replace(/\/+$/, ''); // remove trailing slashes
 
 export type LoginResult = { token: string; user: unknown };
