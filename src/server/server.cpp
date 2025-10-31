@@ -797,18 +797,30 @@ bool AcademicSocialServer::validateUserRegistration(const std::string& username,
 }
 
 void AcademicSocialServer::ensureDemoUserExists() {
+    // Helper lambda to assign Admin role to a user
+    auto assignAdminRole = [this](int user_id) -> bool {
+        auto admin_role = role_repository_->findByName("Admin");
+        if (admin_role.has_value()) {
+            // Check if user already has Admin role to avoid duplicate assignments
+            auto current_role = role_repository_->getUserRole(user_id);
+            if (!current_role.has_value() || current_role->getName() != "Admin") {
+                role_repository_->assignRoleToUser(user_id, admin_role->getId().value());
+                std::cout << "Demo user granted Admin permissions" << std::endl;
+            } else {
+                std::cout << "Demo user already has Admin permissions" << std::endl;
+            }
+            return true;
+        } else {
+            std::cerr << "Warning: Could not find Admin role for demo user" << std::endl;
+            return false;
+        }
+    };
+    
     // Check if demo user already exists
     auto existing_user = user_repository_->findByUsername("demo_student");
     if (existing_user.has_value()) {
         std::cout << "Demo user already exists" << std::endl;
-        
-        // Ensure demo user has Admin role for full permissions
-        int demo_user_id = existing_user->getId().value();
-        auto admin_role = role_repository_->findByName("Admin");
-        if (admin_role.has_value()) {
-            role_repository_->assignRoleToUser(demo_user_id, admin_role->getId().value());
-            std::cout << "Demo user granted Admin permissions" << std::endl;
-        }
+        assignAdminRole(existing_user->getId().value());
         return;
     }
 
@@ -823,15 +835,7 @@ void AcademicSocialServer::ensureDemoUserExists() {
     if (created_user.has_value()) {
         int demo_user_id = created_user->getId().value();
         std::cout << "Demo user created successfully (ID: " << demo_user_id << ")" << std::endl;
-        
-        // Assign Admin role to demo user for all permissions
-        auto admin_role = role_repository_->findByName("Admin");
-        if (admin_role.has_value()) {
-            role_repository_->assignRoleToUser(demo_user_id, admin_role->getId().value());
-            std::cout << "Demo user granted Admin permissions" << std::endl;
-        } else {
-            std::cerr << "Warning: Could not find Admin role for demo user" << std::endl;
-        }
+        assignAdminRole(demo_user_id);
     } else {
         std::cerr << "Warning: Failed to create demo user" << std::endl;
     }
