@@ -239,6 +239,26 @@ bool UserRepository::update(const User& user) {
     return stmt.step() == SQLITE_DONE;
 }
 
+// Update user password
+bool UserRepository::updatePassword(int userId, const std::string& newPassword) {
+    if (!database_ || !database_->isOpen()) return false;
+
+    // Hash the new password
+    std::string hashed_password = utils::hash_password(newPassword);
+
+    const std::string sql = R"(
+        UPDATE users SET password_hash = ? WHERE id = ?
+    )";
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return false;
+
+    stmt.bindText(1, hashed_password);
+    stmt.bindInt(2, userId);
+
+    return stmt.step() == SQLITE_DONE;
+}
+
 // Build User object from a DB row
 User UserRepository::userFromStatement(db::Statement& stmt) {
     User user;

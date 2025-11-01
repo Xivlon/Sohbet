@@ -812,8 +812,17 @@ void AcademicSocialServer::ensureDemoUserExists() {
     // Check if demo user already exists
     auto existing_user = user_repository_->findByUsername("demo_student");
     if (existing_user.has_value()) {
-        std::cout << "Demo user already exists" << std::endl;
-        assignAdminRole(existing_user->getId().value());
+        int demo_user_id = existing_user->getId().value();
+        std::cout << "Demo user already exists (ID: " << demo_user_id << ")" << std::endl;
+        
+        // Always reset the demo user's password to ensure it works after any API changes
+        if (user_repository_->updatePassword(demo_user_id, "demo123")) {
+            std::cout << "Demo user password reset successfully" << std::endl;
+        } else {
+            std::cerr << "Warning: Failed to reset demo user password" << std::endl;
+        }
+        
+        assignAdminRole(demo_user_id);
         return;
     }
 
