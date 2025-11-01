@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { apiClient, User, LoginData, RegisterData } from '../lib/api-client';
+import { isDebugEnabled } from '../lib/debug';
 
 interface AuthContextType {
   user: User | null;
@@ -20,7 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const login = async (data: LoginData): Promise<{ success: boolean; error?: string }> => {
-    const debug = process.env.NODE_ENV === 'development';
+    const debug = isDebugEnabled();
     setIsLoading(true);
     if (debug) {
       console.log('[Auth Context] Login attempt:', { username: data.username });

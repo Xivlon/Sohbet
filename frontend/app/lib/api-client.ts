@@ -1,6 +1,7 @@
 'use client';
 
 import { API_URL } from './config';
+import { isDebugEnabled } from './debug';
 
 const API_BASE_URL = (API_URL || 'http://localhost:8080').replace(/\/+$/, ''); // remove trailing slashes
 
@@ -69,10 +70,13 @@ class ApiClient {
   private debug: boolean;
 
   constructor(baseUrl: string = API_BASE_URL) {
-    this.instanceId = Math.random().toString(36).substring(7);
+    // Use crypto.randomUUID() if available, otherwise fallback to Math.random()
+    this.instanceId = typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? crypto.randomUUID().split('-')[0]
+      : Math.random().toString(36).substring(7);
     this.baseUrl = baseUrl;
     // Enable debug logging in development or when explicitly enabled
-    this.debug = typeof process !== 'undefined' && (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_API === 'true');
+    this.debug = isDebugEnabled();
     
     if (this.debug) {
       console.log('[API Client] Constructor called, instance ID:', this.instanceId, 'baseUrl:', baseUrl);
@@ -139,6 +143,26 @@ class ApiClient {
     return this.token;
   }
 
+  /**
+   * Synchronizes token from localStorage to instance variable.
+   * This ensures all instances use the same token even if they're created separately.
+   * @returns The current token from localStorage or instance variable
+   */
+  private syncTokenFromStorage(): string | null {
+    let currentToken = this.token;
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('auth_token');
+      if (storedToken && storedToken !== this.token) {
+        if (this.debug) {
+          console.log('[API Client]', this.instanceId, 'Token mismatch! Instance token:', this.token ? 'exists' : 'null', ', localStorage token:', storedToken ? 'exists' : 'null');
+        }
+        currentToken = storedToken;
+        this.token = storedToken; // Sync instance variable
+      }
+    }
+    return currentToken;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -158,17 +182,7 @@ class ApiClient {
     };
 
     // Always read token from localStorage to ensure we have the latest
-    let currentToken = this.token;
-    if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('auth_token');
-      if (storedToken && storedToken !== this.token) {
-        if (this.debug) {
-          console.log('[API Client]', this.instanceId, 'Token mismatch! Instance token:', this.token ? 'exists' : 'null', ', localStorage token:', storedToken ? 'exists' : 'null');
-        }
-        currentToken = storedToken;
-        this.token = storedToken; // Sync instance variable
-      }
-    }
+    const currentToken = this.syncTokenFromStorage();
 
     if (currentToken) {
       headers['Authorization'] = `Bearer ${currentToken}`;
@@ -266,17 +280,8 @@ class ApiClient {
     formData.append('user_id', userId.toString());
     formData.append('media_type', mediaType);
 
-    // Get current token from localStorage (same logic as request method)
-    let currentToken = this.token;
-    if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('auth_token');
-      if (storedToken) {
-        currentToken = storedToken;
-        if (storedToken !== this.token) {
-          this.token = storedToken; // Sync instance variable
-        }
-      }
-    }
+    // Get current token using the same sync logic as other requests
+    const currentToken = this.syncTokenFromStorage();
 
     try {
       const response = await fetch(`${this.baseUrl}/api/media/upload`, {
