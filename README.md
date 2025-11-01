@@ -81,14 +81,23 @@ npm start
 
 ### Production Deployment
 
-For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the comprehensive [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) which covers:
+For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the deployment guides:
+
+**Vercel (Frontend Only)**:
+- **[VERCEL_README.md](VERCEL_README.md)** - ⚠️ **START HERE** - Critical configuration required
+- **[VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)** - Detailed deployment guide with troubleshooting
+
+**Full Stack Deployment**:
+- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) - Covers backend, frontend, and environment variables
 - Environment variable configuration
 - Frontend and backend setup
 - Security considerations
 - **WebSocket configuration** - Critical for real-time features (see [WEBSOCKET_HANDSHAKE_FIX.md](docs/WEBSOCKET_HANDSHAKE_FIX.md))
 - Troubleshooting common deployment issues
 
-**⚠️ Important for Fly.io deployments**: WebSocket connections require special configuration in `fly.toml` to work correctly. See the deployment guide for details.
+**⚠️ Important Notes**:
+- **Vercel deployments**: Must set Root Directory to `frontend` in project settings (see VERCEL_README.md)
+- **Fly.io deployments**: WebSocket connections require special configuration in `fly.toml`
 
 ---
 
