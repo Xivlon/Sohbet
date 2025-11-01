@@ -20,16 +20,16 @@ This document explains how to deploy the Sohbet frontend to Vercel from this mon
 - **Output Directory**: Leave empty (auto-detected) or use `.next`
 - **Install Command**: Leave empty (auto-detected) or use `npm ci`
 
-### 3. Environment Variables
+### 3. Environment Variables (Optional)
 
-Add these environment variables in Vercel project settings:
+The `vercel.json` file already includes default environment variables:
 
 ```
 NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
 NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
-Or use the defaults from `vercel.json` (same values).
+These will be used automatically. **You only need to add environment variables in Vercel project settings if you want to override the defaults** or point to a different backend.
 
 ### 4. Deploy
 
