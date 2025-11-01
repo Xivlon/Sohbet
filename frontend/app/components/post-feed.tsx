@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { PostCard } from "./post-card"
 import { Button } from "@/app/components/ui/button"
+import { apiClient } from "@/app/lib/api-client"
 
 interface Post {
   id: number
@@ -32,14 +33,10 @@ export function PostFeed() {
   const fetchPosts = async (reset = false) => {
     try {
       const currentOffset = reset ? 0 : offset
-      const response = await fetch(`/api/posts?limit=${limit}&offset=${currentOffset}`, {
-        headers: {
-          'X-User-ID': '1', // TODO: Get from auth context
-        },
-      })
+      const response = await apiClient.getPosts(limit, currentOffset)
       
-      if (response.ok) {
-        const newPosts = await response.json()
+      if (response.data) {
+        const newPosts = response.data.posts || []
         if (reset) {
           setPosts(newPosts)
         } else {
