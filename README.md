@@ -85,7 +85,10 @@ For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the 
 - Environment variable configuration
 - Frontend and backend setup
 - Security considerations
+- **WebSocket configuration** - Critical for real-time features (see [WEBSOCKET_HANDSHAKE_FIX.md](docs/WEBSOCKET_HANDSHAKE_FIX.md))
 - Troubleshooting common deployment issues
+
+**⚠️ Important for Fly.io deployments**: WebSocket connections require special configuration in `fly.toml` to work correctly. See the deployment guide for details.
 
 ---
 
