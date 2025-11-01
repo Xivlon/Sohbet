@@ -20,16 +20,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const login = async (data: LoginData): Promise<{ success: boolean; error?: string }> => {
+    const debug = process.env.NODE_ENV === 'development';
     setIsLoading(true);
-    console.log('[Auth Context] Login attempt:', { username: data.username });
+    if (debug) {
+      console.log('[Auth Context] Login attempt:', { username: data.username });
+    }
     const response = await apiClient.login(data);
-    console.log('[Auth Context] Login response:', { 
-      success: !response.error, 
-      status: response.status, 
-      hasData: !!response.data,
-      hasToken: !!response.data?.token,
-      hasUser: !!response.data?.user 
-    });
+    if (debug) {
+      console.log('[Auth Context] Login response:', { 
+        success: !response.error, 
+        status: response.status, 
+        hasData: !!response.data,
+        hasToken: !!response.data?.token,
+        hasUser: !!response.data?.user 
+      });
+    }
     setIsLoading(false);
 
     if (response.error) {
@@ -38,7 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (response.data) {
-      console.log('[Auth Context] Setting user in React state');
+      if (debug) {
+        console.log('[Auth Context] Setting user in React state');
+      }
       setUser(response.data.user);
       return { success: true };
     }

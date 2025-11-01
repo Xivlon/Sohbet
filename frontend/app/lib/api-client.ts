@@ -66,30 +66,44 @@ class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
   private instanceId: string;
+  private debug: boolean;
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.instanceId = Math.random().toString(36).substring(7);
     this.baseUrl = baseUrl;
-    console.log('[API Client] Constructor called, instance ID:', this.instanceId, 'baseUrl:', baseUrl);
+    // Enable debug logging in development or when explicitly enabled
+    this.debug = typeof process !== 'undefined' && (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG_API === 'true');
+    
+    if (this.debug) {
+      console.log('[API Client] Constructor called, instance ID:', this.instanceId, 'baseUrl:', baseUrl);
+    }
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('auth_token');
-      console.log('[API Client] Token loaded from localStorage:', this.token ? `${this.token.substring(0, 20)}...` : 'null');
-    } else {
+      if (this.debug) {
+        console.log('[API Client] Token loaded from localStorage:', this.token ? `${this.token.substring(0, 20)}...` : 'null');
+      }
+    } else if (this.debug) {
       console.log('[API Client] Constructor running on server (no window), token remains null');
     }
   }
 
   setToken(token: string | null) {
-    console.log('[API Client]', this.instanceId, 'setToken called with:', token ? `${token.substring(0, 20)}...` : 'null');
+    if (this.debug) {
+      console.log('[API Client]', this.instanceId, 'setToken called with:', token ? `${token.substring(0, 20)}...` : 'null');
+    }
     this.token = token;
     if (typeof window !== 'undefined') {
       if (token) {
         localStorage.setItem('auth_token', token);
-        console.log('[API Client]', this.instanceId, 'Token stored in localStorage');
+        if (this.debug) {
+          console.log('[API Client]', this.instanceId, 'Token stored in localStorage');
+        }
       } else {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
-        console.log('[API Client]', this.instanceId, 'Token removed from localStorage');
+        if (this.debug) {
+          console.log('[API Client]', this.instanceId, 'Token removed from localStorage');
+        }
       }
     }
   }
@@ -119,7 +133,9 @@ class ApiClient {
   }
 
   getToken(): string | null {
-    console.log('[API Client]', this.instanceId, 'getToken called, returning:', this.token ? `${this.token.substring(0, 20)}...` : 'null');
+    if (this.debug) {
+      console.log('[API Client]', this.instanceId, 'getToken called, returning:', this.token ? `${this.token.substring(0, 20)}...` : 'null');
+    }
     return this.token;
   }
 
@@ -146,7 +162,9 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       const storedToken = localStorage.getItem('auth_token');
       if (storedToken && storedToken !== this.token) {
-        console.log('[API Client]', this.instanceId, 'Token mismatch! Instance token:', this.token ? 'exists' : 'null', ', localStorage token:', storedToken ? 'exists' : 'null');
+        if (this.debug) {
+          console.log('[API Client]', this.instanceId, 'Token mismatch! Instance token:', this.token ? 'exists' : 'null', ', localStorage token:', storedToken ? 'exists' : 'null');
+        }
         currentToken = storedToken;
         this.token = storedToken; // Sync instance variable
       }
@@ -154,8 +172,10 @@ class ApiClient {
 
     if (currentToken) {
       headers['Authorization'] = `Bearer ${currentToken}`;
-      console.log('[API Client]', this.instanceId, 'Including Authorization header with token:', currentToken.substring(0, 20) + '...');
-    } else {
+      if (this.debug) {
+        console.log('[API Client]', this.instanceId, 'Including Authorization header with token:', currentToken.substring(0, 20) + '...');
+      }
+    } else if (this.debug) {
       console.log('[API Client]', this.instanceId, 'No token available, Authorization header NOT included');
     }
 
@@ -203,18 +223,22 @@ class ApiClient {
   }
 
   async login(data: LoginData): Promise<ApiResponse<LoginResponse>> {
-    console.log('[API Client]', this.instanceId, 'Login attempt starting');
+    if (this.debug) {
+      console.log('[API Client]', this.instanceId, 'Login attempt starting');
+    }
     const response = await this.request<LoginResponse>('/api/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });
 
-    console.log('[API Client]', this.instanceId, 'Login response received:', {
-      hasError: !!response.error,
-      hasData: !!response.data,
-      hasToken: !!response.data?.token,
-      tokenPreview: response.data?.token ? response.data.token.substring(0, 20) + '...' : 'none'
-    });
+    if (this.debug) {
+      console.log('[API Client]', this.instanceId, 'Login response received:', {
+        hasError: !!response.error,
+        hasData: !!response.data,
+        hasToken: !!response.data?.token,
+        tokenPreview: response.data?.token ? response.data.token.substring(0, 20) + '...' : 'none'
+      });
+    }
 
     if (response.data?.token) {
       this.setToken(response.data.token);
@@ -242,10 +266,22 @@ class ApiClient {
     formData.append('user_id', userId.toString());
     formData.append('media_type', mediaType);
 
+    // Get current token from localStorage (same logic as request method)
+    let currentToken = this.token;
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('auth_token');
+      if (storedToken) {
+        currentToken = storedToken;
+        if (storedToken !== this.token) {
+          this.token = storedToken; // Sync instance variable
+        }
+      }
+    }
+
     try {
       const response = await fetch(`${this.baseUrl}/api/media/upload`, {
         method: 'POST',
-        headers: this.token ? { 'Authorization': `Bearer ${this.token}` } : {},
+        headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {},
         body: formData,
       });
 
