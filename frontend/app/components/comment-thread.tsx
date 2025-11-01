@@ -40,7 +40,6 @@ export function CommentThread({ postId, currentUserId }: CommentThreadProps) {
   const [showCommentForm, setShowCommentForm] = useState(false)
 
   const canDeleteAnyComment = usePermission(PERMISSIONS.DELETE_ANY_COMMENT)
-  const canEditAnyComment = usePermission(PERMISSIONS.EDIT_ANY_COMMENT)
 
   useEffect(() => {
     fetchComments()
