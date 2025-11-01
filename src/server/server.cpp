@@ -1038,6 +1038,15 @@ int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
         }
     }
     
+    // Check for demo user in request body
+    std::string username = extractJsonField(request.body, "username");
+    if (username == "demo_student") {
+        auto demo_user = user_repository_->findByUsername("demo_student");
+        if (demo_user.has_value() && demo_user->getId().has_value()) {
+            return demo_user->getId().value();
+        }
+    }
+    
     return -1;
 }
 
