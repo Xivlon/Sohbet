@@ -70,7 +70,7 @@ This PR fixes critical issues preventing the Sohbet application from working cor
 ### Frontend (Vercel)
 ```env
 NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
-NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev
+NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
 ### Backend (Fly.io)
