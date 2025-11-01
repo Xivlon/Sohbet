@@ -2,6 +2,12 @@
 
 This guide provides instructions for deploying Sohbet in production environments, including the necessary environment variable configurations.
 
+## Current Production Deployments
+
+- **Backend (Fly.io)**: https://sohbet-uezxqq.fly.dev
+- **Frontend (Vercel)**: https://sohbet-seven.vercel.app/
+- **JWT Secret**: yDE0NNfNuaOt6/9aVK6D3bRW6yHYqhjVypiaVZai0Hg=
+
 ## Environment Variables
 
 ### Frontend (Vercel/Next.js)
@@ -9,9 +15,9 @@ This guide provides instructions for deploying Sohbet in production environments
 Create a `.env.local` file in the `frontend/` directory with the following variables:
 
 ```env
-# Production Backend URLs - Update with your actual deployment domain
-NEXT_PUBLIC_API_URL=https://your-app.fly.dev
-NEXT_PUBLIC_WS_URL=wss://your-app.fly.dev:8081
+# Production Backend URLs - Actual deployment
+NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
+NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
 **Important Notes:**
@@ -25,8 +31,8 @@ NEXT_PUBLIC_WS_URL=wss://your-app.fly.dev:8081
 In your Vercel project settings, add these environment variables:
 
 ```
-NEXT_PUBLIC_API_URL=https://your-backend-domain.fly.dev
-NEXT_PUBLIC_WS_URL=wss://your-backend-domain.fly.dev:8081
+NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
+NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
 ### Backend (Fly.io/C++)
@@ -35,8 +41,8 @@ Set the following environment variables on your backend deployment:
 
 ```bash
 # On Fly.io
-fly secrets set SOHBET_JWT_SECRET=your-secret-key-here
-fly secrets set CORS_ORIGIN=https://sohbet-henna.vercel.app
+fly secrets set SOHBET_JWT_SECRET=yDE0NNfNuaOt6/9aVK6D3bRW6yHYqhjVypiaVZai0Hg=
+fly secrets set CORS_ORIGIN=https://sohbet-seven.vercel.app
 fly secrets set PORT=8080
 fly secrets set WS_PORT=8081
 ```
@@ -88,7 +94,7 @@ The frontend now includes validation to prevent insecure WebSocket connections (
 ### CORS Configuration
 
 The backend server's CORS configuration is controlled by the `CORS_ORIGIN` environment variable:
-- **Production**: Set to your frontend domain (e.g., `https://sohbet-henna.vercel.app`)
+- **Production**: Set to your frontend domain (e.g., `https://sohbet-seven.vercel.app`)
 - **Development**: Can be set to `*` to allow all origins
 - **Default**: If not set, defaults to `*` (not recommended for production)
 
@@ -119,7 +125,7 @@ The backend server's CORS configuration is controlled by the `CORS_ORIGIN` envir
 Open your frontend in a browser and check the console:
 ```javascript
 // Should show successful API request
-fetch('https://your-backend.fly.dev/api/status')
+fetch('https://sohbet-uezxqq.fly.dev/api/status')
   .then(r => r.json())
   .then(console.log)
 ```
@@ -129,7 +135,7 @@ fetch('https://your-backend.fly.dev/api/status')
 In the browser console:
 ```javascript
 // Should establish connection without errors
-const ws = new WebSocket('wss://your-backend.fly.dev/?token=test-token');
+const ws = new WebSocket('wss://sohbet-uezxqq.fly.dev/?token=test-token');
 ws.onopen = () => console.log('✓ WebSocket connected');
 ws.onerror = (e) => console.error('✗ WebSocket error:', e);
 ```
@@ -162,7 +168,7 @@ If WebSocket fails to connect with errors like "Firefox can't establish a connec
 2. **Check environment variables**:
    - Verify `NEXT_PUBLIC_WS_URL` uses `wss://` (not `ws://`) for HTTPS sites
    - Ensure the WebSocket URL includes the correct port (`:8081`)
-   - Example: `wss://your-app.fly.dev:8081`
+   - Example: `wss://sohbet-uezxqq.fly.dev:8081`
 
 3. **Verify network connectivity**:
    - Check that the WebSocket port (8081) is not blocked by firewall
