@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient, type CreateVoiceChannelData } from './api-client';
 
 export type {
   VoiceChannel,
@@ -16,7 +16,7 @@ class VoiceService {
   /**
    * Create a new voice channel
    */
-  async createChannel(data: import('./api-client').CreateVoiceChannelData) {
+  async createChannel(data: CreateVoiceChannelData) {
     return apiClient.createVoiceChannel(data);
   }
 
