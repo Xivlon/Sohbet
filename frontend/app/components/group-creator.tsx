@@ -24,6 +24,7 @@ import {
 import { Plus } from "lucide-react"
 import { PermissionGate } from "./permission-gate"
 import { PERMISSIONS } from "@/app/lib/permissions"
+import { apiClient } from "@/app/lib/api-client"
 
 interface GroupCreatorProps {
   onGroupCreated?: () => void
@@ -45,22 +46,14 @@ export function GroupCreator({ onGroupCreated, currentUserId }: GroupCreatorProp
 
     setIsCreating(true)
     try {
-      const response = await fetch('/api/groups', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-ID': String(currentUserId),
-        },
-        body: JSON.stringify(formData),
-      })
+      const response = await apiClient.createGroup(formData.name, formData.description, formData.privacy)
 
-      if (response.ok) {
+      if (response.error) {
+        alert(response.error || 'Failed to create group')
+      } else {
         setFormData({ name: '', description: '', privacy: 'private' })
         setOpen(false)
         onGroupCreated?.()
-      } else {
-        const error = await response.json()
-        alert(error.error || 'Failed to create group')
       }
     } catch (error) {
       console.error('Error creating group:', error)

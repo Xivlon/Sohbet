@@ -412,10 +412,10 @@ class ApiClient {
     return this.request(`/api/groups?limit=${limit}&offset=${offset}`);
   }
 
-  async createGroup(name: string, description: string): Promise<ApiResponse<any>> {
+  async createGroup(name: string, description: string, privacy?: string): Promise<ApiResponse<any>> {
     return this.request('/api/groups', {
       method: 'POST',
-      body: JSON.stringify({ name, description }),
+      body: JSON.stringify({ name, description, privacy }),
     });
   }
 
