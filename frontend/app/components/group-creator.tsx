@@ -48,7 +48,7 @@ export function GroupCreator({ onGroupCreated }: GroupCreatorProps) {
 
     setIsCreating(true)
     try {
-      const response = await apiClient.createGroup(formData.name, formData.description)
+      const response = await apiClient.createGroup(formData.name, formData.description, formData.privacy)
 
       if (response.data || response.status === 200 || response.status === 201) {
         setFormData({ name: '', description: '', privacy: 'private' })
