@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
+import { apiClient } from '@/app/lib/api-client'
 
 interface Comment {
   id: number

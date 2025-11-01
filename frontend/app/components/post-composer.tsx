@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select"
+import { apiClient } from '@/app/lib/api-client'
 
 interface PostComposerProps {
   onPostCreated?: () => void

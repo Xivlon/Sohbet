@@ -8,6 +8,7 @@ import { ScrollArea } from '@/app/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/app/components/avatar'
 import { Send } from 'lucide-react'
 import { useChatWebSocket, ChatMessagePayload } from '../lib/use-websocket'
+import { apiClient } from '@/app/lib/api-client'
 
 interface Message extends ChatMessagePayload {
   id: number
@@ -76,16 +77,11 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
-        headers: {
-          'X-User-ID': currentUserId.toString()
-        }
-      })
+      const response = await apiClient.getMessages(conversationId, 50, 0)
       
-      if (response.ok) {
-        const data = await response.json()
+      if (response.data) {
         // Reverse to show oldest first
-        setMessages(data.messages.reverse())
+        setMessages(response.data.messages.reverse())
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -117,20 +113,10 @@ export function ChatWindow({ conversationId, currentUserId, otherUser }: ChatWin
       
       // Fallback to REST API if WebSocket fails
       if (!webSocketSent) {
-        const response = await fetch(`/api/conversations/${conversationId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-ID': currentUserId.toString()
-          },
-          body: JSON.stringify({
-            content: messageContent
-          })
-        })
+        const response = await apiClient.sendMessage(conversationId, messageContent)
         
-        if (response.ok) {
-          const message = await response.json()
-          setMessages([...messages, message])
+        if (response.data) {
+          setMessages([...messages, response.data])
         }
       } else {
         // Optimistically add message to UI (WebSocket will confirm)

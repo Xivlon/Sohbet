@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Textarea } from "@/app/components/ui/textarea"
-import { apiClient } from "@/app/lib/api-client"
+import { apiClient } from '@/app/lib/api-client'
 
 interface CommentFormProps {
   postId?: number

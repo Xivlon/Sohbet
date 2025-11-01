@@ -449,6 +449,41 @@ class ApiClient {
     return this.request(`/api/users/${userId}`);
   }
 
+  async updateUser(userId: number, data: Partial<User>): Promise<ApiResponse<User>> {
+    return this.request(`/api/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Friendships API
+  async getFriendRequests(status?: string): Promise<ApiResponse<any[]>> {
+    const query = status ? `?status=${status}` : '';
+    return this.request(`/api/friendships${query}`);
+  }
+
+  async acceptFriendRequest(requestId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/friendships/${requestId}/accept`, {
+      method: 'PUT',
+    });
+  }
+
+  async rejectFriendRequest(requestId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/friendships/${requestId}/reject`, {
+      method: 'PUT',
+    });
+  }
+
+  async getFriends(userId: number): Promise<ApiResponse<any[]>> {
+    return this.request(`/api/users/${userId}/friends`);
+  }
+
+  async deleteFriendship(friendshipId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/friendships/${friendshipId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Conversations/Chat API
   async getConversations(): Promise<ApiResponse<{ conversations: any[]; total: number }>> {
     return this.request('/api/conversations');

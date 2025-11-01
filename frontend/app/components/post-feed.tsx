@@ -25,6 +25,8 @@ export function PostFeed() {
   const [hasMore, setHasMore] = useState(true)
   const [offset, setOffset] = useState(0)
   const limit = 20
+  
+  const { user } = useAuth()
 
   useEffect(() => {
     fetchPosts()
@@ -95,7 +97,7 @@ export function PostFeed() {
         <PostCard
           key={post.id}
           post={post}
-          currentUserId={1} // TODO: Get from auth context
+          currentUserId={user?.id}
           onDelete={handleDeletePost}
         />
       ))}

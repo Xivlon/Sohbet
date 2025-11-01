@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
 import { CommentThread } from "./comment-thread"
+import { apiClient } from '@/app/lib/api-client'
 
 interface Post {
   id: number

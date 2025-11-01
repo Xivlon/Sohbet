@@ -24,7 +24,6 @@ export default function GroupsPage() {
           </p>
         </div>
         <GroupCreator
-          currentUserId={user?.id}
           onGroupCreated={handleGroupCreated}
         />
       </div>

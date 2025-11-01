@@ -24,14 +24,14 @@ import {
 import { Plus } from "lucide-react"
 import { PermissionGate } from "./permission-gate"
 import { PERMISSIONS } from "@/app/lib/permissions"
-import { apiClient } from "@/app/lib/api-client"
+import { apiClient } from '@/app/lib/api-client'
+import { useAuth } from '@/app/contexts/auth-context'
 
 interface GroupCreatorProps {
   onGroupCreated?: () => void
-  currentUserId?: number
 }
 
-export function GroupCreator({ onGroupCreated, currentUserId }: GroupCreatorProps) {
+export function GroupCreator({ onGroupCreated }: GroupCreatorProps) {
   const [open, setOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState({
@@ -39,10 +39,12 @@ export function GroupCreator({ onGroupCreated, currentUserId }: GroupCreatorProp
     description: '',
     privacy: 'private'
   })
+  
+  const { user } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!currentUserId) return
+    if (!user?.id) return
 
     setIsCreating(true)
     try {
