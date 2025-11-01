@@ -11,6 +11,8 @@
 #include <fstream>
 #include <regex>
 #include <sstream>
+#include <thread>
+#include <set>
 #include <cstring>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -308,7 +310,7 @@ void AcademicSocialServer::handleClient(int client_socket) {
     HttpResponse response = handleRequest(request);
     
     // Format and send response
-    std::string http_response = formatHttpResponse(response);
+    std::string http_response = formatHttpResponse(response, request);
     send(client_socket, http_response.c_str(), http_response.length(), 0);
     
     close(client_socket);
@@ -366,7 +368,8 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
     return request;
 }
 
-std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& response) {
+std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& response, const HttpRequest& request) {
+    (void)request;
     std::ostringstream oss;
     oss << "HTTP/1.1 " << response.status_code << " ";
     

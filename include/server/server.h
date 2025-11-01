@@ -89,7 +89,9 @@ public:
      * @param request HTTP request to process
      * @return HTTP response
      */
-    HttpResponse handleRequest(const HttpRequest& request);
+    HttpResponse handleRequest(const HttpRequest &request);
+
+    const sohbet::server::HttpResponse &NewFunction(const sohbet::server::HttpRequest &request, std::string &base_path);
 
 private:
     int port_;
