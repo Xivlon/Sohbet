@@ -148,6 +148,10 @@ add_executable(test_admin_permissions tests/test_admin_permissions.cpp)
 target_link_libraries(test_admin_permissions sohbet_lib)
 add_test(NAME AdminPermissionsTest COMMAND test_admin_permissions)
 
+add_executable(test_demo_student_post tests/test_demo_student_post.cpp)
+target_link_libraries(test_demo_student_post sohbet_lib)
+add_test(NAME DemoStudentPostTest COMMAND test_demo_student_post WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 # Example programs
 add_executable(user_management_example examples/user_management_example.cpp)
 target_link_libraries(user_management_example sohbet_lib)
