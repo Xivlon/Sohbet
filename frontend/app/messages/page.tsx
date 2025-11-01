@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Card } from '@/app/components/ui/card'
 import { ChatList } from '@/app/components/chat-list'
 import { ChatWindow } from '@/app/components/chat-window'
+import { apiClient } from '@/app/lib/api-client'
 
 interface Conversation {
   id: number
@@ -22,27 +23,21 @@ export default function MessagesPage() {
     
     // Fetch conversation details to get other user info
     try {
-      const response = await fetch('/api/conversations', {
-        headers: {
-          'X-User-ID': currentUserId.toString()
-        }
-      })
+      const response = await apiClient.getConversations()
       
-      if (response.ok) {
-        const data = await response.json()
-        const conversation: Conversation | undefined = data.conversations.find((c: Conversation) => c.id === conversationId)
+      if (response.data) {
+        const conversation: Conversation | undefined = response.data.conversations.find((c: Conversation) => c.id === conversationId)
         
         if (conversation) {
           const otherUserId = conversation.user1_id === currentUserId 
             ? conversation.user2_id 
             : conversation.user1_id
           
-          const userResponse = await fetch(`/api/users/${otherUserId}`)
-          if (userResponse.ok) {
-            const userData = await userResponse.json()
+          const userResponse = await apiClient.getUserById(otherUserId)
+          if (userResponse.data) {
             setOtherUser({
               id: otherUserId,
-              username: userData.username || 'Unknown User'
+              username: userResponse.data.username || 'Unknown User'
             })
           }
         }

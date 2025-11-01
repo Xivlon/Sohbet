@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select"
+import { apiClient } from '@/app/lib/api-client'
 
 interface PostComposerProps {
   onPostCreated?: () => void
@@ -27,19 +28,9 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
 
     setPosting(true)
     try {
-      const response = await fetch('/api/posts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-ID': '1', // TODO: Get from auth context
-        },
-        body: JSON.stringify({
-          content,
-          visibility,
-        }),
-      })
+      const response = await apiClient.createPost(content, visibility)
 
-      if (response.ok) {
+      if (response.data || response.status === 200 || response.status === 201) {
         setContent("")
         setVisibility("friends")
         onPostCreated?.()

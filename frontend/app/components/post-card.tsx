@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
 import { CommentThread } from "./comment-thread"
+import { apiClient } from '@/app/lib/api-client'
 
 interface Post {
   id: number
@@ -44,26 +45,14 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
   const handleLike = async () => {
     try {
       if (liked) {
-        const response = await fetch(`/api/posts/${post.id}/react?reaction_type=like`, {
-          method: 'DELETE',
-          headers: {
-            'X-User-ID': String(currentUserId),
-          },
-        })
-        if (response.ok) {
+        const response = await apiClient.removeReaction(post.id)
+        if (response.status === 200 || response.status === 204) {
           setLiked(false)
           setLikeCount(Math.max(0, likeCount - 1))
         }
       } else {
-        const response = await fetch(`/api/posts/${post.id}/react`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-ID': String(currentUserId),
-          },
-          body: JSON.stringify({ reaction_type: 'like' }),
-        })
-        if (response.ok) {
+        const response = await apiClient.reactToPost(post.id, 'like')
+        if (response.data || response.status === 200 || response.status === 201) {
           setLiked(true)
           setLikeCount(likeCount + 1)
         }
@@ -77,13 +66,8 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
     if (!confirm('Are you sure you want to delete this post?')) return
 
     try {
-      const response = await fetch(`/api/posts/${post.id}`, {
-        method: 'DELETE',
-        headers: {
-          'X-User-ID': String(currentUserId),
-        },
-      })
-      if (response.ok) {
+      const response = await apiClient.deletePost(post.id)
+      if (response.status === 200 || response.status === 204) {
         onDelete?.(post.id)
       }
     } catch (error) {

@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/app/components/ui/card'
 import { Avatar, AvatarFallback } from '@/app/components/avatar'
 import { ScrollArea } from '@/app/components/ui/scroll-area'
 import { useOnlineUsers } from '../lib/use-websocket'
+import { apiClient } from '@/app/lib/api-client'
 
 interface Conversation {
   id: number
@@ -38,30 +39,25 @@ export function ChatList({ currentUserId, onSelectConversation, selectedConversa
 
   const fetchConversations = async () => {
     try {
-      const response = await fetch('/api/conversations', {
-        headers: {
-          'X-User-ID': currentUserId.toString()
-        }
-      })
+      const response = await apiClient.getConversations()
       
-      if (response.ok) {
-        const data = await response.json()
+      if (response.data) {
+        const conversationsList = response.data.conversations || []
         
         // Fetch user details for each conversation
         const conversationsWithUsers = await Promise.all(
-          data.conversations.map(async (conv: Conversation) => {
+          conversationsList.map(async (conv: Conversation) => {
             const otherUserId = conv.user1_id === currentUserId ? conv.user2_id : conv.user1_id
             
             try {
-              const userResponse = await fetch(`/api/users/${otherUserId}`)
-              if (userResponse.ok) {
-                const userData = await userResponse.json()
+              const userResponse = await apiClient.getUserById(otherUserId)
+              if (userResponse.data) {
                 return {
                   ...conv,
                   other_user: {
                     id: otherUserId,
-                    username: userData.username || 'Unknown User',
-                    email: userData.email || ''
+                    username: userResponse.data.username || 'Unknown User',
+                    email: userResponse.data.email || ''
                   }
                 }
               }

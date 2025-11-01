@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Textarea } from "@/app/components/ui/textarea"
+import { apiClient } from '@/app/lib/api-client'
 
 interface CommentFormProps {
   postId?: number
@@ -30,20 +31,11 @@ export function CommentForm({
 
     setPosting(true)
     try {
-      const url = parentCommentId 
-        ? `/api/comments/${parentCommentId}/reply`
-        : `/api/posts/${postId}/comments`
+      const response = parentCommentId 
+        ? await apiClient.replyToComment(parentCommentId, content)
+        : await apiClient.createComment(postId!, content)
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-ID': '1', // TODO: Get from auth context
-        },
-        body: JSON.stringify({ content }),
-      })
-
-      if (response.ok) {
+      if (response.data || response.status === 200 || response.status === 201) {
         setContent("")
         onCommentCreated?.()
       }

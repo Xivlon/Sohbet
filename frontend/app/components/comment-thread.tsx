@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
+import { apiClient } from '@/app/lib/api-client'
 
 interface Comment {
   id: number
@@ -43,10 +44,9 @@ export function CommentThread({ postId, currentUserId }: CommentThreadProps) {
 
   const fetchComments = async () => {
     try {
-      const response = await fetch(`/api/posts/${postId}/comments`)
-      if (response.ok) {
-        const data = await response.json()
-        setComments(data)
+      const response = await apiClient.getComments(postId)
+      if (response.data) {
+        setComments(response.data)
       }
     } catch (error) {
       console.error('Error fetching comments:', error)
@@ -65,13 +65,8 @@ export function CommentThread({ postId, currentUserId }: CommentThreadProps) {
     if (!confirm('Are you sure you want to delete this comment?')) return
 
     try {
-      const response = await fetch(`/api/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-User-ID': String(currentUserId),
-        },
-      })
-      if (response.ok) {
+      const response = await apiClient.deleteComment(commentId)
+      if (response.status === 200 || response.status === 204) {
         // Remove the comment and all its replies
         const removeCommentAndReplies = (comments: Comment[], idToRemove: number): Comment[] => {
           const filtered = comments.filter(c => c.id !== idToRemove)

@@ -345,6 +345,36 @@ class ApiClient {
     });
   }
 
+  async deletePost(postId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/posts/${postId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getComments(postId: number): Promise<ApiResponse<any[]>> {
+    return this.request(`/api/posts/${postId}/comments`);
+  }
+
+  async createComment(postId: number, content: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/posts/${postId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async replyToComment(commentId: number, content: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/comments/${commentId}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async deleteComment(commentId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/comments/${commentId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Groups API
   async getGroups(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ groups: any[]; total: number }>> {
     return this.request(`/api/groups?limit=${limit}&offset=${offset}`);
@@ -385,6 +415,34 @@ class ApiClient {
   // Users API
   async getUserById(userId: number): Promise<ApiResponse<any>> {
     return this.request(`/api/users/${userId}`);
+  }
+
+  // Friendships API
+  async getFriendRequests(status?: string): Promise<ApiResponse<any[]>> {
+    const query = status ? `?status=${status}` : '';
+    return this.request(`/api/friendships${query}`);
+  }
+
+  async acceptFriendRequest(requestId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/friendships/${requestId}/accept`, {
+      method: 'PUT',
+    });
+  }
+
+  async rejectFriendRequest(requestId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/friendships/${requestId}/reject`, {
+      method: 'PUT',
+    });
+  }
+
+  async getFriends(userId: number): Promise<ApiResponse<any[]>> {
+    return this.request(`/api/users/${userId}/friends`);
+  }
+
+  async deleteFriendship(friendshipId: number): Promise<ApiResponse<any>> {
+    return this.request(`/api/friendships/${friendshipId}`, {
+      method: 'DELETE',
+    });
   }
 
   // Conversations/Chat API
