@@ -10,8 +10,8 @@ Create a `.env.local` file in the `frontend/` directory with the following varia
 
 ```env
 # Production Backend URLs - Update with your actual deployment domain
-NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
-NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
+NEXT_PUBLIC_API_URL=https://your-app.fly.dev
+NEXT_PUBLIC_WS_URL=wss://your-app.fly.dev:8081
 ```
 
 **Important Notes:**
@@ -154,14 +154,15 @@ If you see CORS errors in the browser console:
 
 If WebSocket fails to connect with errors like "Firefox can't establish a connection to the server at wss://...":
 
-1. **Verify TLS handlers are configured** in `backend/fly.toml`:
-   - Port 8081 MUST have `handlers = ["tls", "http"]` to support secure WebSocket connections
-   - Without TLS handlers, `wss://` connections will fail from HTTPS pages
+1. **Verify TCP protocol configuration** in `backend/fly.toml`:
+   - Port 8081 MUST use `protocol = "tcp"` with `handlers = ["tls"]` only
+   - Do NOT use `handlers = ["tls", "http"]` as this causes handshake failures
+   - See [WEBSOCKET_HANDSHAKE_FIX.md](WEBSOCKET_HANDSHAKE_FIX.md) for details
    
 2. **Check environment variables**:
    - Verify `NEXT_PUBLIC_WS_URL` uses `wss://` (not `ws://`) for HTTPS sites
    - Ensure the WebSocket URL includes the correct port (`:8081`)
-   - Example: `wss://your-backend.fly.dev:8081`
+   - Example: `wss://your-app.fly.dev:8081`
 
 3. **Verify network connectivity**:
    - Check that the WebSocket port (8081) is not blocked by firewall
