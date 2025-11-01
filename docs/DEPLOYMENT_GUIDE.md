@@ -49,25 +49,35 @@ fly secrets set WS_PORT=8081
 
 #### Fly.io Configuration for WebSocket TLS
 
-**Important**: The `backend/fly.toml` file must be configured to enable TLS/HTTPS on the WebSocket port (8081) for secure WebSocket connections (`wss://`) to work properly.
+**Important**: The `backend/fly.toml` file must be configured correctly to handle WebSocket connections. Due to how Fly.io's HTTP proxy works, WebSocket connections require special configuration to avoid handshake failures.
 
-Ensure your `fly.toml` includes TLS handlers for port 8081:
+**Correct Configuration** (uses TCP protocol mode):
 
 ```toml
 # WebSocket Service (port 8081)
+# Using TCP protocol to avoid HTTP proxy interference with WebSocket upgrade
 [[services]]
   internal_port = 8081
   processes = ['app']
+  protocol = "tcp"  # CRITICAL: Use TCP mode, not HTTP mode
   auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
   [[services.ports]]
     port = 8081
-    handlers = ["tls", "http"]  # TLS is required for wss:// connections
+    handlers = ["tls"]  # TLS only, no HTTP handler
 ```
 
-**Note**: Without `"tls"` in the handlers array, browsers will be unable to establish secure WebSocket connections (`wss://`) from HTTPS pages, resulting in connection failures.
+**Why TCP protocol?**
+- Fly.io's HTTP proxy expects complete HTTP responses and doesn't handle WebSocket upgrade (HTTP 101) properly
+- Using `protocol = "tcp"` tells Fly.io to pass through raw TCP after TLS termination
+- This allows the WebSocket handshake to complete without proxy interference
+- Still provides TLS encryption for secure WebSocket (`wss://`) connections
+
+**Common mistake**: Using `handlers = ["tls", "http"]` causes `[PU02]` errors because the HTTP proxy closes connections on WebSocket upgrade responses.
+
+For more details, see [WEBSOCKET_HANDSHAKE_FIX.md](WEBSOCKET_HANDSHAKE_FIX.md).
 
 ## Security Considerations
 

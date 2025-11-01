@@ -25,16 +25,18 @@ primary_region = 'iad'
     port = 443
 
 # WebSocket Service (port 8081)
+# Using TCP protocol to avoid HTTP proxy interference with WebSocket upgrade
 [[services]]
   internal_port = 8081
   processes = ['app']
+  protocol = "tcp"
   auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
   [[services.ports]]
     port = 8081
-    handlers = ["tls", "http"]
+    handlers = ["tls"]
 
 [[vm]]
   memory = '1gb'
