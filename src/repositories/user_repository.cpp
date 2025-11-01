@@ -243,13 +243,6 @@ bool UserRepository::update(const User& user) {
 bool UserRepository::updatePassword(int userId, const std::string& newPassword) {
     if (!database_ || !database_->isOpen()) return false;
 
-    // Verify user exists before attempting update
-    auto user = findById(userId);
-    if (!user.has_value()) {
-        std::cerr << "updatePassword: User ID " << userId << " not found" << std::endl;
-        return false;
-    }
-
     // Hash the new password
     std::string hashed_password = utils::hash_password(newPassword);
 
@@ -269,7 +262,10 @@ bool UserRepository::updatePassword(int userId, const std::string& newPassword) 
 
     // Verify that exactly one row was updated
     int changes = sqlite3_changes(database_->getHandle());
-    if (changes != 1) {
+    if (changes == 0) {
+        std::cerr << "updatePassword: User ID " << userId << " not found" << std::endl;
+        return false;
+    } else if (changes != 1) {
         std::cerr << "updatePassword: Expected 1 row updated, got " << changes << std::endl;
         return false;
     }
