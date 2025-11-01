@@ -112,9 +112,9 @@ std::optional<JWTPayload> verify_jwt_token(const std::string& token, const std::
     // Decode payload
     std::string payload_json = base64_url_decode(encoded_payload);
     
-    // Check if decoding was successful
-    if (payload_json.empty()) {
-        return std::nullopt; // Invalid base64 encoding
+    // Check if decoding was successful and has minimum JSON structure
+    if (payload_json.length() < 2 || payload_json[0] != '{') {
+        return std::nullopt; // Invalid base64 encoding or not a JSON object
     }
     
     // Parse payload (simplified JSON parsing)
@@ -138,7 +138,14 @@ std::optional<JWTPayload> verify_jwt_token(const std::string& token, const std::
         return std::nullopt; // Missing user_id field
     }
     size_t user_id_start = user_id_pos + 10;
+    // Find either comma or closing brace as delimiter
     size_t user_id_end = payload_json.find(",", user_id_start);
+    size_t user_id_end_alt = payload_json.find("}", user_id_start);
+    if (user_id_end == std::string::npos) {
+        user_id_end = user_id_end_alt;
+    } else if (user_id_end_alt != std::string::npos && user_id_end_alt < user_id_end) {
+        user_id_end = user_id_end_alt;
+    }
     if (user_id_end == std::string::npos) {
         return std::nullopt; // Malformed user_id field
     }
@@ -168,7 +175,14 @@ std::optional<JWTPayload> verify_jwt_token(const std::string& token, const std::
         return std::nullopt; // Missing expiration field
     }
     size_t exp_start = exp_pos + 6;
-    size_t exp_end = payload_json.find("}", exp_start);
+    // Find either comma or closing brace as delimiter
+    size_t exp_end = payload_json.find(",", exp_start);
+    size_t exp_end_alt = payload_json.find("}", exp_start);
+    if (exp_end == std::string::npos) {
+        exp_end = exp_end_alt;
+    } else if (exp_end_alt != std::string::npos && exp_end_alt < exp_end) {
+        exp_end = exp_end_alt;
+    }
     if (exp_end == std::string::npos) {
         return std::nullopt; // Malformed expiration field
     }
