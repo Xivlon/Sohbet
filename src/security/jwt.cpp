@@ -36,7 +36,12 @@ std::string base64_url_decode(const std::string& input) {
     
     for (char c : input) {
         if (c == '=') break;
-        val = (val << 6) + chars.find(c);
+        size_t pos = chars.find(c);
+        // Check for invalid base64 character
+        if (pos == std::string::npos) {
+            return ""; // Return empty string for invalid input
+        }
+        val = (val << 6) + pos;
         valb += 6;
         if (valb >= 0) {
             result.push_back(char((val >> valb) & 0xFF));
@@ -107,32 +112,85 @@ std::optional<JWTPayload> verify_jwt_token(const std::string& token, const std::
     // Decode payload
     std::string payload_json = base64_url_decode(encoded_payload);
     
+    // Check if decoding was successful and has minimum JSON structure
+    if (payload_json.length() < 2 || payload_json[0] != '{') {
+        return std::nullopt; // Invalid base64 encoding or not a JSON object
+    }
+    
     // Parse payload (simplified JSON parsing)
     JWTPayload payload;
     
     // Extract username
-    size_t username_start = payload_json.find("\"username\":\"") + 12;
+    size_t username_pos = payload_json.find("\"username\":\"");
+    if (username_pos == std::string::npos) {
+        return std::nullopt; // Missing username field
+    }
+    size_t username_start = username_pos + 12;
     size_t username_end = payload_json.find("\"", username_start);
+    if (username_end == std::string::npos) {
+        return std::nullopt; // Malformed username field
+    }
     payload.username = payload_json.substr(username_start, username_end - username_start);
     
     // Extract user_id
-    size_t user_id_start = payload_json.find("\"user_id\":") + 10;
+    size_t user_id_pos = payload_json.find("\"user_id\":");
+    if (user_id_pos == std::string::npos) {
+        return std::nullopt; // Missing user_id field
+    }
+    size_t user_id_start = user_id_pos + 10;
+    // Find either comma or closing brace as delimiter
     size_t user_id_end = payload_json.find(",", user_id_start);
-    payload.user_id = std::stoi(payload_json.substr(user_id_start, user_id_end - user_id_start));
+    size_t user_id_end_alt = payload_json.find("}", user_id_start);
+    if (user_id_end == std::string::npos) {
+        user_id_end = user_id_end_alt;
+    } else if (user_id_end_alt != std::string::npos && user_id_end_alt < user_id_end) {
+        user_id_end = user_id_end_alt;
+    }
+    if (user_id_end == std::string::npos) {
+        return std::nullopt; // Malformed user_id field
+    }
+    try {
+        payload.user_id = std::stoi(payload_json.substr(user_id_start, user_id_end - user_id_start));
+    } catch (const std::exception&) {
+        return std::nullopt; // Invalid user_id format
+    }
     
     // Extract role
-    size_t role_start = payload_json.find("\"role\":\"") + 8;
-    size_t role_end = payload_json.find("\"", role_start);
-    if (role_start != std::string::npos && role_end != std::string::npos) {
-        payload.role = payload_json.substr(role_start, role_end - role_start);
+    size_t role_pos = payload_json.find("\"role\":\"");
+    if (role_pos != std::string::npos) {
+        size_t role_start = role_pos + 8;
+        size_t role_end = payload_json.find("\"", role_start);
+        if (role_end != std::string::npos) {
+            payload.role = payload_json.substr(role_start, role_end - role_start);
+        } else {
+            payload.role = "Student"; // Default role
+        }
     } else {
         payload.role = "Student"; // Default role
     }
     
     // Extract expiration
-    size_t exp_start = payload_json.find("\"exp\":") + 6;
-    size_t exp_end = payload_json.find("}", exp_start);
-    payload.exp = std::stoll(payload_json.substr(exp_start, exp_end - exp_start));
+    size_t exp_pos = payload_json.find("\"exp\":");
+    if (exp_pos == std::string::npos) {
+        return std::nullopt; // Missing expiration field
+    }
+    size_t exp_start = exp_pos + 6;
+    // Find either comma or closing brace as delimiter
+    size_t exp_end = payload_json.find(",", exp_start);
+    size_t exp_end_alt = payload_json.find("}", exp_start);
+    if (exp_end == std::string::npos) {
+        exp_end = exp_end_alt;
+    } else if (exp_end_alt != std::string::npos && exp_end_alt < exp_end) {
+        exp_end = exp_end_alt;
+    }
+    if (exp_end == std::string::npos) {
+        return std::nullopt; // Malformed expiration field
+    }
+    try {
+        payload.exp = std::stoll(payload_json.substr(exp_start, exp_end - exp_start));
+    } catch (const std::exception&) {
+        return std::nullopt; // Invalid expiration format
+    }
     
     // Check expiration
     auto now = std::chrono::system_clock::now();

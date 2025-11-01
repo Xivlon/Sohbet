@@ -822,16 +822,24 @@ This project is intended for educational and learning purposes. It demonstrates 
 
 ### Documentation Files
 
+#### Security & Code Quality
+- **[CODE_REVIEW_REPORT.md](CODE_REVIEW_REPORT.md)** - ✅ **NEW**: Comprehensive security and code quality analysis (Nov 2025)
+- **[IDENTIFIED_PROBLEMS.md](IDENTIFIED_PROBLEMS.md)** - ✅ **NEW**: Detailed catalog of all identified issues and solutions
 - **[FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)** - **⚠️ CRITICAL**: Issues requiring immediate attention
+- **[Issues.md](Issues.md)** - Comprehensive checkup report with security assessment
+
+#### Implementation Status
 - **[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)** - Complete implementation roadmap with current status
 - **[ROADMAP_STATUS_CHECK.md](ROADMAP_STATUS_CHECK.md)** - Detailed status analysis of implementation progress
-- **[Issues.md](Issues.md)** - Comprehensive checkup report with security assessment
-- **[WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md)** - WebSocket real-time communication documentation
+#### Phase Completion Reports
 - **[PHASE2_SUMMARY.md](PHASE2_SUMMARY.md)** - Phase 2 (Social Features) completion report
 - **[PHASE3_SUMMARY.md](PHASE3_SUMMARY.md)** - Phase 3 (Groups/Organizations) completion report
 - **[PHASE4_SUMMARY.md](PHASE4_SUMMARY.md)** - Phase 4 initial completion report
 - **[PHASE4A_COMPLETION_REPORT.md](PHASE4A_COMPLETION_REPORT.md)** - Phase 4A (Real-Time Chat) completion report
 - **[PHASE4C_COMPLETION_REPORT.md](PHASE4C_COMPLETION_REPORT.md)** - Phase 4C (Voice Channels API) completion report
+
+#### Technical Documentation
+- **[WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md)** - WebSocket real-time communication documentation
 - **[3rd-Party Service Integration.md](3rd-Party Service Integration.md)** - Information about voice/video integration with Murmur
 - **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Summary of the Murmur integration implementation
 - **[docs/ACADEMIC_FEATURES.md](docs/ACADEMIC_FEATURES.md)** - Details about academic features and future enhancements
