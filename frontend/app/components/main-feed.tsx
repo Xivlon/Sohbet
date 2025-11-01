@@ -37,8 +37,11 @@ export function MainFeed() {
   const { user } = useAuth();
 
   useEffect(() => {
-    loadPosts();
-  }, []);
+    // Only load posts if user is authenticated
+    if (user) {
+      loadPosts();
+    }
+  }, [user]);
 
   const loadPosts = async () => {
     setLoading(true);
