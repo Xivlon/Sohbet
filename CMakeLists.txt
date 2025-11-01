@@ -144,6 +144,10 @@ add_executable(test_rate_limiter tests/test_rate_limiter.cpp)
 target_link_libraries(test_rate_limiter sohbet_lib)
 add_test(NAME RateLimiterTest COMMAND test_rate_limiter)
 
+add_executable(test_admin_permissions tests/test_admin_permissions.cpp)
+target_link_libraries(test_admin_permissions sohbet_lib)
+add_test(NAME AdminPermissionsTest COMMAND test_admin_permissions)
+
 # Example programs
 add_executable(user_management_example examples/user_management_example.cpp)
 target_link_libraries(user_management_example sohbet_lib)

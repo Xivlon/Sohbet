@@ -1218,7 +1218,8 @@ HttpResponse AcademicSocialServer::handleDeleteFriendship(const HttpRequest& req
         return createErrorResponse(404, "Friendship not found");
     }
     
-    if (friendship->getRequesterId() != user_id && friendship->getAddresseeId() != user_id) {
+    // Allow deleting if user is part of the friendship OR has delete_any_friendship permission
+    if (friendship->getRequesterId() != user_id && friendship->getAddresseeId() != user_id && !role_repository_->userHasPermission(user_id, "delete_any_friendship")) {
         return createErrorResponse(403, "You can only delete your own friendships");
     }
     
@@ -1351,7 +1352,8 @@ HttpResponse AcademicSocialServer::handleUpdatePost(const HttpRequest& request) 
         return createErrorResponse(404, "Post not found");
     }
     
-    if (post->getAuthorId() != user_id) {
+    // Allow editing if user owns the post OR has edit_any_post permission
+    if (post->getAuthorId() != user_id && !role_repository_->userHasPermission(user_id, "edit_any_post")) {
         return createErrorResponse(403, "You can only edit your own posts");
     }
     
@@ -1389,7 +1391,8 @@ HttpResponse AcademicSocialServer::handleDeletePost(const HttpRequest& request) 
         return createErrorResponse(404, "Post not found");
     }
     
-    if (post->getAuthorId() != user_id) {
+    // Allow deleting if user owns the post OR has delete_any_post permission
+    if (post->getAuthorId() != user_id && !role_repository_->userHasPermission(user_id, "delete_any_post")) {
         return createErrorResponse(403, "You can only delete your own posts");
     }
     
@@ -1562,7 +1565,8 @@ HttpResponse AcademicSocialServer::handleUpdateComment(const HttpRequest& reques
         return createErrorResponse(404, "Comment not found");
     }
     
-    if (comment->getAuthorId() != user_id) {
+    // Allow editing if user owns the comment OR has edit_any_comment permission
+    if (comment->getAuthorId() != user_id && !role_repository_->userHasPermission(user_id, "edit_any_comment")) {
         return createErrorResponse(403, "You can only edit your own comments");
     }
     
@@ -1595,7 +1599,8 @@ HttpResponse AcademicSocialServer::handleDeleteComment(const HttpRequest& reques
         return createErrorResponse(404, "Comment not found");
     }
     
-    if (comment->getAuthorId() != user_id) {
+    // Allow deleting if user owns the comment OR has delete_any_comment permission
+    if (comment->getAuthorId() != user_id && !role_repository_->userHasPermission(user_id, "delete_any_comment")) {
         return createErrorResponse(403, "You can only delete your own comments");
     }
     
