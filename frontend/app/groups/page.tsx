@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { GroupList } from "@/app/components/group-list"
 import { GroupCreator } from "@/app/components/group-creator"
 import { useAuth } from "@/app/contexts/auth-context"
@@ -24,7 +24,6 @@ export default function GroupsPage() {
           </p>
         </div>
         <GroupCreator
-          currentUserId={user?.id}
           onGroupCreated={handleGroupCreated}
         />
       </div>
