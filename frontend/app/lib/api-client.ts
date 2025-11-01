@@ -421,6 +421,13 @@ class ApiClient {
     return this.request(`/api/users/${userId}`);
   }
 
+  async updateUser(userId: number, data: Partial<User>): Promise<ApiResponse<User>> {
+    return this.request(`/api/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Friendships API
   async getFriendRequests(status?: string): Promise<ApiResponse<any[]>> {
     const query = status ? `?status=${status}` : '';
