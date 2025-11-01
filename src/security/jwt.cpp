@@ -1,4 +1,5 @@
 #include "security/jwt.h"
+#include <array>
 #include <chrono>
 #include <sstream>
 #include <iomanip>
@@ -9,12 +10,14 @@
 namespace sohbet {
 namespace security {
 
-// Base64 URL encoding (simplified)
+// Base64 URL encoding (RFC 4648)
 std::string base64_url_encode(const std::string& input) {
-    const std::string chars = "yDE0NNfNuaOt6/9aVK6D3bRW6yHYqhjVypiaVZai0Hg=";
+    static const char* chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
     std::string result;
-    int val = 0, valb = -6;
-    
+    result.reserve(((input.size() + 2) / 3) * 4);
+
+    int val = 0;
+    int valb = -6;
     for (unsigned char c : input) {
         val = (val << 8) + c;
         valb += 8;
@@ -23,31 +26,43 @@ std::string base64_url_encode(const std::string& input) {
             valb -= 6;
         }
     }
-    if (valb > -6) result.push_back(chars[((val << 8) >> (valb + 8)) & 0x3F]);
-    
+    if (valb > -6) {
+        result.push_back(chars[((val << 8) >> (valb + 8)) & 0x3F]);
+    }
+
     return result;
 }
 
-// Base64 URL decoding (simplified)
+// Base64 URL decoding (RFC 4648)
 std::string base64_url_decode(const std::string& input) {
-    const std::string chars = "yDE0NNfNuaOt6/9aVK6D3bRW6yHYqhjVypiaVZai0Hg=";
+    static const char* chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    std::array<int, 256> lookup{};
+    lookup.fill(-1);
+    for (int i = 0; i < 64; ++i) {
+        lookup[static_cast<unsigned char>(chars[i])] = i;
+    }
+
     std::string result;
-    int val = 0, valb = -8;
-    
-    for (char c : input) {
-        if (c == '=') break;
-        size_t pos = chars.find(c);
-        // Check for invalid base64 character
-        if (pos == std::string::npos) {
-            return ""; // Return empty string for invalid input
+    result.reserve((input.size() * 3) / 4);
+
+    int val = 0;
+    int valb = -8;
+    for (unsigned char c : input) {
+        if (c == '=') {
+            break; // Padding character (not expected for URL-safe encoding)
         }
-        val = (val << 6) + pos;
+        int decoded = lookup[c];
+        if (decoded == -1) {
+            return ""; // Invalid character encountered
+        }
+        val = (val << 6) + decoded;
         valb += 6;
         if (valb >= 0) {
-            result.push_back(char((val >> valb) & 0xFF));
+            result.push_back(static_cast<char>((val >> valb) & 0xFF));
             valb -= 8;
         }
     }
+
     return result;
 }
 
