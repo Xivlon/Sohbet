@@ -68,19 +68,26 @@ class ApiClient {
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
+    console.log('[API Client] Constructor called, baseUrl:', baseUrl);
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('auth_token');
+      console.log('[API Client] Token loaded from localStorage:', this.token ? `${this.token.substring(0, 20)}...` : 'null');
+    } else {
+      console.log('[API Client] Constructor running on server (no window), token remains null');
     }
   }
 
   setToken(token: string | null) {
+    console.log('[API Client] setToken called with:', token ? `${token.substring(0, 20)}...` : 'null');
     this.token = token;
     if (typeof window !== 'undefined') {
       if (token) {
         localStorage.setItem('auth_token', token);
+        console.log('[API Client] Token stored in localStorage');
       } else {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
+        console.log('[API Client] Token removed from localStorage');
       }
     }
   }
@@ -110,6 +117,7 @@ class ApiClient {
   }
 
   getToken(): string | null {
+    console.log('[API Client] getToken called, returning:', this.token ? `${this.token.substring(0, 20)}...` : 'null');
     return this.token;
   }
 
@@ -133,6 +141,9 @@ class ApiClient {
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
+      console.log('[API Client] Including Authorization header with token:', this.token.substring(0, 20) + '...');
+    } else {
+      console.log('[API Client] No token available, Authorization header NOT included');
     }
 
     try {
@@ -179,9 +190,17 @@ class ApiClient {
   }
 
   async login(data: LoginData): Promise<ApiResponse<LoginResponse>> {
+    console.log('[API Client] Login attempt starting');
     const response = await this.request<LoginResponse>('/api/login', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+
+    console.log('[API Client] Login response received:', {
+      hasError: !!response.error,
+      hasData: !!response.data,
+      hasToken: !!response.data?.token,
+      tokenPreview: response.data?.token ? response.data.token.substring(0, 20) + '...' : 'none'
     });
 
     if (response.data?.token) {
