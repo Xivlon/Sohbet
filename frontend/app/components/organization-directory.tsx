@@ -29,8 +29,11 @@ export function OrganizationDirectory({ currentUserId }: OrganizationDirectoryPr
   const [activeCategory, setActiveCategory] = useState("all")
 
   useEffect(() => {
-    fetchOrganizations()
-  }, [])
+    // Only fetch organizations if user is authenticated
+    if (currentUserId) {
+      fetchOrganizations()
+    }
+  }, [currentUserId])
 
   const fetchOrganizations = async () => {
     setLoading(true)

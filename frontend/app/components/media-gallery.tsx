@@ -15,7 +15,10 @@ export function MediaGallery({ userId, mediaType, columns = 3 }: MediaGalleryPro
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadMedia();
+    // Only load media if userId is provided
+    if (userId) {
+      loadMedia();
+    }
   }, [userId, mediaType]);
 
   const loadMedia = async () => {
