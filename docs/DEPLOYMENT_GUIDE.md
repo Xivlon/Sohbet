@@ -10,8 +10,8 @@ Create a `.env.local` file in the `frontend/` directory with the following varia
 
 ```env
 # Production Backend URLs - Update with your actual deployment domain
-NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
-NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
+NEXT_PUBLIC_API_URL=https://your-app.fly.dev
+NEXT_PUBLIC_WS_URL=wss://your-app.fly.dev:8081
 ```
 
 **Important Notes:**
@@ -49,25 +49,35 @@ fly secrets set WS_PORT=8081
 
 #### Fly.io Configuration for WebSocket TLS
 
-**Important**: The `backend/fly.toml` file must be configured to enable TLS/HTTPS on the WebSocket port (8081) for secure WebSocket connections (`wss://`) to work properly.
+**Important**: The `backend/fly.toml` file must be configured correctly to handle WebSocket connections. Due to how Fly.io's HTTP proxy works, WebSocket connections require special configuration to avoid handshake failures.
 
-Ensure your `fly.toml` includes TLS handlers for port 8081:
+**Correct Configuration** (uses TCP protocol mode):
 
 ```toml
 # WebSocket Service (port 8081)
+# Using TCP protocol to avoid HTTP proxy interference with WebSocket upgrade
 [[services]]
   internal_port = 8081
   processes = ['app']
+  protocol = "tcp"  # CRITICAL: Use TCP mode, not HTTP mode
   auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
   [[services.ports]]
     port = 8081
-    handlers = ["tls", "http"]  # TLS is required for wss:// connections
+    handlers = ["tls"]  # TLS only, no HTTP handler
 ```
 
-**Note**: Without `"tls"` in the handlers array, browsers will be unable to establish secure WebSocket connections (`wss://`) from HTTPS pages, resulting in connection failures.
+**Why TCP protocol?**
+- Fly.io's HTTP proxy expects complete HTTP responses and doesn't handle WebSocket upgrade (HTTP 101) properly
+- Using `protocol = "tcp"` tells Fly.io to pass through raw TCP after TLS termination
+- This allows the WebSocket handshake to complete without proxy interference
+- Still provides TLS encryption for secure WebSocket (`wss://`) connections
+
+**Common mistake**: Using `handlers = ["tls", "http"]` causes `[PU02]` errors because the HTTP proxy closes connections on WebSocket upgrade responses.
+
+For more details, see [WEBSOCKET_HANDSHAKE_FIX.md](WEBSOCKET_HANDSHAKE_FIX.md).
 
 ## Security Considerations
 
@@ -144,14 +154,15 @@ If you see CORS errors in the browser console:
 
 If WebSocket fails to connect with errors like "Firefox can't establish a connection to the server at wss://...":
 
-1. **Verify TLS handlers are configured** in `backend/fly.toml`:
-   - Port 8081 MUST have `handlers = ["tls", "http"]` to support secure WebSocket connections
-   - Without TLS handlers, `wss://` connections will fail from HTTPS pages
+1. **Verify TCP protocol configuration** in `backend/fly.toml`:
+   - Port 8081 MUST use `protocol = "tcp"` with `handlers = ["tls"]` only
+   - Do NOT use `handlers = ["tls", "http"]` as this causes handshake failures
+   - See [WEBSOCKET_HANDSHAKE_FIX.md](WEBSOCKET_HANDSHAKE_FIX.md) for details
    
 2. **Check environment variables**:
    - Verify `NEXT_PUBLIC_WS_URL` uses `wss://` (not `ws://`) for HTTPS sites
    - Ensure the WebSocket URL includes the correct port (`:8081`)
-   - Example: `wss://your-backend.fly.dev:8081`
+   - Example: `wss://your-app.fly.dev:8081`
 
 3. **Verify network connectivity**:
    - Check that the WebSocket port (8081) is not blocked by firewall
