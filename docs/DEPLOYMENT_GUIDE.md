@@ -28,12 +28,30 @@ NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 
 #### Vercel Deployment
 
-In your Vercel project settings, add these environment variables:
+The project includes a `vercel.json` configuration file at the root that specifies:
+- Build and output directories for the Next.js frontend
+- Environment variables for API and WebSocket URLs
+- Framework detection for optimal deployment
 
+**Automatic Configuration:**
+The `vercel.json` file already includes the necessary environment variables:
+```json
+{
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://sohbet-uezxqq.fly.dev",
+    "NEXT_PUBLIC_WS_URL": "wss://sohbet-uezxqq.fly.dev:8081"
+  }
+}
+```
+
+**Manual Override (Optional):**
+If you need to override these in your Vercel project settings, add:
 ```
 NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
 NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
+
+**Note:** Environment variables set in Vercel project settings take precedence over those in `vercel.json`.
 
 ### Backend (Fly.io/C++)
 
