@@ -28,13 +28,21 @@ NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 
 #### Vercel Deployment
 
-The project includes a `vercel.json` configuration file at the root that specifies:
-- Build and output directories for the Next.js frontend
-- Environment variables for API and WebSocket URLs
-- Framework detection for optimal deployment
+The project includes a minimal `vercel.json` configuration file at the root that provides environment variables for the deployment. However, **you must configure the project settings in Vercel to deploy from the monorepo correctly**.
 
-**Automatic Configuration:**
-The `vercel.json` file already includes the necessary environment variables:
+**Required Vercel Project Settings:**
+
+When setting up your Vercel project, configure the following settings:
+
+1. **Framework Preset**: Next.js
+2. **Root Directory**: `frontend` (this tells Vercel where the Next.js app is located)
+3. **Build Command**: `npm run build` (or leave empty to use default)
+4. **Output Directory**: `.next` (or leave empty to use default)
+5. **Install Command**: `npm ci` (or leave empty to use default)
+
+**Environment Variables:**
+
+The `vercel.json` file includes default environment variables for production:
 ```json
 {
   "env": {
@@ -44,14 +52,17 @@ The `vercel.json` file already includes the necessary environment variables:
 }
 ```
 
-**Manual Override (Optional):**
-If you need to override these in your Vercel project settings, add:
+You can override these in your Vercel project settings if needed:
 ```
 NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
 NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
-**Note:** Environment variables set in Vercel project settings take precedence over those in `vercel.json`.
+**Important Notes:**
+- Environment variables in Vercel project settings take precedence over `vercel.json`
+- The **Root Directory** setting is crucial for monorepo deployments
+- Vercel will auto-detect the Next.js framework from the `frontend` directory
+- The `.vercelignore` file ensures backend and build artifacts aren't uploaded
 
 ### Backend (Fly.io/C++)
 

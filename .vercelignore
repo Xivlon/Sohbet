@@ -1,0 +1,32 @@
+# Ignore backend and build artifacts
+backend/
+build/
+src/
+include/
+tests/
+migrations/
+murmur/
+examples/
+scripts/
+docs/
+
+# Ignore configuration files not needed for deployment
+CMakeLists.txt
+Dockerfile
+fly.toml
+.replit
+Sohbet.code-workspace
+pyproject.toml
+uv.lock
+
+# Ignore documentation
+*.md
+!frontend/README.md
+
+# Ignore assets
+attached_assets/
+
+# Ignore environment files
+.env
+.env.example
+env.deployment
