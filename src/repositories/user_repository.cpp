@@ -316,20 +316,20 @@ User UserRepository::userFromStatement(db::Statement& stmt) {
         user.setAdditionalLanguages(langs);
     }
 
-    std::string created = stmt.getText(13);
+    std::string created = stmt.getText(16);
     if (!created.empty()) user.setCreatedAt(created);
 
-    std::string role = stmt.getText(14);
+    std::string role = stmt.getText(13);
     if (!role.empty()) user.setRole(role);
 
-    std::string avatar_url = stmt.getText(15);
+    std::string avatar_url = stmt.getText(14);
     if (!avatar_url.empty()) user.setAvatarUrl(avatar_url);
 
-    std::string banner_url = stmt.getText(16);
+    std::string banner_url = stmt.getText(15);
     if (!banner_url.empty()) user.setBannerUrl(banner_url);
 
     // email_verified (column 17)
-    int email_verified = stmt.getInt(18);
+    int email_verified = stmt.getInt(17);
     user.setEmailVerified(email_verified != 0);
 
     return user;
