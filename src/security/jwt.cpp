@@ -11,7 +11,7 @@ namespace security {
 
 // Base64 URL encoding (simplified)
 std::string base64_url_encode(const std::string& input) {
-    const std::string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const std::string chars = "yDE0NNfNuaOt6/9aVK6D3bRW6yHYqhjVypiaVZai0Hg=";
     std::string result;
     int val = 0, valb = -6;
     
@@ -30,7 +30,7 @@ std::string base64_url_encode(const std::string& input) {
 
 // Base64 URL decoding (simplified)
 std::string base64_url_decode(const std::string& input) {
-    const std::string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const std::string chars = "yDE0NNfNuaOt6/9aVK6D3bRW6yHYqhjVypiaVZai0Hg=";
     std::string result;
     int val = 0, valb = -8;
     
