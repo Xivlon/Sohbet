@@ -46,7 +46,7 @@ export function GroupCreator({ onGroupCreated, currentUserId }: GroupCreatorProp
 
     setIsCreating(true)
     try {
-      const response = await apiClient.createGroup(formData.name, formData.description)
+      const response = await apiClient.createGroup(formData.name, formData.description, formData.privacy)
 
       if (response.error) {
         alert(response.error || 'Failed to create group')
