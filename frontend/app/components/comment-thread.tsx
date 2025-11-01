@@ -5,6 +5,7 @@ import { Button } from "@/app/components/ui/button"
 import { CommentForm } from "./comment-form"
 import { MessageCircle, MoreVertical } from "lucide-react"
 import { apiClient } from "@/app/lib/api-client"
+import { usePermission, PERMISSIONS } from "@/app/lib/permissions"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,8 @@ export function CommentThread({ postId, currentUserId }: CommentThreadProps) {
   const [loading, setLoading] = useState(true)
   const [replyingTo, setReplyingTo] = useState<number | null>(null)
   const [showCommentForm, setShowCommentForm] = useState(false)
+
+  const canDeleteAnyComment = usePermission(PERMISSIONS.DELETE_ANY_COMMENT)
 
   useEffect(() => {
     fetchComments()
@@ -102,6 +105,7 @@ export function CommentThread({ postId, currentUserId }: CommentThreadProps) {
 
   const renderComment = (comment: Comment, depth: number = 0) => {
     const isOwner = currentUserId === comment.author_id
+    const canDelete = isOwner || canDeleteAnyComment
     const replies = comments.filter(c => c.parent_id === comment.id)
 
     return (
@@ -133,7 +137,7 @@ export function CommentThread({ postId, currentUserId }: CommentThreadProps) {
                   Reply
                 </Button>
 
-                {isOwner && (
+                {canDelete && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-auto p-0">

@@ -19,6 +19,10 @@ export const PERMISSIONS = {
   // Admin permissions
   MANAGE_USERS: 'manage_users',
   DELETE_ANY_POST: 'delete_any_post',
+  EDIT_ANY_POST: 'edit_any_post',
+  DELETE_ANY_COMMENT: 'delete_any_comment',
+  EDIT_ANY_COMMENT: 'edit_any_comment',
+  DELETE_ANY_FRIENDSHIP: 'delete_any_friendship',
   MANAGE_ORGANIZATIONS: 'manage_organizations',
 } as const;
 
@@ -63,6 +67,10 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.CREATE_PUBLIC_POST,
     PERMISSIONS.MANAGE_USERS,
     PERMISSIONS.DELETE_ANY_POST,
+    PERMISSIONS.EDIT_ANY_POST,
+    PERMISSIONS.DELETE_ANY_COMMENT,
+    PERMISSIONS.EDIT_ANY_COMMENT,
+    PERMISSIONS.DELETE_ANY_FRIENDSHIP,
     PERMISSIONS.MANAGE_ORGANIZATIONS,
   ],
 };
