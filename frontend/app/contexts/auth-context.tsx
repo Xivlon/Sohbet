@@ -1,6 +1,7 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { apiClient, User, LoginData, RegisterData } from '../lib/api-client';
+import { isDebugEnabled } from '../lib/debug';
 
 interface AuthContextType {
   user: User | null;
@@ -15,33 +16,37 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const token = apiClient.getToken();
-    const storedUser = apiClient.getUser();
-    
-    if (token && storedUser) {
-      setUser(storedUser);
-    }
-    
-    setIsLoading(false);
-  }, []);
+  // Initialize state from localStorage to avoid setState in useEffect
+  const [user, setUser] = useState<User | null>(() => apiClient.getUser());
+  const [isLoading, setIsLoading] = useState(false);
 
   const login = async (data: LoginData): Promise<{ success: boolean; error?: string }> => {
+    const debug = isDebugEnabled();
     setIsLoading(true);
-    console.log('Login attempt:', { username: data.username });
+    if (debug) {
+      console.log('[Auth Context] Login attempt:', { username: data.username });
+    }
     const response = await apiClient.login(data);
-    console.log('Login response:', { success: !response.error, status: response.status, hasData: !!response.data });
+    if (debug) {
+      console.log('[Auth Context] Login response:', { 
+        success: !response.error, 
+        status: response.status, 
+        hasData: !!response.data,
+        hasToken: !!response.data?.token,
+        hasUser: !!response.data?.user 
+      });
+    }
     setIsLoading(false);
 
     if (response.error) {
-      console.error('Login error:', response.error);
+      console.error('[Auth Context] Login error:', response.error);
       return { success: false, error: response.error };
     }
 
     if (response.data) {
+      if (debug) {
+        console.log('[Auth Context] Setting user in React state');
+      }
       setUser(response.data.user);
       return { success: true };
     }

@@ -49,26 +49,19 @@ export function Profile() {
     setSuccess('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://0.0.0.0:8080'}/api/users/${user.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiClient.getToken()}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await apiClient.updateUser(user.id, formData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Profil güncellenemedi');
+      if (response.error) {
+        setError(response.error || 'Profil güncellenemedi');
         return;
       }
 
-      apiClient.setUser(data);
-      setSuccess('Profil başarıyla güncellendi!');
-      setIsEditing(false);
-    } catch (err) {
+      if (response.data) {
+        apiClient.setUser(response.data);
+        setSuccess('Profil başarıyla güncellendi!');
+        setIsEditing(false);
+      }
+    } catch {
       setError('Bir hata oluştu');
     } finally {
       setSaving(false);

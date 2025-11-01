@@ -1,0 +1,51 @@
+name: Brilliant_Curve Agent
+permissions:
+  contents: write
+  issues: write
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+  issue_comment:
+    types: [created]
+
+jobs:
+  ai-developer:
+    if: |
+      contains(github.event.comment.body, '/develop') ||
+      contains(github.event.comment.body, '/implement') ||
+      contains(github.event.comment.body, '/execute-all-core-goals')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codebase
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          
+      - name: Install Python dependencies
+        run: |
+          pip install requests pyyaml
+          
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+      - name: Analyze and Develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "🤖 AI Developer Agent Activating..."
+          python .github/agents/run_agent.py "${{ github.event.comment.body }}"
+          
+      - name: Commit AI-generated code
+        run: |
+          git add .
+          git diff --staged --quiet || git commit -m "🤖 AI: ${{ github.event.comment.body }}"
+          git push

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Textarea } from "@/app/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { apiClient } from "@/app/lib/api-client"
 import {
   Select,
   SelectContent,
@@ -27,19 +28,9 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
 
     setPosting(true)
     try {
-      const response = await fetch('/api/posts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-ID': '1', // TODO: Get from auth context
-        },
-        body: JSON.stringify({
-          content,
-          visibility,
-        }),
-      })
+      const response = await apiClient.createPost(content, visibility)
 
-      if (response.ok) {
+      if (response.data) {
         setContent("")
         setVisibility("friends")
         onPostCreated?.()

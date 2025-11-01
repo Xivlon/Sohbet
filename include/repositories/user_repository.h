@@ -89,6 +89,14 @@ public:
      */
     bool update(const User& user);
 
+    /**
+     * Update a user's password
+     * @param userId User ID
+     * @param newPassword Plaintext password to hash and store
+     * @return true if successful, false otherwise
+     */
+    bool updatePassword(int userId, const std::string& newPassword);
+
 private:
     std::shared_ptr<db::Database> database_;
     

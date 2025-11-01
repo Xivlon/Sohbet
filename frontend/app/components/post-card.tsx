@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/app/components/ui/card"
 import { Heart, MessageCircle, Share2, MoreVertical } from "lucide-react"
+import { apiClient } from "@/app/lib/api-client"
+import { usePermission, PERMISSIONS } from "@/app/lib/permissions"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,31 +41,25 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
   const [likeCount, setLikeCount] = useState(0)
   const [showComments, setShowComments] = useState(false)
 
+  const canDeleteAnyPost = usePermission(PERMISSIONS.DELETE_ANY_POST)
+  const canEditAnyPost = usePermission(PERMISSIONS.EDIT_ANY_POST)
   const isOwner = currentUserId === post.author_id
+  
+  // User can edit/delete if they own the post OR have admin permissions
+  const canEdit = isOwner || canEditAnyPost
+  const canDelete = isOwner || canDeleteAnyPost
 
   const handleLike = async () => {
     try {
       if (liked) {
-        const response = await fetch(`/api/posts/${post.id}/react?reaction_type=like`, {
-          method: 'DELETE',
-          headers: {
-            'X-User-ID': String(currentUserId),
-          },
-        })
-        if (response.ok) {
+        const response = await apiClient.removeReaction(post.id)
+        if (response.data || response.status === 200) {
           setLiked(false)
           setLikeCount(Math.max(0, likeCount - 1))
         }
       } else {
-        const response = await fetch(`/api/posts/${post.id}/react`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-ID': String(currentUserId),
-          },
-          body: JSON.stringify({ reaction_type: 'like' }),
-        })
-        if (response.ok) {
+        const response = await apiClient.reactToPost(post.id, 'like')
+        if (response.data || response.status === 200) {
           setLiked(true)
           setLikeCount(likeCount + 1)
         }
@@ -77,13 +73,8 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
     if (!confirm('Are you sure you want to delete this post?')) return
 
     try {
-      const response = await fetch(`/api/posts/${post.id}`, {
-        method: 'DELETE',
-        headers: {
-          'X-User-ID': String(currentUserId),
-        },
-      })
-      if (response.ok) {
+      const response = await apiClient.deletePost(post.id)
+      if (response.data || response.status === 200) {
         onDelete?.(post.id)
       }
     } catch (error) {
@@ -116,7 +107,7 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
             </div>
           </div>
           
-          {isOwner && (
+          {(canEdit || canDelete) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -124,12 +115,16 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit?.(post.id)}>
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDelete} className="text-red-600">
-                  Delete
-                </DropdownMenuItem>
+                {canEdit && (
+                  <DropdownMenuItem onClick={() => onEdit?.(post.id)}>
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                {canDelete && (
+                  <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                    Delete
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}

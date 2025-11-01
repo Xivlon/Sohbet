@@ -1,13 +1,21 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card } from '@/app/components/ui/card'
 import { ChatList } from '@/app/components/chat-list'
 import { ChatWindow } from '@/app/components/chat-window'
+import { apiClient } from '@/app/lib/api-client'
+
+interface Conversation {
+  id: number
+  user1_id: number
+  user2_id: number
+  created_at: string
+}
 
 export default function MessagesPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>()
-  const [currentUserId, setCurrentUserId] = useState<number>(1) // TODO: Get from auth context
+  const [currentUserId] = useState<number>(1) // TODO: Get from auth context
   const [otherUser, setOtherUser] = useState<{ id: number; username: string } | undefined>()
 
   const handleSelectConversation = async (conversationId: number) => {
@@ -15,27 +23,21 @@ export default function MessagesPage() {
     
     // Fetch conversation details to get other user info
     try {
-      const response = await fetch('/api/conversations', {
-        headers: {
-          'X-User-ID': currentUserId.toString()
-        }
-      })
+      const response = await apiClient.getConversations()
       
-      if (response.ok) {
-        const data = await response.json()
-        const conversation = data.conversations.find((c: any) => c.id === conversationId)
+      if (response.data) {
+        const conversation: Conversation | undefined = response.data.conversations.find((c: Conversation) => c.id === conversationId)
         
         if (conversation) {
           const otherUserId = conversation.user1_id === currentUserId 
             ? conversation.user2_id 
             : conversation.user1_id
           
-          const userResponse = await fetch(`/api/users/${otherUserId}`)
-          if (userResponse.ok) {
-            const userData = await userResponse.json()
+          const userResponse = await apiClient.getUserById(otherUserId)
+          if (userResponse.data) {
             setOtherUser({
               id: otherUserId,
-              username: userData.username || 'Unknown User'
+              username: userResponse.data.username || 'Unknown User'
             })
           }
         }

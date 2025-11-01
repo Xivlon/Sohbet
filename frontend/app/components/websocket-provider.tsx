@@ -14,13 +14,8 @@ export function WebSocketProvider({
 }: { 
   children: React.ReactNode;
 }) {
-  const [token, setToken] = useState<string | null>(null);
-
-  // Get token from API client (localStorage)
-  useEffect(() => {
-    const authToken = apiClient.getToken();
-    setToken(authToken);
-  }, []);
+  // Initialize token state directly from apiClient to avoid setState in useEffect
+  const [token] = useState<string | null>(() => apiClient.getToken());
 
   const { connected } = useWebSocket(token);
 
@@ -39,11 +34,11 @@ export function WebSocketProvider({
  * Connection status indicator component
  */
 export function ConnectionStatus({ className }: { className?: string }) {
-  const [connected, setConnected] = useState(false);
+  // Initialize state with current connection status and subscribe to changes
+  const [connected, setConnected] = useState(() => websocketService.isConnected());
 
   useEffect(() => {
     const unsubscribe = websocketService.onConnectionChange(setConnected);
-    setConnected(websocketService.isConnected());
     return unsubscribe;
   }, []);
 

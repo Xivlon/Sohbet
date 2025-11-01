@@ -309,7 +309,7 @@ void AcademicSocialServer::handleClient(int client_socket) {
     HttpResponse response = handleRequest(request);
     
     // Format and send response
-    std::string http_response = formatHttpResponse(response);
+    std::string http_response = formatHttpResponse(response, request);
     send(client_socket, http_response.c_str(), http_response.length(), 0);
     
     close(client_socket);
@@ -367,7 +367,16 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
     return request;
 }
 
-std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& response) {
+// Helper function to validate and sanitize Origin header
+static bool isValidOrigin(const std::string& origin) {
+    // Validate that the origin matches a proper URL format
+    // This prevents header injection attacks while still allowing all valid origins
+    // Use static regex to compile once and reuse for performance
+    static const std::regex origin_regex(R"(^https?://[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*(:[0-9]{1,5})?$)");
+    return std::regex_match(origin, origin_regex);
+}
+
+std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& response, const HttpRequest& request) {
     std::ostringstream oss;
     oss << "HTTP/1.1 " << response.status_code << " ";
     
@@ -387,12 +396,23 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
     oss << "Content-Type: " << response.content_type << "\r\n";
     oss << "Content-Length: " << response.body.length() << "\r\n";
     
-    // CORS headers - use environment variable or allow all origins
-    std::string cors_origin = config::get_cors_origin();
+    // CORS headers - allow ALL origins by echoing the Origin header
+    // Validate the origin to prevent header injection attacks
+    std::string cors_origin = "*";
+    auto origin_it = request.headers.find("Origin");
+    if (origin_it != request.headers.end() && isValidOrigin(origin_it->second)) {
+        cors_origin = origin_it->second;
+    }
+    
     oss << "Access-Control-Allow-Origin: " << cors_origin << "\r\n";
     oss << "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n";
     oss << "Access-Control-Allow-Headers: Content-Type, Authorization\r\n";
-    oss << "Access-Control-Allow-Credentials: true\r\n";
+    
+    // Only add credentials header if origin is not "*"
+    if (cors_origin != "*") {
+        oss << "Access-Control-Allow-Credentials: true\r\n";
+    }
+    
     oss << "Connection: close\r\n";
     oss << "\r\n";
     oss << response.body;
@@ -673,7 +693,11 @@ HttpResponse AcademicSocialServer::handleLogin(const HttpRequest& request) {
         std::ostringstream oss;
         oss << "{ \"token\":\"" << token << "\", \"user\":" << user.toJson() << " }";
         return createJsonResponse(200, oss.str());
+    } catch (const std::exception& e) {
+        std::cerr << "Login error: " << e.what() << std::endl;
+        return createErrorResponse(500, "Internal server error");
     } catch (...) {
+        std::cerr << "Login error: Unknown exception" << std::endl;
         return createErrorResponse(500, "Internal server error");
     }
 }
@@ -774,6 +798,18 @@ bool AcademicSocialServer::validateUserRegistration(const std::string& username,
 }
 
 void AcademicSocialServer::ensureDemoUserExists() {
+    // Helper lambda to assign Admin role to a user
+    auto assignAdminRole = [this](int user_id) -> void {
+        auto admin_role = role_repository_->findByName("Admin");
+        if (admin_role.has_value()) {
+            // assignRoleToUser uses INSERT OR IGNORE, so it won't create duplicates
+            role_repository_->assignRoleToUser(user_id, admin_role->getId().value());
+            std::cout << "Demo user ensured to have Admin permissions" << std::endl;
+        } else {
+            std::cerr << "Warning: Could not find Admin role for demo user" << std::endl;
+        }
+    };
+    
     // Check if demo user already exists
     auto existing_user = user_repository_->findByUsername("demo_student");
     auto professor_role = role_repository_->findByName("Professor");
@@ -783,18 +819,17 @@ void AcademicSocialServer::ensureDemoUserExists() {
     }
 
     if (existing_user.has_value()) {
-        std::cout << "Demo user already exists" << std::endl;
-
-        if (professor_role.has_value() && existing_user->getId().has_value()) {
-            auto current_role = role_repository_->getUserRole(existing_user->getId().value());
-            if (!current_role.has_value()) {
-                if (role_repository_->assignRoleToUser(existing_user->getId().value(), professor_role->getId().value())) {
-                    std::cout << "Assigned Professor role to existing demo user" << std::endl;
-                } else {
-                    std::cerr << "Warning: Failed to assign Professor role to existing demo user" << std::endl;
-                }
-            }
+        int demo_user_id = existing_user->getId().value();
+        std::cout << "Demo user already exists (ID: " << demo_user_id << ")" << std::endl;
+        
+        // Always reset the demo user's password to ensure it works after any API changes
+        if (user_repository_->updatePassword(demo_user_id, "demo123")) {
+            std::cout << "Demo user password reset successfully" << std::endl;
+        } else {
+            std::cerr << "Warning: Failed to reset demo user password" << std::endl;
         }
+        
+        assignAdminRole(demo_user_id);
         return;
     }
 
@@ -807,15 +842,9 @@ void AcademicSocialServer::ensureDemoUserExists() {
 
     auto created_user = user_repository_->create(demo_user, "demo123");
     if (created_user.has_value()) {
-        std::cout << "Demo user created successfully (ID: " << created_user->getId().value() << ")" << std::endl;
-
-        if (professor_role.has_value() && created_user->getId().has_value()) {
-            if (role_repository_->assignRoleToUser(created_user->getId().value(), professor_role->getId().value())) {
-                std::cout << "Assigned Professor role to demo user" << std::endl;
-            } else {
-                std::cerr << "Warning: Failed to assign Professor role to demo user" << std::endl;
-            }
-        }
+        int demo_user_id = created_user->getId().value();
+        std::cout << "Demo user created successfully (ID: " << demo_user_id << ")" << std::endl;
+        assignAdminRole(demo_user_id);
     } else {
         std::cerr << "Warning: Failed to create demo user" << std::endl;
     }
@@ -1016,6 +1045,18 @@ int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
         }
     }
     
+    // Check for demo user in request body (for demo/testing purposes only)
+    // WARNING: This allows any request with "username": "demo_student" to authenticate
+    // as the demo user. This is intentional for demo/testing but should be disabled
+    // in production environments by removing or protecting the demo_student account.
+    std::string username = extractJsonField(request.body, "username");
+    if (username == "demo_student") {
+        auto demo_user = user_repository_->findByUsername("demo_student");
+        if (demo_user.has_value() && demo_user->getId().has_value()) {
+            return demo_user->getId().value();
+        }
+    }
+    
     return -1;
 }
 
@@ -1196,7 +1237,8 @@ HttpResponse AcademicSocialServer::handleDeleteFriendship(const HttpRequest& req
         return createErrorResponse(404, "Friendship not found");
     }
     
-    if (friendship->getRequesterId() != user_id && friendship->getAddresseeId() != user_id) {
+    // Allow deleting if user is part of the friendship OR has delete_any_friendship permission
+    if (friendship->getRequesterId() != user_id && friendship->getAddresseeId() != user_id && !role_repository_->userHasPermission(user_id, "delete_any_friendship")) {
         return createErrorResponse(403, "You can only delete your own friendships");
     }
     
@@ -1329,7 +1371,8 @@ HttpResponse AcademicSocialServer::handleUpdatePost(const HttpRequest& request) 
         return createErrorResponse(404, "Post not found");
     }
     
-    if (post->getAuthorId() != user_id) {
+    // Allow editing if user owns the post OR has edit_any_post permission
+    if (post->getAuthorId() != user_id && !role_repository_->userHasPermission(user_id, "edit_any_post")) {
         return createErrorResponse(403, "You can only edit your own posts");
     }
     
@@ -1367,7 +1410,8 @@ HttpResponse AcademicSocialServer::handleDeletePost(const HttpRequest& request) 
         return createErrorResponse(404, "Post not found");
     }
     
-    if (post->getAuthorId() != user_id) {
+    // Allow deleting if user owns the post OR has delete_any_post permission
+    if (post->getAuthorId() != user_id && !role_repository_->userHasPermission(user_id, "delete_any_post")) {
         return createErrorResponse(403, "You can only delete your own posts");
     }
     
@@ -1540,7 +1584,8 @@ HttpResponse AcademicSocialServer::handleUpdateComment(const HttpRequest& reques
         return createErrorResponse(404, "Comment not found");
     }
     
-    if (comment->getAuthorId() != user_id) {
+    // Allow editing if user owns the comment OR has edit_any_comment permission
+    if (comment->getAuthorId() != user_id && !role_repository_->userHasPermission(user_id, "edit_any_comment")) {
         return createErrorResponse(403, "You can only edit your own comments");
     }
     
@@ -1573,7 +1618,8 @@ HttpResponse AcademicSocialServer::handleDeleteComment(const HttpRequest& reques
         return createErrorResponse(404, "Comment not found");
     }
     
-    if (comment->getAuthorId() != user_id) {
+    // Allow deleting if user owns the comment OR has delete_any_comment permission
+    if (comment->getAuthorId() != user_id && !role_repository_->userHasPermission(user_id, "delete_any_comment")) {
         return createErrorResponse(403, "You can only delete your own comments");
     }
     

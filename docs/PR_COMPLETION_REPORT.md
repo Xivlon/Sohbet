@@ -142,7 +142,7 @@ Template file showing:
 
 ```env
 NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
-NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev
+NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
 ### Required for Backend (Fly.io)
@@ -221,7 +221,7 @@ fly deploy
 #### 2. Frontend (Vercel)
 In Vercel project settings, add:
 - `NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev`
-- `NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev`
+- `NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081`
 
 Then redeploy.
 

@@ -352,6 +352,63 @@ ws.send(JSON.stringify({
 3. Check network connectivity
 4. Review browser console for reconnection attempts
 
+## Production Deployment
+
+### Critical: Fly.io WebSocket Configuration
+
+When deploying to Fly.io, WebSocket connections require special configuration to avoid handshake failures. The default HTTP handler configuration causes `[PU02] could not complete HTTP request` errors.
+
+**Required Configuration in `backend/fly.toml`:**
+
+```toml
+# WebSocket Service (port 8081)
+# Using TCP protocol to avoid HTTP proxy interference with WebSocket upgrade
+[[services]]
+  internal_port = 8081
+  processes = ['app']
+  protocol = "tcp"  # CRITICAL: Must use TCP mode
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 8081
+    handlers = ["tls"]  # TLS only, no HTTP handler
+```
+
+**Why this is necessary:**
+- Fly.io's HTTP proxy expects complete HTTP responses
+- WebSocket uses HTTP 101 "Switching Protocols" which the HTTP proxy doesn't recognize
+- Using TCP protocol mode allows raw TCP passthrough after TLS termination
+- This prevents the proxy from interfering with the WebSocket handshake
+
+For detailed explanation, see [WEBSOCKET_HANDSHAKE_FIX.md](WEBSOCKET_HANDSHAKE_FIX.md).
+
+### Environment Variables
+
+**Frontend:**
+```env
+NEXT_PUBLIC_WS_URL=wss://your-backend.fly.dev:8081
+```
+
+**Backend:**
+```bash
+fly secrets set SOHBET_JWT_SECRET=your-secret-key
+```
+
+### Verification
+
+After deployment, verify WebSocket connectivity:
+
+```bash
+# Check WebSocket port is accessible
+fly status
+
+# Test connection from browser console
+const ws = new WebSocket('wss://your-backend.fly.dev:8081/?token=YOUR_TOKEN');
+ws.onopen = () => console.log('✓ Connected');
+```
+
 ## Future Enhancements
 
 - [ ] Message read receipts via WebSocket

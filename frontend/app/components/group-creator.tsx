@@ -24,13 +24,14 @@ import {
 import { Plus } from "lucide-react"
 import { PermissionGate } from "./permission-gate"
 import { PERMISSIONS } from "@/app/lib/permissions"
+import { apiClient } from '@/app/lib/api-client'
+import { useAuth } from '@/app/contexts/auth-context'
 
 interface GroupCreatorProps {
   onGroupCreated?: () => void
-  currentUserId?: number
 }
 
-export function GroupCreator({ onGroupCreated, currentUserId }: GroupCreatorProps) {
+export function GroupCreator({ onGroupCreated }: GroupCreatorProps) {
   const [open, setOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState({
@@ -38,29 +39,23 @@ export function GroupCreator({ onGroupCreated, currentUserId }: GroupCreatorProp
     description: '',
     privacy: 'private'
   })
+  
+  const { user } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!currentUserId) return
+    if (!user?.id) return
 
     setIsCreating(true)
     try {
-      const response = await fetch('/api/groups', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-ID': String(currentUserId),
-        },
-        body: JSON.stringify(formData),
-      })
+      const response = await apiClient.createGroup(formData.name, formData.description, formData.privacy)
 
-      if (response.ok) {
+      if (response.error) {
+        alert(response.error || 'Failed to create group')
+      } else {
         setFormData({ name: '', description: '', privacy: 'private' })
         setOpen(false)
         onGroupCreated?.()
-      } else {
-        const error = await response.json()
-        alert(error.error || 'Failed to create group')
       }
     } catch (error) {
       console.error('Error creating group:', error)

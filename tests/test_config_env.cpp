@@ -25,6 +25,7 @@ int main() {
     // Save original environment
     std::string orig_port = save_env("PORT");
     std::string orig_ws_port = save_env("WS_PORT");
+    std::string orig_cors = save_env("CORS_ORIGIN");
     
     // Test default HTTP port
     unsetenv("PORT");
@@ -57,9 +58,28 @@ int main() {
     assert(sohbet::config::get_websocket_port() == 3001);
     std::cout << "✓ Port configuration from environment variables works correctly" << std::endl;
     
+    // Test default CORS origin (should be "http://localhost:5000")
+    unsetenv("CORS_ORIGIN");
+    std::string default_cors = sohbet::config::get_cors_origin();
+    assert(default_cors == "http://localhost:5000");
+    std::cout << "✓ Default CORS origin: " << default_cors << std::endl;
+    
+    // Test custom CORS origin
+    setenv("CORS_ORIGIN", "https://example.com", 1);
+    std::string custom_cors = sohbet::config::get_cors_origin();
+    assert(custom_cors == "https://example.com");
+    std::cout << "✓ Custom CORS origin: " << custom_cors << std::endl;
+    
+    // Test with production frontend URL
+    setenv("CORS_ORIGIN", "https://sohbet-henna.vercel.app", 1);
+    std::string production_cors = sohbet::config::get_cors_origin();
+    assert(production_cors == "https://sohbet-henna.vercel.app");
+    std::cout << "✓ Production CORS origin: " << production_cors << std::endl;
+    
     // Restore original environment
     restore_env("PORT", orig_port);
     restore_env("WS_PORT", orig_ws_port);
+    restore_env("CORS_ORIGIN", orig_cors);
     
     std::cout << "All environment configuration tests passed!" << std::endl;
     return 0;

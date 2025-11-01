@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { PostCard } from "./post-card"
 import { Button } from "@/app/components/ui/button"
+import { apiClient } from "@/app/lib/api-client"
+import { useAuth } from "@/app/contexts/auth-context"
 
 interface Post {
   id: number
@@ -24,6 +26,8 @@ export function PostFeed() {
   const [hasMore, setHasMore] = useState(true)
   const [offset, setOffset] = useState(0)
   const limit = 20
+  
+  const { user } = useAuth()
 
   useEffect(() => {
     fetchPosts()
@@ -32,14 +36,10 @@ export function PostFeed() {
   const fetchPosts = async (reset = false) => {
     try {
       const currentOffset = reset ? 0 : offset
-      const response = await fetch(`/api/posts?limit=${limit}&offset=${currentOffset}`, {
-        headers: {
-          'X-User-ID': '1', // TODO: Get from auth context
-        },
-      })
+      const response = await apiClient.getPosts(limit, currentOffset)
       
-      if (response.ok) {
-        const newPosts = await response.json()
+      if (response.data) {
+        const newPosts = response.data.posts || []
         if (reset) {
           setPosts(newPosts)
         } else {
@@ -98,7 +98,7 @@ export function PostFeed() {
         <PostCard
           key={post.id}
           post={post}
-          currentUserId={1} // TODO: Get from auth context
+          currentUserId={user?.id}
           onDelete={handleDeletePost}
         />
       ))}

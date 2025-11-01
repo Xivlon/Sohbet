@@ -2,6 +2,12 @@
 
 This guide provides instructions for deploying Sohbet in production environments, including the necessary environment variable configurations.
 
+## Current Production Deployments
+
+- **Backend (Fly.io)**: https://sohbet-uezxqq.fly.dev
+- **Frontend (Vercel)**: https://sohbet-seven.vercel.app/
+- **JWT Secret**: yDE0NNfNuaOt6/9aVK6D3bRW6yHYqhjVypiaVZai0Hg=
+
 ## Environment Variables
 
 ### Frontend (Vercel/Next.js)
@@ -9,9 +15,9 @@ This guide provides instructions for deploying Sohbet in production environments
 Create a `.env.local` file in the `frontend/` directory with the following variables:
 
 ```env
-# Production Backend URLs - Update with your actual deployment domain
+# Production Backend URLs - Actual deployment
 NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
-NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev
+NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
 **Important Notes:**
@@ -25,8 +31,8 @@ NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev
 In your Vercel project settings, add these environment variables:
 
 ```
-NEXT_PUBLIC_API_URL=https://your-backend-domain.fly.dev
-NEXT_PUBLIC_WS_URL=wss://your-backend-domain.fly.dev
+NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
+NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
 ### Backend (Fly.io/C++)
@@ -35,8 +41,8 @@ Set the following environment variables on your backend deployment:
 
 ```bash
 # On Fly.io
-fly secrets set SOHBET_JWT_SECRET=your-secret-key-here
-fly secrets set CORS_ORIGIN=https://sohbet-henna.vercel.app
+fly secrets set SOHBET_JWT_SECRET=yDE0NNfNuaOt6/9aVK6D3bRW6yHYqhjVypiaVZai0Hg=
+fly secrets set CORS_ORIGIN=https://sohbet-seven.vercel.app
 fly secrets set PORT=8080
 fly secrets set WS_PORT=8081
 ```
@@ -47,6 +53,38 @@ fly secrets set WS_PORT=8081
 - `PORT`: HTTP server port (default: 8080)
 - `WS_PORT`: WebSocket server port (default: 8081)
 
+#### Fly.io Configuration for WebSocket TLS
+
+**Important**: The `backend/fly.toml` file must be configured correctly to handle WebSocket connections. Due to how Fly.io's HTTP proxy works, WebSocket connections require special configuration to avoid handshake failures.
+
+**Correct Configuration** (uses TCP protocol mode):
+
+```toml
+# WebSocket Service (port 8081)
+# Using TCP protocol to avoid HTTP proxy interference with WebSocket upgrade
+[[services]]
+  internal_port = 8081
+  processes = ['app']
+  protocol = "tcp"  # CRITICAL: Use TCP mode, not HTTP mode
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 8081
+    handlers = ["tls"]  # TLS only, no HTTP handler
+```
+
+**Why TCP protocol?**
+- Fly.io's HTTP proxy expects complete HTTP responses and doesn't handle WebSocket upgrade (HTTP 101) properly
+- Using `protocol = "tcp"` tells Fly.io to pass through raw TCP after TLS termination
+- This allows the WebSocket handshake to complete without proxy interference
+- Still provides TLS encryption for secure WebSocket (`wss://`) connections
+
+**Common mistake**: Using `handlers = ["tls", "http"]` causes `[PU02]` errors because the HTTP proxy closes connections on WebSocket upgrade responses.
+
+For more details, see [WEBSOCKET_HANDSHAKE_FIX.md](WEBSOCKET_HANDSHAKE_FIX.md).
+
 ## Security Considerations
 
 ### Protocol Mismatch Prevention
@@ -56,7 +94,7 @@ The frontend now includes validation to prevent insecure WebSocket connections (
 ### CORS Configuration
 
 The backend server's CORS configuration is controlled by the `CORS_ORIGIN` environment variable:
-- **Production**: Set to your frontend domain (e.g., `https://sohbet-henna.vercel.app`)
+- **Production**: Set to your frontend domain (e.g., `https://sohbet-seven.vercel.app`)
 - **Development**: Can be set to `*` to allow all origins
 - **Default**: If not set, defaults to `*` (not recommended for production)
 
@@ -87,7 +125,7 @@ The backend server's CORS configuration is controlled by the `CORS_ORIGIN` envir
 Open your frontend in a browser and check the console:
 ```javascript
 // Should show successful API request
-fetch('https://your-backend.fly.dev/api/status')
+fetch('https://sohbet-uezxqq.fly.dev/api/status')
   .then(r => r.json())
   .then(console.log)
 ```
@@ -97,7 +135,7 @@ fetch('https://your-backend.fly.dev/api/status')
 In the browser console:
 ```javascript
 // Should establish connection without errors
-const ws = new WebSocket('wss://your-backend.fly.dev/?token=test-token');
+const ws = new WebSocket('wss://sohbet-uezxqq.fly.dev/?token=test-token');
 ws.onopen = () => console.log('✓ WebSocket connected');
 ws.onerror = (e) => console.error('✗ WebSocket error:', e);
 ```
@@ -120,11 +158,27 @@ If you see CORS errors in the browser console:
 
 ### WebSocket Connection Failures
 
-If WebSocket fails to connect:
-1. Verify `NEXT_PUBLIC_WS_URL` uses `wss://` (not `ws://`) for HTTPS sites
-2. Check that the WebSocket port (8081) is not blocked by firewall
-3. Ensure the backend WebSocket server is running
-4. Check browser console for specific error messages
+If WebSocket fails to connect with errors like "Firefox can't establish a connection to the server at wss://...":
+
+1. **Verify TCP protocol configuration** in `backend/fly.toml`:
+   - Port 8081 MUST use `protocol = "tcp"` with `handlers = ["tls"]` only
+   - Do NOT use `handlers = ["tls", "http"]` as this causes handshake failures
+   - See [WEBSOCKET_HANDSHAKE_FIX.md](WEBSOCKET_HANDSHAKE_FIX.md) for details
+   
+2. **Check environment variables**:
+   - Verify `NEXT_PUBLIC_WS_URL` uses `wss://` (not `ws://`) for HTTPS sites
+   - Ensure the WebSocket URL includes the correct port (`:8081`)
+   - Example: `wss://sohbet-uezxqq.fly.dev:8081`
+
+3. **Verify network connectivity**:
+   - Check that the WebSocket port (8081) is not blocked by firewall
+   - Ensure the backend WebSocket server is running
+   - Test the port is accessible: `nc -zv your-backend.fly.dev 8081`
+
+4. **Check browser console** for specific error messages:
+   - "Protocol mismatch" errors indicate trying to use `ws://` from HTTPS page
+   - "Connection refused" may indicate backend not running or port blocked
+   - Check the browser console for reconnection attempts and error details
 
 ### API 404 Errors
 

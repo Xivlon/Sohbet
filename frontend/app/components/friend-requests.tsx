@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { apiClient } from '@/app/lib/api-client'
 
 interface FriendRequest {
   id: number
@@ -28,14 +29,9 @@ export function FriendRequests() {
 
   const fetchFriendRequests = async () => {
     try {
-      const response = await fetch('/api/friendships?status=pending', {
-        headers: {
-          'X-User-ID': '1', // TODO: Get from auth context
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setRequests(data)
+      const response = await apiClient.getFriendRequests('pending')
+      if (response.data) {
+        setRequests(response.data)
       }
     } catch (error) {
       console.error('Error fetching friend requests:', error)
@@ -46,13 +42,8 @@ export function FriendRequests() {
 
   const handleAccept = async (requestId: number) => {
     try {
-      const response = await fetch(`/api/friendships/${requestId}/accept`, {
-        method: 'PUT',
-        headers: {
-          'X-User-ID': '1', // TODO: Get from auth context
-        },
-      })
-      if (response.ok) {
+      const response = await apiClient.acceptFriendRequest(requestId)
+      if (response.status === 200 || response.status === 204) {
         setRequests(requests.filter(r => r.id !== requestId))
       }
     } catch (error) {
@@ -62,13 +53,8 @@ export function FriendRequests() {
 
   const handleReject = async (requestId: number) => {
     try {
-      const response = await fetch(`/api/friendships/${requestId}/reject`, {
-        method: 'PUT',
-        headers: {
-          'X-User-ID': '1', // TODO: Get from auth context
-        },
-      })
-      if (response.ok) {
+      const response = await apiClient.rejectFriendRequest(requestId)
+      if (response.status === 200 || response.status === 204) {
         setRequests(requests.filter(r => r.id !== requestId))
       }
     } catch (error) {

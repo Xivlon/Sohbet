@@ -86,7 +86,8 @@ void test_user_registration_login_retrieval() {
 
 void test_jwt_functionality() {
     // Test JWT token generation and verification
-    std::string token = sohbet::security::generate_jwt_token("testuser", 123, "student");
+    const std::string test_secret = "test-jwt-secret-for-unit-tests-min-32-chars";
+    std::string token = sohbet::security::generate_jwt_token("testuser", 123, "student", test_secret);
     std::cout << "Generated JWT token: " << token << std::endl;
     
     // Token should be non-empty and contain dots
@@ -94,7 +95,7 @@ void test_jwt_functionality() {
     assert(token.find('.') != std::string::npos);
     
     // Verify token
-    auto payload_opt = sohbet::security::verify_jwt_token(token);
+    auto payload_opt = sohbet::security::verify_jwt_token(token, test_secret);
     assert(payload_opt.has_value());
     
     auto payload = payload_opt.value();
@@ -103,7 +104,7 @@ void test_jwt_functionality() {
     assert(payload.role == "student");
     
     // Test with invalid token
-    auto invalid_payload_opt = sohbet::security::verify_jwt_token("invalid.token.here");
+    auto invalid_payload_opt = sohbet::security::verify_jwt_token("invalid.token.here", test_secret);
     assert(!invalid_payload_opt.has_value());
     
     std::cout << "JWT functionality tests passed!" << std::endl;

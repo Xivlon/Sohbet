@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdlib>
 #include <stdexcept>
+#include <iostream>
 
 namespace sohbet {
 namespace config {
@@ -11,10 +12,11 @@ inline std::string get_jwt_secret() {
     if (!secret || std::string(secret).empty()) {
         const char* fallback = std::getenv("JWT_SECRET");
         if (!fallback || std::string(fallback).empty()) {
-            throw std::runtime_error(
-                "CRITICAL: JWT secret not configured. "
-                "Set SOHBET_JWT_SECRET environment variable before starting the server."
-            );
+            // Development default - INSECURE, for demo/development only
+            // This allows demo login to work out of the box
+            std::cerr << "WARNING: Using default JWT secret. This is INSECURE and should only be used for development/demo.\n";
+            std::cerr << "Set SOHBET_JWT_SECRET environment variable for production use.\n";
+            return "dev-only-insecure-jwt-secret-change-in-production";
         }
         return std::string(fallback);
     }
@@ -48,8 +50,9 @@ inline int get_websocket_port() {
 inline std::string get_cors_origin() {
     const char* origin = std::getenv("CORS_ORIGIN");
     if (!origin || std::string(origin).empty()) {
-        // Default to allowing all origins for development
-        return "*";
+        // Default to localhost for development
+        // Note: When using Access-Control-Allow-Credentials, origin cannot be "*"
+        return "http://localhost:5000";
     }
     return std::string(origin);
 }

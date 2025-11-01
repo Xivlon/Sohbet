@@ -42,7 +42,7 @@ git clone https://github.com/Xivlon/Sohbet.git
 cd Sohbet
 
 # 2. Run the application
-./start-fullstack.sh
+./scripts/start-fullstack_Version2.sh
 ```
 
 This simple command will:
@@ -81,11 +81,14 @@ npm start
 
 ### Production Deployment
 
-For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the comprehensive [Deployment Guide](DEPLOYMENT_GUIDE.md) which covers:
+For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the comprehensive [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) which covers:
 - Environment variable configuration
 - Frontend and backend setup
 - Security considerations
+- **WebSocket configuration** - Critical for real-time features (see [WEBSOCKET_HANDSHAKE_FIX.md](docs/WEBSOCKET_HANDSHAKE_FIX.md))
 - Troubleshooting common deployment issues
+
+**⚠️ Important for Fly.io deployments**: WebSocket connections require special configuration in `fly.toml` to work correctly. See the deployment guide for details.
 
 ---
 
@@ -309,6 +312,8 @@ A demo account is automatically created for testing:
 - **Username**: `demo_student`
 - **Password**: `demo123`
 
+**Note:** The demo account password is automatically reset on each server startup to ensure it works correctly after deployments or configuration changes. See [docs/DEMO_ACCOUNT_FIX.md](docs/DEMO_ACCOUNT_FIX.md) for details.
+
 **Example:**
 ```bash
 curl -X POST -H "Content-Type: application/json" \
@@ -334,7 +339,7 @@ The API returns standard HTTP status codes:
 The easiest way to build and start the server:
 
 ```bash
-./setup.sh
+./scripts/setup.sh
 ```
 
 This script will:
@@ -391,7 +396,7 @@ ctest -V
 To run both backend and frontend together:
 
 ```bash
-./start-fullstack.sh
+./scripts/start-fullstack_Version2.sh
 ```
 
 This starts:
@@ -426,7 +431,7 @@ Having issues? Here are common problems and solutions:
 3. **Restart the server:**
    ```bash
    pkill -f sohbet
-   ./setup.sh
+   ./scripts/setup.sh
    ```
 
 #### Problem: Server won't start
@@ -455,7 +460,7 @@ Having issues? Here are common problems and solutions:
 **Solution:**
 ```bash
 chmod +x build/sohbet
-chmod +x setup.sh
+chmod +x scripts/setup.sh
 ```
 
 #### Problem: Port 8080 already in use
@@ -538,7 +543,7 @@ pkill -f sohbet
 
 Use the full stack startup script which handles all configuration:
 ```bash
-./start-fullstack.sh
+./scripts/start-fullstack_Version2.sh
 ```
 
 ### Testing the Complete Setup
@@ -694,6 +699,8 @@ The frontend remains React+TypeScript and communicates with the C++ backend via 
 
 ## Roadmap - Implementation Status
 
+**⚠️ Important**: See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for critical issues requiring attention before production deployment.
+
 ### Phase 1: Foundation & Authentication ✅ COMPLETE (100%)
 
 - ✅ User registration with validation and uniqueness checks
@@ -725,29 +732,47 @@ The frontend remains React+TypeScript and communicates with the C++ backend via 
 
 ### Phase 4: Real-Time Communication ✅ COMPLETE (95%)
 
+**Current Status**: Phase 4A complete, Phase 4C API complete. See [PHASE4A_COMPLETION_REPORT.md](PHASE4A_COMPLETION_REPORT.md) and [PHASE4C_COMPLETION_REPORT.md](PHASE4C_COMPLETION_REPORT.md) for details.
+
 #### Phase 4A: Real-Time Chat ✅ COMPLETE (100%)
-- ✅ WebSocket infrastructure for real-time communication
+- ✅ WebSocket infrastructure for real-time communication (port 8081)
 - ✅ Conversation creation and management
 - ✅ Real-time message delivery
-- ✅ Typing indicators
-- ✅ Online/offline presence tracking
+- ✅ Typing indicators ("yazıyor...")
+- ✅ Online/offline presence tracking (green dots)
 - ✅ Message history with pagination
 - ✅ Automatic reconnection handling
 
 #### Phase 4C: Voice Channels ✅ API COMPLETE (90%)
 - ✅ Voice channel database models
-- ✅ Voice channel REST API endpoints
+- ✅ Voice channel REST API endpoints (6 endpoints)
+- ✅ VoiceChannelRepository with CRUD operations
 - ✅ Channel creation and management
 - ✅ Session tracking (join/leave)
 - ✅ Active user counting
+- ✅ Khave UI using real API
 - ⚠️ Murmur server integration (pending)
 - ⚠️ WebRTC voice streaming (pending)
-- ⚠️ Full Khave UI implementation (in progress)
+- ⚠️ Full voice functionality (pending)
 
 **See [WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md) for detailed WebSocket documentation.**
 **See [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for complete implementation details.**
+**See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for critical issues and roadmap.**
 
 ### Future Enhancements (Planned)
+
+**⚠️ Critical Issues to Address First** (see [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)):
+- 🔴 **P0**: Fix JWT security vulnerability (hardcoded secret)
+- 🔴 **P0**: Fix frontend build failures (missing UI components)
+- 🔴 **P0**: Fix import path inconsistencies
+
+**High Priority**:
+- 🟠 Fix TypeScript `any` types (11 instances)
+- 🟠 Implement rate limiting
+- 🟠 Standardize import patterns
+- 🟠 Fix React performance issues
+
+**Feature Enhancements**:
 
 - 📝 Email verification for accounts
 - 📝 Rate limiting and enhanced security
@@ -797,18 +822,29 @@ This project is intended for educational and learning purposes. It demonstrates 
 
 ### Documentation Files
 
+#### Security & Code Quality
+- **[CODE_REVIEW_REPORT.md](CODE_REVIEW_REPORT.md)** - ✅ **NEW**: Comprehensive security and code quality analysis (Nov 2025)
+- **[IDENTIFIED_PROBLEMS.md](IDENTIFIED_PROBLEMS.md)** - ✅ **NEW**: Detailed catalog of all identified issues and solutions
+- **[FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)** - **⚠️ CRITICAL**: Issues requiring immediate attention
+- **[Issues.md](Issues.md)** - Comprehensive checkup report with security assessment
+
+#### Implementation Status
 - **[IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md)** - Complete implementation roadmap with current status
 - **[ROADMAP_STATUS_CHECK.md](ROADMAP_STATUS_CHECK.md)** - Detailed status analysis of implementation progress
-- **[WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md)** - WebSocket real-time communication documentation
+#### Phase Completion Reports
 - **[PHASE2_SUMMARY.md](PHASE2_SUMMARY.md)** - Phase 2 (Social Features) completion report
 - **[PHASE3_SUMMARY.md](PHASE3_SUMMARY.md)** - Phase 3 (Groups/Organizations) completion report
 - **[PHASE4_SUMMARY.md](PHASE4_SUMMARY.md)** - Phase 4 initial completion report
 - **[PHASE4A_COMPLETION_REPORT.md](PHASE4A_COMPLETION_REPORT.md)** - Phase 4A (Real-Time Chat) completion report
 - **[PHASE4C_COMPLETION_REPORT.md](PHASE4C_COMPLETION_REPORT.md)** - Phase 4C (Voice Channels API) completion report
+
+#### Technical Documentation
+- **[WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md)** - WebSocket real-time communication documentation
 - **[3rd-Party Service Integration.md](3rd-Party Service Integration.md)** - Information about voice/video integration with Murmur
 - **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Summary of the Murmur integration implementation
 - **[docs/ACADEMIC_FEATURES.md](docs/ACADEMIC_FEATURES.md)** - Details about academic features and future enhancements
 - **[docs/VOICE_INTEGRATION.md](docs/VOICE_INTEGRATION.md)** - Developer guide for voice integration
+- **[docs/DEMO_ACCOUNT_FIX.md](docs/DEMO_ACCOUNT_FIX.md)** - Fix for demo account "Unauthorized" errors
 - **[frontend/README.md](frontend/README.md)** - Frontend-specific documentation
 
 ### Getting Help

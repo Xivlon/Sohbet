@@ -1,0 +1,101 @@
+command_library:
+  Development Standards:
+  - enforce-code-standards
+  - optimize-sqlite-performance
+  - update-api-documentation
+  - apply-api-versioning
+  Feature Completion:
+  - finalize-voice-channel
+  - implement-file-sharing
+  - configure-deployment-communication
+  Future Roadmap:
+  - implement-advanced-search
+  - extend-webrtc-video-sharing
+  - build-analytics-dashboard
+  - add-structured-qa-system
+  Security & Authentication:
+  - implement-email-verification
+  - add-rate-limiting
+  - secure-jwt-authentication
+  - Implement CORS Support
+  System Integration:
+  - synchronize-deployments
+  - validate-cross-platform-auth
+commit_message_template: '[agent] {command_name}: updated progress tracker status'
+description: 'The Brilliant_Curve agent autonomously manages security, feature completion,
+  and future roadmap execution for the Sohbet academic social media platform. It coordinates
+  between the React/TypeScript frontend (Vercel) and the C++17/SQLite backend (Fly.io),
+  updating its own progress tracker using GNOME symbolic icons defined in icons.md.
+
+  '
+name: Brilliant_Curve
+on_command_update: commit
+permissions:
+- read
+- write
+- workflows
+progress_tracker:
+- icon: document-save-symbolic
+  status: Completed
+  task: Implement Email Verification
+- icon: document-save-symbolic
+  status: Completed
+  task: Add Rate Limiting
+- icon: document-save-symbolic
+  status: Completed
+  task: Secure JWT Authentication
+- icon: document-save-symbolic
+  status: Completed
+  task: Finalize Voice Channel
+- icon: document-save-symbolic
+  status: Completed
+  task: Implement File Sharing
+- icon: document-save-symbolic
+  status: Completed
+  task: Configure Deployment Communication
+- icon: document-save-symbolic
+  status: Completed
+  task: Implement Advanced Search
+- icon: document-save-symbolic
+  status: Completed
+  task: Extend WebRTC Video Sharing
+- icon: document-save-symbolic
+  status: Completed
+  task: Build Analytics Dashboard
+- icon: document-save-symbolic
+  status: Completed
+  task: Add Structured Q&A System
+- icon: document-save-symbolic
+  status: Completed
+  task: Enforce Code Standards
+- icon: document-save-symbolic
+  status: Completed
+  task: Optimize SQLite Performance
+- icon: document-save-symbolic
+  status: Completed
+  task: Update API Documentation
+- icon: document-save-symbolic
+  status: Completed
+  task: Apply API Versioning
+- icon: document-save-symbolic
+  status: Completed
+  task: Synchronize Deployments
+- icon: document-save-symbolic
+  status: Completed
+  task: Validate Cross-Platform Auth
+- icon: document-save-symbolic
+  status: Completed
+  task: murmur server integration
+- icon: document-save-symbolic
+  status: Completed
+  task: WebRTC voice streaming
+- icon: document-save-symbolic
+  status: Completed
+  task: Full Khave UI implementation
+- icon: document-save-symbolic
+  status: Completed
+  task: Change all API endpoints from absolute URLs to relative paths
+stateful_sections:
+- Progress Tracker
+visible_to:
+- all

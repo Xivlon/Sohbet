@@ -28,7 +28,7 @@ This PR fixes critical issues preventing the Sohbet application from working cor
 **Files Created**:
 - `frontend/.env.local` (gitignored)
 - `frontend/.env.example`
-- `DEPLOYMENT_GUIDE.md`
+- `docs/DEPLOYMENT_GUIDE.md`
 
 ### 3. API Base URL Hardcoded to Localhost ✅
 **Problem**: `api-client.ts` defaulted to `http://0.0.0.0:8080` instead of using production backend.
@@ -70,7 +70,7 @@ This PR fixes critical issues preventing the Sohbet application from working cor
 ### Frontend (Vercel)
 ```env
 NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
-NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev
+NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081
 ```
 
 ### Backend (Fly.io)
@@ -101,7 +101,7 @@ After deployment, verify:
 ## Documentation
 
 ### New Files
-- **DEPLOYMENT_GUIDE.md**: Comprehensive deployment instructions
+- **docs/DEPLOYMENT_GUIDE.md**: Comprehensive deployment instructions
   - Environment variable setup for Vercel and Fly.io
   - Security considerations
   - Deployment checklist
@@ -166,7 +166,7 @@ Without these, the application will not work!
 ## Files Changed Summary
 
 ```
-DEPLOYMENT_GUIDE.md                   | 174 +++++++++++++++++++
+docs/DEPLOYMENT_GUIDE.md              | 174 +++++++++++++++++++
 README.md                             |   8 +
 frontend/.env.example                 |  11 ++
 frontend/app/lib/api-client.ts        |  14 +-
@@ -179,6 +179,6 @@ src/server/server.cpp                 |   6 +-
 
 ## References
 
-- [Deployment Guide](DEPLOYMENT_GUIDE.md)
+- [Deployment Guide](../docs/DEPLOYMENT_GUIDE.md)
 - [Vercel Environment Variables](https://vercel.com/docs/environment-variables)
 - [Fly.io Secrets](https://fly.io/docs/reference/secrets/)

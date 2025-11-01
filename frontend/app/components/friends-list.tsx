@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { apiClient } from '@/app/lib/api-client'
+import { useAuth } from '@/app/contexts/auth-context'
 
 interface Friend {
   id: number
@@ -14,25 +16,34 @@ interface Friend {
   department?: string
 }
 
+interface Friendship {
+  id: number
+  requester_id: number
+  addressee_id: number
+  status: string
+  created_at: string
+  updated_at: string
+}
+
 export function FriendsList() {
   const [friends, setFriends] = useState<Friend[]>([])
   const [loading, setLoading] = useState(true)
+  
+  const { user } = useAuth()
 
   useEffect(() => {
-    fetchFriends()
-  }, [])
+    if (user?.id) {
+      fetchFriends()
+    }
+  }, [user?.id])
 
   const fetchFriends = async () => {
+    if (!user?.id) return
+    
     try {
-      const userId = 1 // TODO: Get from auth context
-      const response = await fetch(`/api/users/${userId}/friends`, {
-        headers: {
-          'X-User-ID': String(userId),
-        },
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setFriends(data)
+      const response = await apiClient.getFriends(user.id)
+      if (response.data) {
+        setFriends(response.data)
       }
     } catch (error) {
       console.error('Error fetching friends:', error)
@@ -43,32 +54,24 @@ export function FriendsList() {
 
   const handleUnfriend = async (friendId: number) => {
     if (!confirm('Are you sure you want to remove this friend?')) return
+    if (!user?.id) return
 
     try {
       // First find the friendship record
-      const response = await fetch(`/api/friendships`, {
-        headers: {
-          'X-User-ID': '1', // TODO: Get from auth context
-        },
-      })
+      const response = await apiClient.getFriendRequests()
       
-      if (response.ok) {
-        const friendships = await response.json()
+      if (response.data) {
+        const friendships: Friendship[] = response.data
         const friendship = friendships.find(
-          (f: any) => 
-            (f.requester_id === 1 && f.addressee_id === friendId) ||
-            (f.requester_id === friendId && f.addressee_id === 1)
+          (f) => 
+            (f.requester_id === user.id && f.addressee_id === friendId) ||
+            (f.requester_id === friendId && f.addressee_id === user.id)
         )
         
         if (friendship) {
-          const deleteResponse = await fetch(`/api/friendships/${friendship.id}`, {
-            method: 'DELETE',
-            headers: {
-              'X-User-ID': '1', // TODO: Get from auth context
-            },
-          })
+          const deleteResponse = await apiClient.deleteFriendship(friendship.id)
           
-          if (deleteResponse.ok) {
+          if (deleteResponse.status === 200 || deleteResponse.status === 204) {
             setFriends(friends.filter(f => f.id !== friendId))
           }
         }

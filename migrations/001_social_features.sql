@@ -286,6 +286,10 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission) VALUES
 (3, 'create_public_post'),
 (3, 'manage_users'),
 (3, 'delete_any_post'),
+(3, 'edit_any_post'),
+(3, 'delete_any_comment'),
+(3, 'edit_any_comment'),
+(3, 'delete_any_friendship'),
 (3, 'manage_organizations');
 
 -- Assign default roles to existing users based on their position
