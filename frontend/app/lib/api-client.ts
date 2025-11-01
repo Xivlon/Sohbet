@@ -65,10 +65,12 @@ export interface Media {
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
+  private instanceId: string;
 
   constructor(baseUrl: string = API_BASE_URL) {
+    this.instanceId = Math.random().toString(36).substring(7);
     this.baseUrl = baseUrl;
-    console.log('[API Client] Constructor called, baseUrl:', baseUrl);
+    console.log('[API Client] Constructor called, instance ID:', this.instanceId, 'baseUrl:', baseUrl);
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('auth_token');
       console.log('[API Client] Token loaded from localStorage:', this.token ? `${this.token.substring(0, 20)}...` : 'null');
@@ -78,16 +80,16 @@ class ApiClient {
   }
 
   setToken(token: string | null) {
-    console.log('[API Client] setToken called with:', token ? `${token.substring(0, 20)}...` : 'null');
+    console.log('[API Client]', this.instanceId, 'setToken called with:', token ? `${token.substring(0, 20)}...` : 'null');
     this.token = token;
     if (typeof window !== 'undefined') {
       if (token) {
         localStorage.setItem('auth_token', token);
-        console.log('[API Client] Token stored in localStorage');
+        console.log('[API Client]', this.instanceId, 'Token stored in localStorage');
       } else {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
-        console.log('[API Client] Token removed from localStorage');
+        console.log('[API Client]', this.instanceId, 'Token removed from localStorage');
       }
     }
   }
@@ -117,7 +119,7 @@ class ApiClient {
   }
 
   getToken(): string | null {
-    console.log('[API Client] getToken called, returning:', this.token ? `${this.token.substring(0, 20)}...` : 'null');
+    console.log('[API Client]', this.instanceId, 'getToken called, returning:', this.token ? `${this.token.substring(0, 20)}...` : 'null');
     return this.token;
   }
 
@@ -139,11 +141,22 @@ class ApiClient {
       ...options.headers as Record<string, string>,
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-      console.log('[API Client] Including Authorization header with token:', this.token.substring(0, 20) + '...');
+    // Always read token from localStorage to ensure we have the latest
+    let currentToken = this.token;
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('auth_token');
+      if (storedToken && storedToken !== this.token) {
+        console.log('[API Client]', this.instanceId, 'Token mismatch! Instance token:', this.token ? 'exists' : 'null', ', localStorage token:', storedToken ? 'exists' : 'null');
+        currentToken = storedToken;
+        this.token = storedToken; // Sync instance variable
+      }
+    }
+
+    if (currentToken) {
+      headers['Authorization'] = `Bearer ${currentToken}`;
+      console.log('[API Client]', this.instanceId, 'Including Authorization header with token:', currentToken.substring(0, 20) + '...');
     } else {
-      console.log('[API Client] No token available, Authorization header NOT included');
+      console.log('[API Client]', this.instanceId, 'No token available, Authorization header NOT included');
     }
 
     try {
@@ -190,13 +203,13 @@ class ApiClient {
   }
 
   async login(data: LoginData): Promise<ApiResponse<LoginResponse>> {
-    console.log('[API Client] Login attempt starting');
+    console.log('[API Client]', this.instanceId, 'Login attempt starting');
     const response = await this.request<LoginResponse>('/api/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });
 
-    console.log('[API Client] Login response received:', {
+    console.log('[API Client]', this.instanceId, 'Login response received:', {
       hasError: !!response.error,
       hasData: !!response.data,
       hasToken: !!response.data?.token,

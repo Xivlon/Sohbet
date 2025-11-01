@@ -21,17 +21,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (data: LoginData): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
-    console.log('Login attempt:', { username: data.username });
+    console.log('[Auth Context] Login attempt:', { username: data.username });
     const response = await apiClient.login(data);
-    console.log('Login response:', { success: !response.error, status: response.status, hasData: !!response.data });
+    console.log('[Auth Context] Login response:', { 
+      success: !response.error, 
+      status: response.status, 
+      hasData: !!response.data,
+      hasToken: !!response.data?.token,
+      hasUser: !!response.data?.user 
+    });
     setIsLoading(false);
 
     if (response.error) {
-      console.error('Login error:', response.error);
+      console.error('[Auth Context] Login error:', response.error);
       return { success: false, error: response.error };
     }
 
     if (response.data) {
+      console.log('[Auth Context] Setting user in React state');
       setUser(response.data.user);
       return { success: true };
     }
