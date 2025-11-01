@@ -23,7 +23,7 @@ To successfully deploy, you **MUST** configure these settings in your Vercel pro
 
 ### Environment Variables
 
-The following environment variables are configured in `/vercel.json` and will be automatically set:
+The following environment variables are configured in the root `/vercel.json` and will be automatically set:
 
 ```
 NEXT_PUBLIC_API_URL=https://sohbet-uezxqq.fly.dev
