@@ -130,7 +130,7 @@ Look for the WebSocket service configuration and verify:
 
 ```javascript
 // Should connect successfully
-const ws = new WebSocket('wss://sohbet-uezxqq.fly.dev:8081/?token=YOUR_JWT_TOKEN');
+const ws = new WebSocket('wss://your-app.fly.dev:8081/?token=YOUR_JWT_TOKEN');
 ws.onopen = () => console.log('✓ Connected');
 ws.onerror = (e) => console.error('✗ Error:', e);
 ws.onclose = () => console.log('✗ Closed');
@@ -156,7 +156,7 @@ After logging in:
 
 **Solution:**
 ```bash
-fly apps restart sohbet-uezxqq
+fly apps restart your-app-name
 fly logs  # Watch for "WebSocket server listening" message
 ```
 
@@ -176,7 +176,7 @@ fly certs show
 
 **Solution:** Ensure environment variables are correct:
 - Local: `NEXT_PUBLIC_WS_URL=ws://localhost:8081`
-- Production: `NEXT_PUBLIC_WS_URL=wss://sohbet-uezxqq.fly.dev:8081`
+- Production: `NEXT_PUBLIC_WS_URL=wss://your-app.fly.dev:8081`
 
 ## Alternative Solution (Not Recommended)
 
