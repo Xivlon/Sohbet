@@ -593,6 +593,7 @@ HttpResponse AcademicSocialServer::handleUsersDemo(const HttpRequest& request) {
     demo.setDepartment("Computer Science");
     demo.setEnrollmentYear(2023);
     demo.setPrimaryLanguage("Turkish");
+    demo.setPosition("Proffessor");
     return createJsonResponse(200, demo.toJson());
 }
 
@@ -775,8 +776,25 @@ bool AcademicSocialServer::validateUserRegistration(const std::string& username,
 void AcademicSocialServer::ensureDemoUserExists() {
     // Check if demo user already exists
     auto existing_user = user_repository_->findByUsername("demo_student");
+    auto professor_role = role_repository_->findByName("Professor");
+
+    if (!professor_role.has_value()) {
+        std::cerr << "Warning: Professor role not found; demo user may lack permissions" << std::endl;
+    }
+
     if (existing_user.has_value()) {
         std::cout << "Demo user already exists" << std::endl;
+
+        if (professor_role.has_value() && existing_user->getId().has_value()) {
+            auto current_role = role_repository_->getUserRole(existing_user->getId().value());
+            if (!current_role.has_value()) {
+                if (role_repository_->assignRoleToUser(existing_user->getId().value(), professor_role->getId().value())) {
+                    std::cout << "Assigned Professor role to existing demo user" << std::endl;
+                } else {
+                    std::cerr << "Warning: Failed to assign Professor role to existing demo user" << std::endl;
+                }
+            }
+        }
         return;
     }
 
@@ -790,6 +808,14 @@ void AcademicSocialServer::ensureDemoUserExists() {
     auto created_user = user_repository_->create(demo_user, "demo123");
     if (created_user.has_value()) {
         std::cout << "Demo user created successfully (ID: " << created_user->getId().value() << ")" << std::endl;
+
+        if (professor_role.has_value() && created_user->getId().has_value()) {
+            if (role_repository_->assignRoleToUser(created_user->getId().value(), professor_role->getId().value())) {
+                std::cout << "Assigned Professor role to demo user" << std::endl;
+            } else {
+                std::cerr << "Warning: Failed to assign Professor role to demo user" << std::endl;
+            }
+        }
     } else {
         std::cerr << "Warning: Failed to create demo user" << std::endl;
     }
