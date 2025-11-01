@@ -312,6 +312,8 @@ A demo account is automatically created for testing:
 - **Username**: `demo_student`
 - **Password**: `demo123`
 
+**Note:** The demo account password is automatically reset on each server startup to ensure it works correctly after deployments or configuration changes. See [docs/DEMO_ACCOUNT_FIX.md](docs/DEMO_ACCOUNT_FIX.md) for details.
+
 **Example:**
 ```bash
 curl -X POST -H "Content-Type: application/json" \
@@ -834,6 +836,7 @@ This project is intended for educational and learning purposes. It demonstrates 
 - **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Summary of the Murmur integration implementation
 - **[docs/ACADEMIC_FEATURES.md](docs/ACADEMIC_FEATURES.md)** - Details about academic features and future enhancements
 - **[docs/VOICE_INTEGRATION.md](docs/VOICE_INTEGRATION.md)** - Developer guide for voice integration
+- **[docs/DEMO_ACCOUNT_FIX.md](docs/DEMO_ACCOUNT_FIX.md)** - Fix for demo account "Unauthorized" errors
 - **[frontend/README.md](frontend/README.md)** - Frontend-specific documentation
 
 ### Getting Help
