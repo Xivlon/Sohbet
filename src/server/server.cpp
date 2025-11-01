@@ -810,14 +810,35 @@ void AcademicSocialServer::ensureDemoUserExists() {
         }
     };
     
+    auto professor_role = role_repository_->findByName("Professor");
+    auto ensureProfessorPrivileges = [this, &professor_role](int user_id) -> void {
+        if (professor_role.has_value()) {
+            if (!role_repository_->assignRoleToUser(user_id, professor_role->getId().value())) {
+                std::cerr << "Warning: Failed to ensure Professor role assignment for demo user" << std::endl;
+            }
+        } else {
+            std::cerr << "Warning: Could not find Professor role for demo user" << std::endl;
+        }
+
+        db::Statement stmt(*database_, "UPDATE users SET role = ?, position = ? WHERE id = ?");
+        if (!stmt.isValid()) {
+            std::cerr << "Warning: Failed to prepare Professor role update for demo user" << std::endl;
+            return;
+        }
+
+        stmt.bindText(1, "Professor");
+        stmt.bindText(2, "Professor");
+        stmt.bindInt(3, user_id);
+
+        if (stmt.step() != SQLITE_DONE) {
+            std::cerr << "Warning: Failed to persist Professor role for demo user" << std::endl;
+        } else {
+            std::cout << "Demo user flagged as Professor for primary role" << std::endl;
+        }
+    };
+
     // Check if demo user already exists
     auto existing_user = user_repository_->findByUsername("demo_student");
-    auto professor_role = role_repository_->findByName("Professor");
-
-    if (!professor_role.has_value()) {
-        std::cerr << "Warning: Professor role not found; demo user may lack permissions" << std::endl;
-    }
-
     if (existing_user.has_value()) {
         int demo_user_id = existing_user->getId().value();
         std::cout << "Demo user already exists (ID: " << demo_user_id << ")" << std::endl;
@@ -830,6 +851,7 @@ void AcademicSocialServer::ensureDemoUserExists() {
         }
         
         assignAdminRole(demo_user_id);
+        ensureProfessorPrivileges(demo_user_id);
         return;
     }
 
@@ -839,12 +861,15 @@ void AcademicSocialServer::ensureDemoUserExists() {
     demo_user.setDepartment("Computer Science");
     demo_user.setEnrollmentYear(2023);
     demo_user.setPrimaryLanguage("Turkish");
+    demo_user.setPosition(std::string("Professor"));
+    demo_user.setRole(std::string("Professor"));
 
     auto created_user = user_repository_->create(demo_user, "demo123");
     if (created_user.has_value()) {
         int demo_user_id = created_user->getId().value();
         std::cout << "Demo user created successfully (ID: " << demo_user_id << ")" << std::endl;
         assignAdminRole(demo_user_id);
+        ensureProfessorPrivileges(demo_user_id);
     } else {
         std::cerr << "Warning: Failed to create demo user" << std::endl;
     }
