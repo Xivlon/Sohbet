@@ -36,6 +36,11 @@ export function CommentForm({
         response = await apiClient.replyToComment(parentCommentId, content)
       } else if (postId) {
         response = await apiClient.createComment(postId, content)
+      } else {
+        // Neither postId nor parentCommentId provided, should not happen
+        console.error('CommentForm: No postId or parentCommentId provided')
+        setPosting(false)
+        return
       }
 
       if (response && (response.data || response.status === 200)) {
