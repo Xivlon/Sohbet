@@ -63,6 +63,37 @@ export interface Media {
   created_at?: string;
 }
 
+export interface VoiceChannel {
+  id: number;
+  name: string;
+  channel_type: 'public' | 'group' | 'private';
+  group_id?: number;
+  organization_id?: number;
+  active_users: number;
+  created_at: string;
+}
+
+export interface VoiceConnectionToken {
+  session_id: number;
+  channel_id: number;
+  connection_token: string;
+  murmur_host: string;
+  murmur_port: number;
+  expires_at: string;
+}
+
+export interface CreateVoiceChannelData {
+  name: string;
+  channel_type?: 'public' | 'group' | 'private';
+  group_id?: number;
+  organization_id?: number;
+}
+
+export interface VoiceChannelsResponse {
+  channels: VoiceChannel[];
+  count: number;
+}
+
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
@@ -351,6 +382,7 @@ class ApiClient {
     });
   }
 
+  // Comments API
   async getComments(postId: number): Promise<ApiResponse<any[]>> {
     return this.request(`/api/posts/${postId}/comments`);
   }
@@ -381,13 +413,9 @@ class ApiClient {
   }
 
   async createGroup(name: string, description: string, privacy?: string): Promise<ApiResponse<any>> {
-    const body: any = { name, description };
-    if (privacy) {
-      body.privacy = privacy;
-    }
     return this.request('/api/groups', {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify({ name, description, privacy }),
     });
   }
 
@@ -476,6 +504,41 @@ class ApiClient {
     return this.request(`/api/conversations/${conversationId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ content }),
+    });
+  }
+
+  // Voice Channels API
+  async createVoiceChannel(data: CreateVoiceChannelData): Promise<ApiResponse<VoiceChannel>> {
+    return this.request('/api/voice/channels', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getVoiceChannels(channelType?: string): Promise<ApiResponse<VoiceChannelsResponse>> {
+    const params = channelType ? `?channel_type=${channelType}` : '';
+    return this.request(`/api/voice/channels${params}`);
+  }
+
+  async getVoiceChannel(channelId: number): Promise<ApiResponse<VoiceChannel>> {
+    return this.request(`/api/voice/channels/${channelId}`);
+  }
+
+  async joinVoiceChannel(channelId: number): Promise<ApiResponse<VoiceConnectionToken>> {
+    return this.request(`/api/voice/channels/${channelId}/join`, {
+      method: 'POST',
+    });
+  }
+
+  async leaveVoiceChannel(channelId: number): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/api/voice/channels/${channelId}/leave`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deleteVoiceChannel(channelId: number): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/api/voice/channels/${channelId}`, {
+      method: 'DELETE',
     });
   }
 }

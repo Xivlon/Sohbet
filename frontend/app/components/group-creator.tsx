@@ -50,12 +50,12 @@ export function GroupCreator({ onGroupCreated }: GroupCreatorProps) {
     try {
       const response = await apiClient.createGroup(formData.name, formData.description, formData.privacy)
 
-      if (response.data || response.status === 200 || response.status === 201) {
+      if (response.error) {
+        alert(response.error || 'Failed to create group')
+      } else {
         setFormData({ name: '', description: '', privacy: 'private' })
         setOpen(false)
         onGroupCreated?.()
-      } else {
-        alert(response.error || 'Failed to create group')
       }
     } catch (error) {
       console.error('Error creating group:', error)

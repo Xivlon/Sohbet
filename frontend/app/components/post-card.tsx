@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/app/components/ui/card"
 import { Heart, MessageCircle, Share2, MoreVertical } from "lucide-react"
+import { apiClient } from "@/app/lib/api-client"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,13 +47,13 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
     try {
       if (liked) {
         const response = await apiClient.removeReaction(post.id)
-        if (response.status === 200 || response.status === 204) {
+        if (response.data || response.status === 200) {
           setLiked(false)
           setLikeCount(Math.max(0, likeCount - 1))
         }
       } else {
         const response = await apiClient.reactToPost(post.id, 'like')
-        if (response.data || response.status === 200 || response.status === 201) {
+        if (response.data || response.status === 200) {
           setLiked(true)
           setLikeCount(likeCount + 1)
         }
@@ -67,7 +68,7 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
 
     try {
       const response = await apiClient.deletePost(post.id)
-      if (response.status === 200 || response.status === 204) {
+      if (response.data || response.status === 200) {
         onDelete?.(post.id)
       }
     } catch (error) {

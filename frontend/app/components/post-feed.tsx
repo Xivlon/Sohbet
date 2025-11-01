@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { PostCard } from "./post-card"
 import { Button } from "@/app/components/ui/button"
-import { apiClient } from '@/app/lib/api-client'
-import { useAuth } from '@/app/contexts/auth-context'
+import { apiClient } from "@/app/lib/api-client"
 
 interface Post {
   id: number

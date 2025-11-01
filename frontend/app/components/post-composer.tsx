@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Textarea } from "@/app/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { apiClient } from "@/app/lib/api-client"
 import {
   Select,
   SelectContent,
@@ -30,7 +31,7 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
     try {
       const response = await apiClient.createPost(content, visibility)
 
-      if (response.data || response.status === 200 || response.status === 201) {
+      if (response.data) {
         setContent("")
         setVisibility("friends")
         onPostCreated?.()

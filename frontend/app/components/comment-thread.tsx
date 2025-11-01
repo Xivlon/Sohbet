@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/app/components/ui/button"
 import { CommentForm } from "./comment-form"
 import { MessageCircle, MoreVertical } from "lucide-react"
+import { apiClient } from "@/app/lib/api-client"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,7 +67,7 @@ export function CommentThread({ postId, currentUserId }: CommentThreadProps) {
 
     try {
       const response = await apiClient.deleteComment(commentId)
-      if (response.status === 200 || response.status === 204) {
+      if (response.data || response.status === 200) {
         // Remove the comment and all its replies
         const removeCommentAndReplies = (comments: Comment[], idToRemove: number): Comment[] => {
           const filtered = comments.filter(c => c.id !== idToRemove)

@@ -31,11 +31,19 @@ export function CommentForm({
 
     setPosting(true)
     try {
-      const response = parentCommentId 
-        ? await apiClient.replyToComment(parentCommentId, content)
-        : await apiClient.createComment(postId!, content)
+      let response
+      if (parentCommentId) {
+        response = await apiClient.replyToComment(parentCommentId, content)
+      } else if (postId) {
+        response = await apiClient.createComment(postId, content)
+      } else {
+        // Neither postId nor parentCommentId provided, should not happen
+        console.error('CommentForm: No postId or parentCommentId provided')
+        setPosting(false)
+        return
+      }
 
-      if (response.data || response.status === 200 || response.status === 201) {
+      if (response && (response.data || response.status === 200)) {
         setContent("")
         onCommentCreated?.()
       }
