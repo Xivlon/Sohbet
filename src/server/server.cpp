@@ -1038,7 +1038,10 @@ int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
         }
     }
     
-    // Check for demo user in request body
+    // Check for demo user in request body (for demo/testing purposes only)
+    // WARNING: This allows any request with "username": "demo_student" to authenticate
+    // as the demo user. This is intentional for demo/testing but should be disabled
+    // in production environments by removing or protecting the demo_student account.
     std::string username = extractJsonField(request.body, "username");
     if (username == "demo_student") {
         auto demo_user = user_repository_->findByUsername("demo_student");
