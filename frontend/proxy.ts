@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Middleware to handle browser extension source map requests
+ * Proxy to handle browser extension source map requests
  * This prevents 404 errors in the console when browser extensions inject scripts
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Check if this is a source map request that likely comes from a browser extension
