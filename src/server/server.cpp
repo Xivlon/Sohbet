@@ -449,14 +449,20 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleGetMediaFile(request);
     } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/media") != std::string::npos) {
         return handleGetUserMedia(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/friends") != std::string::npos) {
+        return handleGetFriends(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/posts") != std::string::npos) {
+        return handleGetUserPosts(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0) {
+        // This catches GET /api/users/:id (single user by ID)
+        // Must come after all other /api/users/* routes
+        return handleGetUserById(request);
     }
     // Friendship routes
     else if (request.method == "POST" && base_path == "/api/friendships") {
         return handleCreateFriendship(request);
     } else if (request.method == "GET" && base_path == "/api/friendships") {
         return handleGetFriendships(request);
-    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/friends") != std::string::npos) {
-        return handleGetFriends(request);
     } else if (request.method == "PUT" && base_path.find("/api/friendships/") == 0 && base_path.find("/accept") != std::string::npos) {
         return handleAcceptFriendship(request);
     } else if (request.method == "PUT" && base_path.find("/api/friendships/") == 0 && base_path.find("/reject") != std::string::npos) {
@@ -469,8 +475,6 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleCreatePost(request);
     } else if (request.method == "GET" && base_path == "/api/posts") {
         return handleGetPosts(request);
-    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/posts") != std::string::npos) {
-        return handleGetUserPosts(request);
     } else if (request.method == "PUT" && base_path.find("/api/posts/") == 0 && base_path.find("/react") == std::string::npos) {
         return handleUpdatePost(request);
     } else if (request.method == "DELETE" && base_path.find("/api/posts/") == 0 && base_path.find("/react") == std::string::npos) {
@@ -615,6 +619,31 @@ HttpResponse AcademicSocialServer::handleUsersDemo(const HttpRequest& request) {
     demo.setPrimaryLanguage("Turkish");
     demo.setPosition("Proffessor");
     return createJsonResponse(200, demo.toJson());
+}
+
+HttpResponse AcademicSocialServer::handleGetUserById(const HttpRequest& request) {
+    try {
+        // Extract user ID from path: /api/users/:id
+        std::regex id_regex("/api/users/(\\d+)");
+        std::smatch match;
+        if (!std::regex_search(request.path, match, id_regex)) {
+            return createErrorResponse(400, "Invalid user ID");
+        }
+        
+        int user_id = std::stoi(match[1].str());
+        
+        auto user_opt = user_repository_->findById(user_id);
+        if (!user_opt.has_value()) {
+            return createErrorResponse(404, "User not found");
+        }
+        
+        return createJsonResponse(200, user_opt.value().toJson());
+    } catch (const std::exception& e) {
+        std::cerr << "Error getting user by ID: " << e.what() << std::endl;
+        return createErrorResponse(500, "Internal server error");
+    } catch (...) {
+        return createErrorResponse(500, "Internal server error");
+    }
 }
 
 HttpResponse AcademicSocialServer::handleCreateUser(const HttpRequest& request) {

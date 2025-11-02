@@ -124,6 +124,7 @@ private:
     HttpResponse handleStatus(const HttpRequest& request);
     HttpResponse handleGetUsers(const HttpRequest& request);
     HttpResponse handleUsersDemo(const HttpRequest& request);
+    HttpResponse handleGetUserById(const HttpRequest& request);
     HttpResponse handleCreateUser(const HttpRequest& request);
     HttpResponse handleLogin(const HttpRequest& request);
     HttpResponse handleUpdateUser(const HttpRequest& request);
