@@ -65,6 +65,8 @@ We've added comprehensive documentation to guide the deployment:
 
 Contains global environment variables that will be used across all deployments.
 
+**IMPORTANT**: This file now contains ONLY valid Vercel configuration fields. The previous invalid fields (`buildCommand`, `outputDirectory`, `installCommand`) have been removed as they are not part of the Vercel JSON schema and must be configured in the Vercel Dashboard instead.
+
 **Note**: The WebSocket URL includes port 8081 because the backend WebSocket server is configured to run on this specific port (see `src/server/server.cpp`).
 
 ### `/frontend/vercel.json`
