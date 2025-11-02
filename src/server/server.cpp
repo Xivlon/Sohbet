@@ -321,7 +321,16 @@ void AcademicSocialServer::handleClient(int client_socket) {
 }
 
 HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_request) {
-    std::cerr << "DEBUG: Raw request size: " << raw_request.length() << " bytes, first 200 chars: " << raw_request.substr(0, 200) << std::endl;
+        std::cerr << "DEBUG: parseHttpRequest called with " << raw_request.length() << " bytes" << std::endl;
+    
+    size_t headers_end = raw_request.find("\r\n\r\n");
+    if (headers_end == std::string::npos) {
+        std::cerr << "  WARNING: No \\r\\n\\r\\n found!" << std::endl;
+    } else {
+        std::cerr << "  Headers end at position: " << headers_end << std::endl;
+        std::cerr << "  Body starts at: " << (headers_end + 4) << std::endl;
+        std::cerr << "  Total body bytes: " << (raw_request.length() - headers_end - 4) << std::endl;
+    }
     std::istringstream stream(raw_request);
     std::string line;
     
@@ -429,7 +438,12 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
 // -------------------- Request Handlers --------------------
 // Add this function right before handleGetPosts() (before line 420)
 HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
-    std::cerr << "DEBUG: handleCreatePost called, body length: " << request.body.length() << std::endl;
+    std::cerr << "DEBUG: handleCreatePost called, body length: " << std::endl;
+    std::cerr << "  Method: " << request.method << std::endl;
+    std::cerr << "  Path: " << request.path << std::endl;
+    std::cerr << "  Headers count: " << request.headers.size() << std::endl;
+    std::cerr << "  Body length: " << request.body.length() << std::endl;
+    std::cerr << "  Body content (first 200 chars): " << request.body.substr(0, 200) << std::endl;
     int author_id = getUserIdFromAuth(request);
     // Extract base path (without query string)
     std::string base_path = request.path;
