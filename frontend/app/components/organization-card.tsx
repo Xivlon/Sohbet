@@ -4,17 +4,7 @@ import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Badge } from "@/app/components/ui/badge"
 import { Building2, Globe, Mail, Settings } from "lucide-react"
-
-interface Organization {
-  id: number
-  name: string
-  type: string
-  description?: string
-  email?: string
-  website?: string
-  logo_url?: string
-  created_at: string
-}
+import { Organization } from "@/app/lib/api-client"
 
 interface OrganizationCardProps {
   organization: Organization
@@ -60,8 +50,8 @@ export function OrganizationCard({ organization, canManage, onManage, onView }: 
             )}
             <div className="flex-1">
               <CardTitle className="text-xl">{organization.name}</CardTitle>
-              <Badge className={`mt-2 ${getTypeColor(organization.type)}`}>
-                {getTypeLabel(organization.type)}
+              <Badge className={`mt-2 ${getTypeColor(organization.type || organization.category || 'other')}`}>
+                {getTypeLabel(organization.type || organization.category || 'Diğer')}
               </Badge>
             </div>
           </div>

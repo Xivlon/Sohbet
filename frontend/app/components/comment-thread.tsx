@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/app/components/ui/button"
 import { CommentForm } from "./comment-form"
 import { MessageCircle, MoreVertical } from "lucide-react"
-import { apiClient } from "@/app/lib/api-client"
+import { apiClient, Comment } from "@/app/lib/api-client"
 import { usePermission, PERMISSIONS } from "@/app/lib/permissions"
 import {
   DropdownMenu,
@@ -12,21 +12,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
-
-interface Comment {
-  id: number
-  post_id: number
-  parent_id: number | null
-  author_id: number
-  content: string
-  created_at: string
-  updated_at?: string
-  author?: {
-    id: number
-    username: string
-    name?: string
-  }
-}
 
 interface CommentThreadProps {
   postId: number

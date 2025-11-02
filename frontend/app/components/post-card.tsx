@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/app/components/ui/card"
 import { Heart, MessageCircle, Share2, MoreVertical } from "lucide-react"
-import { apiClient } from "@/app/lib/api-client"
+import { apiClient, Post } from "@/app/lib/api-client"
 import { usePermission, PERMISSIONS } from "@/app/lib/permissions"
 import {
   DropdownMenu,
@@ -13,21 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
 import { CommentThread } from "./comment-thread"
-
-interface Post {
-  id: number
-  author_id: number
-  content: string
-  visibility: string
-  created_at: string
-  updated_at?: string
-  author?: {
-    id: number
-    username: string
-    name?: string
-    avatar_url?: string
-  }
-}
 
 interface PostCardProps {
   post: Post
@@ -43,7 +28,7 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
 
   const canDeleteAnyPost = usePermission(PERMISSIONS.DELETE_ANY_POST)
   const canEditAnyPost = usePermission(PERMISSIONS.EDIT_ANY_POST)
-  const isOwner = currentUserId === post.author_id
+  const isOwner = currentUserId === (post.author_id || post.user_id)
   
   // User can edit/delete if they own the post OR have admin permissions
   const canEdit = isOwner || canEditAnyPost

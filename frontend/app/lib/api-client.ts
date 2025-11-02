@@ -94,6 +94,112 @@ export interface VoiceChannelsResponse {
   count: number;
 }
 
+export interface Post {
+  id: number;
+  user_id: number;
+  author_id?: number;
+  content: string;
+  visibility: string;
+  created_at: string;
+  username?: string;
+  avatar_url?: string;
+  author?: {
+    id: number;
+    username: string;
+    name?: string;
+    avatar_url?: string;
+  };
+  reactions?: Reaction[];
+  comment_count?: number;
+}
+
+export interface Reaction {
+  id: number;
+  post_id: number;
+  user_id: number;
+  reaction_type: string;
+  created_at: string;
+  username?: string;
+}
+
+export interface Comment {
+  id: number;
+  post_id: number;
+  parent_id?: number | null;
+  author_id?: number;
+  user_id: number;
+  content: string;
+  created_at: string;
+  updated_at?: string;
+  username?: string;
+  avatar_url?: string;
+  author?: {
+    id: number;
+    username: string;
+    name?: string;
+  };
+  replies?: Comment[];
+}
+
+export interface Group {
+  id: number;
+  name: string;
+  description: string;
+  privacy?: string;
+  created_by?: number;
+  creator_id?: number;
+  created_at: string;
+  member_count?: number;
+  user_role?: string;
+}
+
+export interface Organization {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  type?: string;
+  logo_url?: string;
+  email?: string;
+  website?: string;
+  created_at: string;
+  member_count?: number;
+}
+
+export interface Friendship {
+  id: number;
+  requester_id: number;
+  addressee_id: number;
+  status: string;
+  created_at: string;
+  updated_at?: string;
+  requester?: User;
+  addressee?: User;
+}
+
+export interface Conversation {
+  id: number;
+  user1_id: number;
+  user2_id: number;
+  created_at: string;
+  last_message_at?: string;
+  last_message?: Message;
+  other_user?: User;
+}
+
+export interface Message {
+  id: number;
+  conversation_id: number;
+  sender_id: number;
+  content: string;
+  created_at: string;
+  sender?: User;
+}
+
+export interface DeleteResponse {
+  message: string;
+}
+
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
@@ -352,92 +458,92 @@ class ApiClient {
   }
 
   // Posts API
-  async getPosts(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ posts: any[]; total: number }>> {
+  async getPosts(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ posts: Post[]; total: number }>> {
     return this.request(`/api/posts?limit=${limit}&offset=${offset}`);
   }
 
-  async createPost(content: string, visibility: string = 'friends'): Promise<ApiResponse<any>> {
+  async createPost(content: string, visibility: string = 'friends'): Promise<ApiResponse<Post>> {
     return this.request('/api/posts', {
       method: 'POST',
       body: JSON.stringify({ content, visibility }),
     });
   }
 
-  async reactToPost(postId: number, reactionType: string = 'like'): Promise<ApiResponse<any>> {
+  async reactToPost(postId: number, reactionType: string = 'like'): Promise<ApiResponse<Reaction>> {
     return this.request(`/api/posts/${postId}/react`, {
       method: 'POST',
       body: JSON.stringify({ reaction_type: reactionType }),
     });
   }
 
-  async removeReaction(postId: number): Promise<ApiResponse<any>> {
+  async removeReaction(postId: number): Promise<ApiResponse<DeleteResponse>> {
     return this.request(`/api/posts/${postId}/react`, {
       method: 'DELETE',
     });
   }
 
-  async deletePost(postId: number): Promise<ApiResponse<any>> {
+  async deletePost(postId: number): Promise<ApiResponse<DeleteResponse>> {
     return this.request(`/api/posts/${postId}`, {
       method: 'DELETE',
     });
   }
 
   // Comments API
-  async getComments(postId: number): Promise<ApiResponse<any[]>> {
+  async getComments(postId: number): Promise<ApiResponse<Comment[]>> {
     return this.request(`/api/posts/${postId}/comments`);
   }
 
-  async createComment(postId: number, content: string): Promise<ApiResponse<any>> {
+  async createComment(postId: number, content: string): Promise<ApiResponse<Comment>> {
     return this.request(`/api/posts/${postId}/comments`, {
       method: 'POST',
       body: JSON.stringify({ content }),
     });
   }
 
-  async replyToComment(commentId: number, content: string): Promise<ApiResponse<any>> {
+  async replyToComment(commentId: number, content: string): Promise<ApiResponse<Comment>> {
     return this.request(`/api/comments/${commentId}/reply`, {
       method: 'POST',
       body: JSON.stringify({ content }),
     });
   }
 
-  async deleteComment(commentId: number): Promise<ApiResponse<any>> {
+  async deleteComment(commentId: number): Promise<ApiResponse<DeleteResponse>> {
     return this.request(`/api/comments/${commentId}`, {
       method: 'DELETE',
     });
   }
 
   // Groups API
-  async getGroups(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ groups: any[]; total: number }>> {
+  async getGroups(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ groups: Group[]; total: number }>> {
     return this.request(`/api/groups?limit=${limit}&offset=${offset}`);
   }
 
-  async createGroup(name: string, description: string, privacy?: string): Promise<ApiResponse<any>> {
+  async createGroup(name: string, description: string, privacy?: string): Promise<ApiResponse<Group>> {
     return this.request('/api/groups', {
       method: 'POST',
       body: JSON.stringify({ name, description, privacy }),
     });
   }
 
-  async joinGroup(groupId: number, userId: number): Promise<ApiResponse<any>> {
+  async joinGroup(groupId: number, userId: number): Promise<ApiResponse<{ message: string }>> {
     return this.request(`/api/groups/${groupId}/members`, {
       method: 'POST',
       body: JSON.stringify({ user_id: userId, role: 'member' }),
     });
   }
 
-  async leaveGroup(groupId: number, userId: number): Promise<ApiResponse<any>> {
+  async leaveGroup(groupId: number, userId: number): Promise<ApiResponse<DeleteResponse>> {
     return this.request(`/api/groups/${groupId}/members/${userId}`, {
       method: 'DELETE',
     });
   }
 
   // Organizations API
-  async getOrganizations(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ organizations: any[]; total: number }>> {
+  async getOrganizations(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ organizations: Organization[]; total: number }>> {
     return this.request(`/api/organizations?limit=${limit}&offset=${offset}`);
   }
 
-  async createOrganization(name: string, description: string, category: string): Promise<ApiResponse<any>> {
+  async createOrganization(name: string, description: string, category: string): Promise<ApiResponse<Organization>> {
     return this.request('/api/organizations', {
       method: 'POST',
       body: JSON.stringify({ name, description, category }),
@@ -445,7 +551,7 @@ class ApiClient {
   }
 
   // Users API
-  async getUserById(userId: number): Promise<ApiResponse<any>> {
+  async getUserById(userId: number): Promise<ApiResponse<User>> {
     return this.request(`/api/users/${userId}`);
   }
 
@@ -457,50 +563,50 @@ class ApiClient {
   }
 
   // Friendships API
-  async getFriendRequests(status?: string): Promise<ApiResponse<any[]>> {
+  async getFriendRequests(status?: string): Promise<ApiResponse<Friendship[]>> {
     const query = status ? `?status=${status}` : '';
     return this.request(`/api/friendships${query}`);
   }
 
-  async acceptFriendRequest(requestId: number): Promise<ApiResponse<any>> {
+  async acceptFriendRequest(requestId: number): Promise<ApiResponse<Friendship>> {
     return this.request(`/api/friendships/${requestId}/accept`, {
       method: 'PUT',
     });
   }
 
-  async rejectFriendRequest(requestId: number): Promise<ApiResponse<any>> {
+  async rejectFriendRequest(requestId: number): Promise<ApiResponse<Friendship>> {
     return this.request(`/api/friendships/${requestId}/reject`, {
       method: 'PUT',
     });
   }
 
-  async getFriends(userId: number): Promise<ApiResponse<any[]>> {
+  async getFriends(userId: number): Promise<ApiResponse<User[]>> {
     return this.request(`/api/users/${userId}/friends`);
   }
 
-  async deleteFriendship(friendshipId: number): Promise<ApiResponse<any>> {
+  async deleteFriendship(friendshipId: number): Promise<ApiResponse<DeleteResponse>> {
     return this.request(`/api/friendships/${friendshipId}`, {
       method: 'DELETE',
     });
   }
 
   // Conversations/Chat API
-  async getConversations(): Promise<ApiResponse<{ conversations: any[]; total: number }>> {
+  async getConversations(): Promise<ApiResponse<{ conversations: Conversation[]; total: number }>> {
     return this.request('/api/conversations');
   }
 
-  async createConversation(otherUserId: number): Promise<ApiResponse<any>> {
+  async createConversation(otherUserId: number): Promise<ApiResponse<Conversation>> {
     return this.request('/api/conversations', {
       method: 'POST',
       body: JSON.stringify({ other_user_id: otherUserId }),
     });
   }
 
-  async getMessages(conversationId: number, limit: number = 50, offset: number = 0): Promise<ApiResponse<{ messages: any[] }>> {
+  async getMessages(conversationId: number, limit: number = 50, offset: number = 0): Promise<ApiResponse<{ messages: Message[] }>> {
     return this.request(`/api/conversations/${conversationId}/messages?limit=${limit}&offset=${offset}`);
   }
 
-  async sendMessage(conversationId: number, content: string): Promise<ApiResponse<any>> {
+  async sendMessage(conversationId: number, content: string): Promise<ApiResponse<Message>> {
     return this.request(`/api/conversations/${conversationId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ content }),

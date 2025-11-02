@@ -3,22 +3,8 @@
 import { useState, useEffect } from "react"
 import { PostCard } from "./post-card"
 import { Button } from "@/app/components/ui/button"
-import { apiClient } from "@/app/lib/api-client"
+import { apiClient, Post } from "@/app/lib/api-client"
 import { useAuth } from "@/app/contexts/auth-context"
-
-interface Post {
-  id: number
-  author_id: number
-  content: string
-  visibility: string
-  created_at: string
-  author?: {
-    id: number
-    username: string
-    name?: string
-    avatar_url?: string
-  }
-}
 
 export function PostFeed() {
   const [posts, setPosts] = useState<Post[]>([])

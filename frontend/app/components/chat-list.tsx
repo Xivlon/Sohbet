@@ -5,20 +5,7 @@ import { Card, CardContent } from '@/app/components/ui/card'
 import { Avatar, AvatarFallback } from '@/app/components/avatar'
 import { ScrollArea } from '@/app/components/ui/scroll-area'
 import { useOnlineUsers } from '../lib/use-websocket'
-import { apiClient } from '@/app/lib/api-client'
-
-interface Conversation {
-  id: number
-  user1_id: number
-  user2_id: number
-  created_at: string
-  last_message_at: string
-  other_user?: {
-    id: number
-    username: string
-    email: string
-  }
-}
+import { apiClient, Conversation } from '@/app/lib/api-client'
 
 interface ChatListProps {
   currentUserId: number
@@ -131,7 +118,7 @@ export function ChatList({ currentUserId, onSelectConversation, selectedConversa
                     {conversation.other_user?.username || 'Unknown User'}
                   </p>
                   <p className="text-sm text-muted-foreground truncate">
-                    {new Date(conversation.last_message_at).toLocaleDateString('tr-TR')}
+                    {conversation.last_message_at ? new Date(conversation.last_message_at).toLocaleDateString('tr-TR') : 'No messages'}
                   </p>
                 </div>
               </CardContent>
