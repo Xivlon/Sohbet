@@ -49,8 +49,9 @@ struct HttpRequest {
         : method(m), path(p), body(b) {}
 };
 
-/**
+**
  * Academic Social Server
+ HttpResponse handleRequest(const HttpRequest& request);
  * Simple HTTP server for the academic social platform
  */
 class AcademicSocialServer {
