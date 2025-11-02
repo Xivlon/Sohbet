@@ -306,7 +306,7 @@ void AcademicSocialServer::handleClient(int client_socket) {
     HttpRequest request = parseHttpRequest(raw_request);
     
     // Handle request
-    HttpResponse response = handleRequest(request);
+    HttpResponse response = handleRequest(request);{
     
     // Format and send response
     std::string http_response = formatHttpResponse(response, request);
