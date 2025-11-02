@@ -5,6 +5,7 @@ import { Button } from "@/app/components/ui/button"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Users, Lock, Globe, Settings } from "lucide-react"
 import { Badge } from "@/app/components/ui/badge"
+import { Group } from "@/app/lib/api-client"
 
 // Privacy constants
 const PRIVACY = {
@@ -12,17 +13,6 @@ const PRIVACY = {
   PRIVATE: 'private',
   INVITE_ONLY: 'invite_only',
 } as const;
-
-interface Group {
-  id: number
-  name: string
-  description?: string
-  creator_id: number
-  privacy: string
-  created_at: string
-  member_count?: number
-  user_role?: string
-}
 
 interface GroupCardProps {
   group: Group
@@ -35,7 +25,9 @@ interface GroupCardProps {
 export function GroupCard({ group, currentUserId, onJoin, onManage, onView }: GroupCardProps) {
   const [isJoining, setIsJoining] = useState(false)
   const isMember = group.user_role !== undefined && group.user_role !== null
-  const canManage = group.user_role === 'admin' || group.user_role === 'moderator' || group.creator_id === currentUserId
+  const canManage = group.user_role === 'admin' || group.user_role === 'moderator' || 
+    (group.creator_id && group.creator_id === currentUserId) ||
+    (group.created_by && group.created_by === currentUserId)
 
   const handleJoin = async () => {
     if (!onJoin || !currentUserId) return

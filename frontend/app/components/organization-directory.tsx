@@ -4,19 +4,9 @@ import { useEffect, useState } from "react"
 import { OrganizationCard } from "./organization-card"
 import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { Skeleton } from "@/app/components/ui/skeleton"
-import { apiClient } from "@/app/lib/api-client"
+import { apiClient, Organization } from "@/app/lib/api-client"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent } from "@/app/components/ui/card"
-
-interface Organization {
-  id: number
-  name: string
-  description?: string
-  type: string
-  logo_url?: string
-  created_at: string
-  member_count?: number
-}
 
 interface OrganizationDirectoryProps {
   currentUserId?: number

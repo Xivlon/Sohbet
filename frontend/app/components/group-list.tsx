@@ -4,20 +4,9 @@ import { useEffect, useState } from "react"
 import { GroupCard } from "./group-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { Skeleton } from "@/app/components/ui/skeleton"
-import { apiClient } from "@/app/lib/api-client"
+import { apiClient, Group } from "@/app/lib/api-client"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent } from "@/app/components/ui/card"
-
-interface Group {
-  id: number
-  name: string
-  description?: string
-  creator_id: number
-  privacy: string
-  created_at: string
-  member_count?: number
-  user_role?: string
-}
 
 interface GroupListProps {
   currentUserId?: number

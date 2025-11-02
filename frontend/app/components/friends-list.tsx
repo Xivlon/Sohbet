@@ -3,27 +3,8 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
-import { apiClient } from '@/app/lib/api-client'
+import { apiClient, User as Friend, Friendship } from '@/app/lib/api-client'
 import { useAuth } from '@/app/contexts/auth-context'
-
-interface Friend {
-  id: number
-  username: string
-  name?: string
-  email: string
-  avatar_url?: string
-  university?: string
-  department?: string
-}
-
-interface Friendship {
-  id: number
-  requester_id: number
-  addressee_id: number
-  status: string
-  created_at: string
-  updated_at: string
-}
 
 export function FriendsList() {
   const [friends, setFriends] = useState<Friend[]>([])

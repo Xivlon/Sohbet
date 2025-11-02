@@ -7,37 +7,20 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
-import { apiClient } from '@/app/lib/api-client';
+import { apiClient, Conversation, Message as ApiMessage } from '@/app/lib/api-client';
 import { useAuth } from '@/app/contexts/auth-context';
 
-interface Chat {
-  id: number;
-  user1_id: number;
-  user2_id: number;
-  created_at: string;
-  last_message_at: string;
-  other_user?: {
-    id: number;
-    username: string;
-  };
-}
-
-interface Message {
-  id: number;
-  conversation_id: number;
-  sender_id: number;
-  content: string;
+interface Message extends ApiMessage {
   media_url?: string;
   read_at?: string;
   delivered_at?: string;
-  created_at: string;
 }
 
 export function Muhabbet() {
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
-  const [chats, setChats] = useState<Chat[]>([]);
+  const [chats, setChats] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +55,7 @@ export function Muhabbet() {
         
         // Fetch user details for each conversation
         const conversationsWithUsers = await Promise.all(
-          conversations.map(async (conv: Chat) => {
+          conversations.map(async (conv: Conversation) => {
             const otherUserId = conv.user1_id === currentUserId ? conv.user2_id : conv.user1_id;
             
             try {
@@ -80,10 +63,7 @@ export function Muhabbet() {
               if (userResponse && userResponse.data) {
                 return {
                   ...conv,
-                  other_user: {
-                    id: otherUserId,
-                    username: userResponse.data.username || 'Bilinmeyen Kullanıcı'
-                  }
+                  other_user: userResponse.data
                 };
               }
             } catch (error) {
@@ -94,7 +74,8 @@ export function Muhabbet() {
               ...conv,
               other_user: {
                 id: otherUserId,
-                username: 'Bilinmeyen Kullanıcı'
+                username: 'Bilinmeyen Kullanıcı',
+                email: ''
               }
             };
           })
@@ -155,7 +136,7 @@ export function Muhabbet() {
       if (response.data) {
         // Replace temp message with real one
         setMessages(prev => 
-          prev.map(msg => msg.id === tempMessage.id ? response.data : msg)
+          prev.map(msg => msg.id === tempMessage.id && response.data ? response.data : msg)
         );
         
         // Update conversation's last_message_at
@@ -235,7 +216,7 @@ export function Muhabbet() {
                 <div>
                   <h3 className="font-medium">{selectedChat.other_user?.username || 'Bilinmeyen Kullanıcı'}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Son görülme: {formatTimestamp(selectedChat.last_message_at)}
+                    Son görülme: {selectedChat.last_message_at ? formatTimestamp(selectedChat.last_message_at) : 'Bilinmiyor'}
                   </p>
                 </div>
               </div>
@@ -386,11 +367,11 @@ export function Muhabbet() {
                         <div className="flex items-center justify-between mb-1">
                           <h4 className="font-medium truncate">{chat.other_user?.username || 'Bilinmeyen Kullanıcı'}</h4>
                           <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                            {formatTimestamp(chat.last_message_at)}
+                            {chat.last_message_at ? formatTimestamp(chat.last_message_at) : ''}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">
-                          {new Date(chat.last_message_at).toLocaleDateString('tr-TR')}
+                          {chat.last_message_at ? new Date(chat.last_message_at).toLocaleDateString('tr-TR') : 'Mesaj yok'}
                         </p>
                       </div>
                     </div>
