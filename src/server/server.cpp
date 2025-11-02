@@ -316,6 +316,7 @@ void AcademicSocialServer::handleClient(int client_socket) {
 }
 
 HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_request) {
+    std::cerr << "DEBUG: Raw request size: " << raw_request.length() << " bytes, first 200 chars: " << raw_request.substr(0, 200) << std::endl;
     std::istringstream stream(raw_request);
     std::string line;
     
