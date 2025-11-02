@@ -289,6 +289,7 @@ class ApiClient {
     let currentToken = this.token;
     if (typeof window !== 'undefined') {
       const storedToken = localStorage.getItem('auth_token');
+      console.log('[API Client] syncTokenFromStorage - stored token:', storedToken ? `${storedToken.substring(0, 20)}...` : 'NULL');
       if (storedToken && storedToken !== this.token) {
         if (this.debug) {
           console.log('[API Client]', this.instanceId, 'Token mismatch! Instance token:', this.token ? 'exists' : 'null', ', localStorage token:', storedToken ? 'exists' : 'null');
@@ -648,19 +649,5 @@ class ApiClient {
     });
   }
 }
-  private syncTokenFromStorage(): string | null {
-    let currentToken = this.token;
-    if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem('auth_token');
-      console.log('[API Client] syncTokenFromStorage - stored token:', storedToken ? `${storedToken.substring(0, 20)}...` : 'NULL');
-      if (storedToken && storedToken !== this.token) {
-        if (this.debug) {
-          console.log('[API Client]', this.instanceId, 'Token mismatch! Instance token:', this.token ? 'exists' : 'null', ', localStorage token:', storedToken ? 'exists' : 'null');
-        }
-        currentToken = storedToken;
-        this.token = storedToken;
-      }
-    }
-    return currentToken;
-  }
+
 export const apiClient = new ApiClient();
