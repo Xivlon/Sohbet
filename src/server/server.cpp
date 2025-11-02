@@ -422,42 +422,40 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
 
 // -------------------- Request Handlers --------------------
 
-HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
-    std::string base_path = request.path;
-    size_t query_pos = base_path.find('?');
-    if (query_pos != std::string::npos) {
-        base_path = base_path.substr(0, query_pos);
+HttpResponse AcademicSocialServer::handleGetPosts(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
     }
     
-    if (request.method == "OPTIONS") {
-        return HttpResponse(204, "text/plain", "");
-    } else if (request.method == "GET" && base_path == "/api/status") {
-        return handleStatus(request);
-    } else if (request.method == "GET" && base_path == "/api/users") {
-        return handleGetUsers(request);
-    } else if (request.method == "GET" && base_path == "/api/users/demo") {
-        return handleUsersDemo(request);
-    } else if (request.method == "POST" && base_path == "/api/users") {
-        return handleCreateUser(request);
-    } else if (request.method == "POST" && base_path == "/api/login") {
-        return handleLogin(request);
-    } else if (request.method == "PUT" && base_path.find("/api/users/") == 0) {
-        return handleUpdateUser(request);
-    } else if (request.method == "POST" && base_path == "/api/media/upload") {
-        return handleUploadMedia(request);
-    } else if (request.method == "GET" && base_path.find("/api/media/file/") == 0) {
-        return handleGetMediaFile(request);
-    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/media") != std::string::npos) {
-        return handleGetUserMedia(request);
-    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/friends") != std::string::npos) {
-        return handleGetFriends(request);
-    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/posts") != std::string::npos) {
-        return handleGetUserPosts(request);
-    } else if (request.method == "GET" && base_path.find("/api/users/") == 0) {
-        // This catches GET /api/users/:id (single user by ID)
-        // Must come after all other /api/users/* routes
-        return handleGetUserById(request);
+    // Parse pagination parameters
+    int limit = 50;
+    int offset = 0;
+    
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::smatch match;
+    
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
     }
+    if (std::regex_search(request.path, match, offset_regex)) {
+        offset = std::stoi(match[1].str());
+    }
+    
+    std::vector<Post> posts = post_repository_->findFeedForUser(user_id, limit, offset);
+    
+    // Return in correct format: { posts: [...], total: ... }
+    std::ostringstream oss;
+    oss << "{\"posts\":[";
+    for (size_t i = 0; i < posts.size(); ++i) {
+        oss << posts[i].toJson();
+        if (i < posts.size() - 1) oss << ",";
+    }
+    oss << "],\"total\":" << posts.size() << "}";
+    
+    return createJsonResponse(200, oss.str());
+}
     // Friendship routes
     else if (request.method == "POST" && base_path == "/api/friendships") {
         return handleCreateFriendship(request);
