@@ -421,7 +421,142 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
 }
 
 // -------------------- Request Handlers --------------------
-
+// Add this function right before handleGetPosts() (before line 420)
+HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
+    // Extract base path (without query string)
+    std::string base_path = request.path;
+    size_t query_pos = base_path.find('?');
+    if (query_pos != std::string::npos) {
+        base_path = base_path.substr(0, query_pos);
+    }
+    
+    // Status endpoint
+    if (request.method == "GET" && base_path == "/api/status") {
+        return handleStatus(request);
+    } else if (request.method == "GET" && base_path == "/api/users") {
+        return handleGetUsers(request);
+    } else if (request.method == "GET" && base_path == "/api/users/demo") {
+        return handleUsersDemo(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/friends") != std::string::npos) {
+        return handleGetFriends(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/posts") != std::string::npos) {
+        return handleGetUserPosts(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/media") != std::string::npos) {
+        return handleGetUserMedia(request);
+    } else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/friends") == std::string::npos && base_path.find("/posts") == std::string::npos && base_path.find("/media") == std::string::npos) {
+        return handleGetUserById(request);
+    } else if (request.method == "POST" && base_path == "/api/users") {
+        return handleCreateUser(request);
+    } else if (request.method == "PUT" && base_path.find("/api/users/") == 0) {
+        return handleUpdateUser(request);
+    } else if (request.method == "POST" && base_path == "/api/login") {
+        return handleLogin(request);
+    } else if (request.method == "POST" && base_path == "/api/media/upload") {
+        return handleUploadMedia(request);
+    } else if (request.method == "GET" && base_path.find("/api/media/file/") == 0) {
+        return handleGetMediaFile(request);
+    }
+    // Friendship routes
+    else if (request.method == "POST" && base_path == "/api/friendships") {
+        return handleCreateFriendship(request);
+    } else if (request.method == "GET" && base_path == "/api/friendships") {
+        return handleGetFriendships(request);
+    } else if (request.method == "PUT" && base_path.find("/api/friendships/") == 0 && base_path.find("/accept") != std::string::npos) {
+        return handleAcceptFriendship(request);
+    } else if (request.method == "PUT" && base_path.find("/api/friendships/") == 0 && base_path.find("/reject") != std::string::npos) {
+        return handleRejectFriendship(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/friendships/") == 0) {
+        return handleDeleteFriendship(request);
+    }
+    // Post routes
+    else if (request.method == "POST" && base_path == "/api/posts") {
+        return handleCreatePost(request);
+    } else if (request.method == "GET" && base_path == "/api/posts") {
+        return handleGetPosts(request);
+    } else if (request.method == "PUT" && base_path.find("/api/posts/") == 0 && base_path.find("/react") == std::string::npos) {
+        return handleUpdatePost(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/posts/") == 0 && base_path.find("/react") == std::string::npos) {
+        return handleDeletePost(request);
+    } else if (request.method == "POST" && base_path.find("/api/posts/") == 0 && base_path.find("/react") != std::string::npos) {
+        return handleAddReaction(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/posts/") == 0 && base_path.find("/react") != std::string::npos) {
+        return handleRemoveReaction(request);
+    }
+    // Comment routes
+    else if (request.method == "POST" && base_path.find("/api/posts/") == 0 && base_path.find("/comments") != std::string::npos && base_path.find("/api/comments/") == std::string::npos) {
+        return handleCreateComment(request);
+    } else if (request.method == "GET" && base_path.find("/api/posts/") == 0 && base_path.find("/comments") != std::string::npos) {
+        return handleGetComments(request);
+    } else if (request.method == "POST" && base_path.find("/api/comments/") == 0 && base_path.find("/reply") != std::string::npos) {
+        return handleReplyToComment(request);
+    } else if (request.method == "PUT" && base_path.find("/api/comments/") == 0) {
+        return handleUpdateComment(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/comments/") == 0) {
+        return handleDeleteComment(request);
+    }
+    // Group routes
+    else if (request.method == "POST" && base_path == "/api/groups") {
+        return handleCreateGroup(request);
+    } else if (request.method == "GET" && base_path == "/api/groups") {
+        return handleGetGroups(request);
+    } else if (request.method == "GET" && base_path.find("/api/groups/") == 0 && base_path.find("/members") == std::string::npos) {
+        return handleGetGroup(request);
+    } else if (request.method == "PUT" && base_path.find("/api/groups/") == 0 && base_path.find("/members") == std::string::npos) {
+        return handleUpdateGroup(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/groups/") == 0 && base_path.find("/members") == std::string::npos) {
+        return handleDeleteGroup(request);
+    } else if (request.method == "POST" && base_path.find("/api/groups/") == 0 && base_path.find("/members") != std::string::npos) {
+        return handleAddGroupMember(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/groups/") == 0 && base_path.find("/members/") != std::string::npos) {
+        return handleRemoveGroupMember(request);
+    } else if (request.method == "PUT" && base_path.find("/api/groups/") == 0 && base_path.find("/members/") != std::string::npos && base_path.find("/role") != std::string::npos) {
+        return handleUpdateGroupMemberRole(request);
+    }
+    // Organization routes
+    else if (request.method == "POST" && base_path == "/api/organizations") {
+        return handleCreateOrganization(request);
+    } else if (request.method == "GET" && base_path == "/api/organizations") {
+        return handleGetOrganizations(request);
+    } else if (request.method == "GET" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts") == std::string::npos) {
+        return handleGetOrganization(request);
+    } else if (request.method == "PUT" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts") == std::string::npos) {
+        return handleUpdateOrganization(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts") == std::string::npos) {
+        return handleDeleteOrganization(request);
+    } else if (request.method == "POST" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts") != std::string::npos) {
+        return handleAddOrganizationAccount(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/organizations/") == 0 && base_path.find("/accounts/") != std::string::npos) {
+        return handleRemoveOrganizationAccount(request);
+    }
+    // Chat/Messaging routes
+    else if (request.method == "GET" && base_path == "/api/conversations") {
+        return handleGetConversations(request);
+    } else if (request.method == "POST" && base_path == "/api/conversations") {
+        return handleGetOrCreateConversation(request);
+    } else if (request.method == "GET" && base_path.find("/api/conversations/") == 0 && base_path.find("/messages") != std::string::npos) {
+        return handleGetMessages(request);
+    } else if (request.method == "POST" && base_path.find("/api/conversations/") == 0 && base_path.find("/messages") != std::string::npos) {
+        return handleSendMessage(request);
+    } else if (request.method == "PUT" && base_path.find("/api/messages/") == 0 && base_path.find("/read") != std::string::npos) {
+        return handleMarkMessageRead(request);
+    }
+    // Voice/Murmur routes
+    else if (request.method == "POST" && base_path == "/api/voice/channels") {
+        return handleCreateVoiceChannel(request);
+    } else if (request.method == "GET" && base_path == "/api/voice/channels") {
+        return handleGetVoiceChannels(request);
+    } else if (request.method == "GET" && base_path.find("/api/voice/channels/") == 0 && base_path.find("/join") == std::string::npos && base_path.find("/leave") == std::string::npos) {
+        return handleGetVoiceChannel(request);
+    } else if (request.method == "POST" && base_path.find("/api/voice/channels/") == 0 && base_path.find("/join") != std::string::npos) {
+        return handleJoinVoiceChannel(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/voice/channels/") == 0 && base_path.find("/leave") != std::string::npos) {
+        return handleLeaveVoiceChannel(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/voice/channels/") == 0 && base_path.find("/leave") == std::string::npos) {
+        return handleDeleteVoiceChannel(request);
+    } else {
+        return handleNotFound(request);
+    }
+}
 
 
 HttpResponse AcademicSocialServer::handleStatus(const HttpRequest& request) {
