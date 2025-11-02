@@ -84,6 +84,7 @@ npm start
 For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the deployment guides:
 
 **Vercel (Frontend Only)**:
+- **[VERCEL_404_FIX.md](VERCEL_404_FIX.md)** - 🚨 **FIX 404 ERROR NOW** - 2-minute fix for deployment issues
 - **[VERCEL_README.md](VERCEL_README.md)** - ⚠️ **START HERE** - Critical configuration required
 - **[VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)** - Detailed deployment guide with troubleshooting
 
