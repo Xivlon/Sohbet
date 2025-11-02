@@ -423,6 +423,8 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
 // -------------------- Request Handlers --------------------
 // Add this function right before handleGetPosts() (before line 420)
 HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
+    std::cerr << "DEBUG: handleCreatePost called, body length: " << request.body.length() << std::endl;
+    int author_id = getUserIdFromAuth(request);
     // Extract base path (without query string)
     std::string base_path = request.path;
     size_t query_pos = base_path.find('?');
