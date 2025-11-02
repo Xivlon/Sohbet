@@ -419,10 +419,7 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
     
     return oss.str();
 }
-// Handle CORS preflight requests
-if (request.method == "OPTIONS") {
-    return HttpResponse(200, "text/plain", "");
-}
+
 // -------------------- Request Handlers --------------------
 // Add this function right before handleGetPosts() (before line 420)
 HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
@@ -432,7 +429,10 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
     if (query_pos != std::string::npos) {
         base_path = base_path.substr(0, query_pos);
     }
-    
+    // Handle CORS preflight requests
+    if (request.method == "OPTIONS") {
+        return HttpResponse(200, "text/plain", "");
+    }
     // Status endpoint
     if (request.method == "GET" && base_path == "/api/status") {
         return handleStatus(request);
