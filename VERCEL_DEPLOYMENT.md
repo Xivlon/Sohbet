@@ -97,12 +97,33 @@ The previous `vercel.json` configuration used invalid fields that are not part o
 - Verify `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL` start with `NEXT_PUBLIC_`
 - Check browser console for errors
 
+### Deployment Size / "Packet Size" Discrepancy
+
+**Issue**: Vercel may report an incorrect deployment size or "packet size" that doesn't match the actual build output.
+
+**Explanation**: 
+- This occurs when Vercel attempts to build from the wrong directory
+- If the Root Directory is not set to `frontend`, Vercel may try to package the entire monorepo including the C++ backend
+- The reported size will be much smaller than expected because Vercel can't properly process the build
+
+**Solution**:
+1. Set Root Directory to `frontend` in Vercel Dashboard
+2. Verify that the build completes successfully (check deployment logs)
+3. After a successful build, Vercel should report a size of approximately 10-15MB for the Next.js build
+4. The deployment should include only the `.next` directory and necessary dependencies
+
+**Verification**:
+- Local build size: `du -sh frontend/.next` should show ~11MB
+- Vercel should report similar deployment size after successful build
+- If sizes don't match, the Root Directory is likely not configured correctly
+
 ### Still Having Issues?
 
 1. Check the Vercel deployment logs for specific error messages
 2. Verify the build succeeds locally: `cd frontend && npm run build`
 3. Make sure all dependencies are in `package.json` (not just `devDependencies`)
 4. Check that `frontend/app/page.tsx` and `frontend/app/layout.tsx` exist
+5. Ensure Root Directory is set to `frontend` in Vercel project settings
 
 ## References
 
