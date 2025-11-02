@@ -49,9 +49,8 @@ struct HttpRequest {
         : method(m), path(p), body(b) {}
 };
 
-**
+/**
  * Academic Social Server
- HttpResponse handleRequest(const HttpRequest& request);
  * Simple HTTP server for the academic social platform
  */
 class AcademicSocialServer {
@@ -84,15 +83,6 @@ public:
      * Stop the server gracefully
      */
     void stop();
-    
-    /**
-     * Process HTTP request (for testing/simulation)
-     * @param request HTTP request to process
-     * @return HTTP response
-     */
-    HttpResponse handleRequest(const HttpRequest &request);
-
-    const sohbet::server::HttpResponse &NewFunction(const sohbet::server::HttpRequest &request, std::string &base_path);
 
 private:
     int port_;
@@ -120,6 +110,7 @@ private:
     void handleClient(int client_socket);
     HttpRequest parseHttpRequest(const std::string& raw_request);
     std::string formatHttpResponse(const HttpResponse& response, const HttpRequest& request);
+    HttpResponse handleRequest(const HttpRequest& request);
     
     // Route handlers
     HttpResponse handleStatus(const HttpRequest& request);
