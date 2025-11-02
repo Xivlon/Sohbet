@@ -23,7 +23,7 @@ int main() {
     int http_port = sohbet::config::get_http_port();
     
     // Create server instance with configurable port and database file
-    sohbet::server::AcademicSocialServer server(http_port, "academic.db");
+    sohbet::server::AcademicSocialServer server(http_port, "/app/data/academic.db");
     global_server = &server;
     
     // Set up signal handlers for graceful shutdown
