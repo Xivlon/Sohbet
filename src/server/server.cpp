@@ -438,23 +438,31 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
 // -------------------- Request Handlers --------------------
 // Add this function right before handleGetPosts() (before line 420)
 HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
-    std::cerr << "DEBUG: handleCreatePost called, body length: " << std::endl;
-    std::cerr << "  Method: " << request.method << std::endl;
-    std::cerr << "  Path: " << request.path << std::endl;
-    std::cerr << "  Headers count: " << request.headers.size() << std::endl;
-    std::cerr << "  Body length: " << request.body.length() << std::endl;
-    std::cerr << "  Body content (first 200 chars): " << request.body.substr(0, 200) << std::endl;
-    int author_id = getUserIdFromAuth(request);
     // Extract base path (without query string)
     std::string base_path = request.path;
     size_t query_pos = base_path.find('?');
     if (query_pos != std::string::npos) {
         base_path = base_path.substr(0, query_pos);
     }
-    // Handle CORS preflight requests
+    
+    // Handle CORS preflight requests FIRST (before logging/processing body)
     if (request.method == "OPTIONS") {
+        std::cerr << "DEBUG: Handling OPTIONS preflight for " << base_path << std::endl;
         return HttpResponse(200, "text/plain", "");
     }
+    
+    // Now log debug info for actual requests
+    std::cerr << "DEBUG: handleRequest called" << std::endl;
+    std::cerr << "  Method: " << request.method << std::endl;
+    std::cerr << "  Path: " << request.path << std::endl;
+    std::cerr << "  Base Path: " << base_path << std::endl;
+    std::cerr << "  Headers count: " << request.headers.size() << std::endl;
+    std::cerr << "  Body length: " << request.body.length() << std::endl;
+    if (request.body.length() > 0) {
+        std::cerr << "  Body content (first 200 chars): " << request.body.substr(0, 200) << std::endl;
+    }
+    
+    int author_id = getUserIdFromAuth(request);
     // Status endpoint
     if (request.method == "GET" && base_path == "/api/status") {
         return handleStatus(request);
