@@ -419,7 +419,10 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
     
     return oss.str();
 }
-
+// Handle CORS preflight requests
+if (request.method == "OPTIONS") {
+    return HttpResponse(200, "text/plain", "");
+}
 // -------------------- Request Handlers --------------------
 // Add this function right before handleGetPosts() (before line 420)
 HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
