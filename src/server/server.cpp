@@ -273,14 +273,18 @@ void AcademicSocialServer::handleClient(int client_socket) {
                     buffer.resize(expected_total);
                 }
                 
-                // Keep reading until we have all the data
-                while (total_bytes < static_cast<ssize_t>(expected_total)) {
-                    bytes_read = recv(client_socket, buffer.data() + total_bytes,
-                                     expected_total - total_bytes, 0);
-                    if (bytes_read <= 0) break;
-                    total_bytes += bytes_read;
-                }
+           // Keep reading until we have all the data
+          while (total_bytes < static_cast<ssize_t>(expected_total)) {
+            bytes_read = recv(client_socket, buffer.data() + total_bytes,
+                     expected_total - total_bytes, 0);
+        if (bytes_read < 0) {
+            std::cerr << "recv() error: " << strerror(errno) << std::endl;
+        break;
+        }
+        if (bytes_read == 0) break; // EOF
+            total_bytes += bytes_read;
             }
+        }
             
             break; // We have the full request
         }
