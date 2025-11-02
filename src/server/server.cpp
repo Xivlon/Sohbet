@@ -455,7 +455,7 @@ HttpResponse AcademicSocialServer::handleGetPosts(const HttpRequest& request) {
     oss << "],\"total\":" << posts.size() << "}";
     
     return createJsonResponse(200, oss.str());
-}
+    }
     // Friendship routes
     else if (request.method == "POST" && base_path == "/api/friendships") {
         return handleCreateFriendship(request);
