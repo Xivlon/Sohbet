@@ -34,6 +34,9 @@ RUN apt-get update && apt-get install -y \
 # Copy built binary from builder
 COPY --from=builder /app/build/sohbet /app/sohbet
 
+# Copy migrations
+COPY --from=builder /app/migrations /app/migrations
+
 # Create directory for database
 RUN mkdir -p /app/data
 
