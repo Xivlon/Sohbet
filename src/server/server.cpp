@@ -189,6 +189,7 @@ bool AcademicSocialServer::initializeSocket() {
 }
 
 void AcademicSocialServer::handleClient(int client_socket) {
+    std::cerr << "DEBUG: handleClient started" << std::endl;
     const int INITIAL_BUFFER_SIZE = 8192;
     const size_t MAX_REQUEST_SIZE = 10 * 1024 * 1024; // 10MB max request size
     std::vector<char> buffer(INITIAL_BUFFER_SIZE);
