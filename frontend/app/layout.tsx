@@ -4,8 +4,6 @@ import "./globals.css";
 import { AuthProvider } from "./contexts/auth-context";
 import { WebSocketProvider } from "./components/websocket-provider";
 
-export const dynamic = 'force-dynamic';
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
