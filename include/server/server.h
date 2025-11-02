@@ -83,6 +83,13 @@ public:
      * Stop the server gracefully
      */
     void stop();
+    
+    /**
+     * Process HTTP request (for testing/simulation)
+     * @param request HTTP request to process
+     * @return HTTP response
+     */
+    HttpResponse handleRequest(const HttpRequest& request);
 
 private:
     int port_;
