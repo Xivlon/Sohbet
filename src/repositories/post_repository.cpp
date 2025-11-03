@@ -85,11 +85,13 @@ std::vector<Post> PostRepository::findByAuthor(int author_id, int limit, int off
     if (!database_ || !database_->isOpen()) return posts;
 
     const std::string sql = R"(
-        SELECT id, author_id, author_type, content, media_urls, visibility, 
-               group_id, created_at, updated_at
-        FROM posts 
-        WHERE author_id = ?
-        ORDER BY created_at DESC
+        SELECT p.id, p.author_id, p.author_type, p.content, p.media_urls, p.visibility,
+               p.group_id, p.created_at, p.updated_at,
+               u.username, u.name, u.avatar_url
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        WHERE p.author_id = ?
+        ORDER BY p.created_at DESC
         LIMIT ? OFFSET ?
     )";
 
@@ -115,6 +117,16 @@ std::vector<Post> PostRepository::findByAuthor(int author_id, int limit, int off
         }
         post.setCreatedAt(stmt.getText(7));
         post.setUpdatedAt(stmt.getText(8));
+        // Author information from JOIN
+        if (!stmt.isNull(9)) {
+            post.setAuthorUsername(stmt.getText(9));
+        }
+        if (!stmt.isNull(10)) {
+            post.setAuthorName(stmt.getText(10));
+        }
+        if (!stmt.isNull(11)) {
+            post.setAuthorAvatarUrl(stmt.getText(11));
+        }
         posts.push_back(post);
     }
 
@@ -125,11 +137,13 @@ std::vector<Post> PostRepository::findFeedForUser(int user_id, int limit, int of
     std::vector<Post> posts;
     if (!database_ || !database_->isOpen()) return posts;
 
-    // Get posts from friends and user's own posts
+    // Get posts from friends and user's own posts with author information
     const std::string sql = R"(
-        SELECT DISTINCT p.id, p.author_id, p.author_type, p.content, p.media_urls, 
-               p.visibility, p.group_id, p.created_at, p.updated_at
+        SELECT DISTINCT p.id, p.author_id, p.author_type, p.content, p.media_urls,
+               p.visibility, p.group_id, p.created_at, p.updated_at,
+               u.username, u.name, u.avatar_url
         FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
         LEFT JOIN friendships f ON (
             (f.requester_id = p.author_id AND f.addressee_id = ?) OR
             (f.addressee_id = p.author_id AND f.requester_id = ?)
@@ -167,6 +181,16 @@ std::vector<Post> PostRepository::findFeedForUser(int user_id, int limit, int of
         }
         post.setCreatedAt(stmt.getText(7));
         post.setUpdatedAt(stmt.getText(8));
+        // Author information from JOIN
+        if (!stmt.isNull(9)) {
+            post.setAuthorUsername(stmt.getText(9));
+        }
+        if (!stmt.isNull(10)) {
+            post.setAuthorName(stmt.getText(10));
+        }
+        if (!stmt.isNull(11)) {
+            post.setAuthorAvatarUrl(stmt.getText(11));
+        }
         posts.push_back(post);
     }
 
@@ -178,11 +202,13 @@ std::vector<Post> PostRepository::findByGroupId(int group_id, int limit, int off
     if (!database_ || !database_->isOpen()) return posts;
 
     const std::string sql = R"(
-        SELECT id, author_id, author_type, content, media_urls, visibility, 
-               group_id, created_at, updated_at
-        FROM posts 
-        WHERE group_id = ?
-        ORDER BY created_at DESC
+        SELECT p.id, p.author_id, p.author_type, p.content, p.media_urls, p.visibility,
+               p.group_id, p.created_at, p.updated_at,
+               u.username, u.name, u.avatar_url
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        WHERE p.group_id = ?
+        ORDER BY p.created_at DESC
         LIMIT ? OFFSET ?
     )";
 
@@ -208,6 +234,16 @@ std::vector<Post> PostRepository::findByGroupId(int group_id, int limit, int off
         }
         post.setCreatedAt(stmt.getText(7));
         post.setUpdatedAt(stmt.getText(8));
+        // Author information from JOIN
+        if (!stmt.isNull(9)) {
+            post.setAuthorUsername(stmt.getText(9));
+        }
+        if (!stmt.isNull(10)) {
+            post.setAuthorName(stmt.getText(10));
+        }
+        if (!stmt.isNull(11)) {
+            post.setAuthorAvatarUrl(stmt.getText(11));
+        }
         posts.push_back(post);
     }
 

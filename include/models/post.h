@@ -22,6 +22,9 @@ public:
     const std::optional<int>& getGroupId() const { return group_id_; }
     const std::optional<std::string>& getCreatedAt() const { return created_at_; }
     const std::optional<std::string>& getUpdatedAt() const { return updated_at_; }
+    const std::optional<std::string>& getAuthorUsername() const { return author_username_; }
+    const std::optional<std::string>& getAuthorName() const { return author_name_; }
+    const std::optional<std::string>& getAuthorAvatarUrl() const { return author_avatar_url_; }
 
     // Setters
     void setId(int id) { id_ = id; }
@@ -33,6 +36,9 @@ public:
     void setGroupId(const std::optional<int>& group_id) { group_id_ = group_id; }
     void setCreatedAt(const std::optional<std::string>& created_at) { created_at_ = created_at; }
     void setUpdatedAt(const std::optional<std::string>& updated_at) { updated_at_ = updated_at; }
+    void setAuthorUsername(const std::optional<std::string>& username) { author_username_ = username; }
+    void setAuthorName(const std::optional<std::string>& name) { author_name_ = name; }
+    void setAuthorAvatarUrl(const std::optional<std::string>& avatar_url) { author_avatar_url_ = avatar_url; }
 
     // JSON serialization
     std::string toJson() const;
@@ -58,6 +64,10 @@ private:
     std::optional<int> group_id_;
     std::optional<std::string> created_at_;
     std::optional<std::string> updated_at_;
+    // Author information (populated from JOIN with users table)
+    std::optional<std::string> author_username_;
+    std::optional<std::string> author_name_;
+    std::optional<std::string> author_avatar_url_;
 };
 
 } // namespace sohbet

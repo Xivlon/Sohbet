@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { apiClient } from '@/app/lib/api-client';
 import { useAuth } from '@/app/contexts/auth-context';
+import { toast } from 'sonner';
 
 interface Post {
   id: number;
@@ -65,9 +66,9 @@ export function MainFeed() {
     // Optimistic update
     const wasLiked = post.has_reacted;
     const oldCount = post.reaction_count || 0;
-    
-    setPosts(posts.map(p => 
-      p.id === post.id 
+
+    setPosts(posts.map(p =>
+      p.id === post.id
         ? { ...p, has_reacted: !wasLiked, reaction_count: wasLiked ? oldCount - 1 : oldCount + 1 }
         : p
     ));
@@ -80,12 +81,12 @@ export function MainFeed() {
       }
     } catch (error) {
       // Rollback on error
-      setPosts(posts.map(p => 
-        p.id === post.id 
+      setPosts(posts.map(p =>
+        p.id === post.id
           ? { ...p, has_reacted: wasLiked, reaction_count: oldCount }
           : p
       ));
-      alert('Beğeni işlemi başarısız oldu. Lütfen tekrar deneyin.');
+      toast.error('Beğeni işlemi başarısız oldu. Lütfen tekrar deneyin.');
       console.error('Failed to react to post:', error);
     }
   };
@@ -100,11 +101,12 @@ export function MainFeed() {
         // Reload posts to get the new post with all metadata
         await loadPosts();
         setNewPost('');
+        toast.success('Gönderi başarıyla paylaşıldı!');
       } else {
-        alert('Gönderi paylaşılamadı: ' + (response.error || 'Bilinmeyen hata'));
+        toast.error('Gönderi paylaşılamadı: ' + (response.error || 'Bilinmeyen hata'));
       }
     } catch (err) {
-      alert('Gönderi paylaşılamadı. Lütfen tekrar deneyin.');
+      toast.error('Gönderi paylaşılamadı. Lütfen tekrar deneyin.');
       console.error('Failed to create post:', err);
     } finally {
       setSubmitting(false);
