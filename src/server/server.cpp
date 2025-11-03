@@ -2800,10 +2800,12 @@ HttpResponse AcademicSocialServer::handleJoinVoiceChannel(const HttpRequest& req
         return createErrorResponse(404, "Voice channel not found");
     }
     
-    // Check if user already has an active session
+    // Check if user already has an active session and clean it up if exists
+    // This allows users to re-enter after page refresh or navigation
     int existing_session = voice_channel_repository_->getUserActiveSession(user_id, channel_id);
     if (existing_session > 0) {
-        return createErrorResponse(400, "User already in this channel");
+        // End the existing session to allow re-entry
+        voice_channel_repository_->endSession(existing_session);
     }
     
     // Generate connection token
