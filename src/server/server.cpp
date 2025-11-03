@@ -1163,30 +1163,6 @@ int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
     std::cerr << "DEBUG: All authentication methods failed, returning -1" << std::endl;
     return -1;
 }
-    // Fallback: check for X-User-ID header (for testing)
-    it = request.headers.find("X-User-ID");
-    if (it != request.headers.end()) {
-        try {
-            return std::stoi(it->second);
-        } catch (...) {
-            return -1;
-        }
-    }
-    
-    // Check for demo user in request body (for demo/testing purposes only)
-    // WARNING: This allows any request with "username": "demo_student" to authenticate
-    // as the demo user. This is intentional for demo/testing but should be disabled
-    // in production environments by removing or protecting the demo_student account.
-    std::string username = extractJsonField(request.body, "username");
-    if (username == "demo_student") {
-        auto demo_user = user_repository_->findByUsername("demo_student");
-        if (demo_user.has_value() && demo_user->getId().has_value()) {
-            return demo_user->getId().value();
-        }
-    }
-    
-    return -1;
-}
 
 int AcademicSocialServer::extractIdFromPath(const std::string& path, const std::string& prefix) {
     size_t pos = path.find(prefix);
