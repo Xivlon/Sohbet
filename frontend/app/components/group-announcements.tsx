@@ -129,7 +129,7 @@ export function GroupAnnouncements({ groupId, userRole }: GroupAnnouncementsProp
       content: newAnnouncement.content,
       author: {
         id: user?.id || 0,
-        name: user?.full_name || "Unknown User",
+        name: user?.name || "Unknown User",
         avatar: undefined,
         role: userRole || "member"
       },
