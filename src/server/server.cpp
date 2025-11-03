@@ -321,16 +321,16 @@ void AcademicSocialServer::handleClient(int client_socket) {
 }
 
 HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_request) {
-        std::cerr << "DEBUG: parseHttpRequest called with " << raw_request.length() << " bytes" << std::endl;
+    std::cerr << "DEBUG: parseHttpRequest called with " << raw_request.length() << " bytes" << std::endl;
+    std::cerr << "DEBUG: Raw request (first 500 chars):\n" << raw_request.substr(0, 500) << std::endl;
     
     size_t headers_end = raw_request.find("\r\n\r\n");
     if (headers_end == std::string::npos) {
         std::cerr << "  WARNING: No \\r\\n\\r\\n found!" << std::endl;
     } else {
         std::cerr << "  Headers end at position: " << headers_end << std::endl;
-        std::cerr << "  Body starts at: " << (headers_end + 4) << std::endl;
-        std::cerr << "  Total body bytes: " << (raw_request.length() - headers_end - 4) << std::endl;
     }
+    
     std::istringstream stream(raw_request);
     std::string line;
     
@@ -340,10 +340,13 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
     std::string method, path, version;
     request_line >> method >> path >> version;
     
+    std::cerr << "DEBUG: Request line - Method: " << method << ", Path: " << path << std::endl;
+    
     HttpRequest request(method, path, "");
     
     // Parse headers
     bool headers_done = false;
+    int header_count = 0;
     while (std::getline(stream, line)) {
         if (line == "\r" || line.empty()) {
             headers_done = true;
@@ -354,6 +357,9 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
         if (!line.empty() && line.back() == '\r') {
             line.pop_back();
         }
+        
+        // DEBUG: Log every header received
+        std::cerr << "DEBUG: Header #" << (++header_count) << ": " << line.substr(0, 150) << std::endl;
         
         // Parse header (Name: Value)
         size_t colon_pos = line.find(':');
@@ -367,9 +373,12 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
                 header_value = header_value.substr(start);
             }
             
+            std::cerr << "DEBUG: Storing header '" << header_name << "' = '" << header_value.substr(0, 100) << "'" << std::endl;
             request.headers[header_name] = header_value;
         }
     }
+    
+    std::cerr << "DEBUG: Total headers parsed: " << header_count << std::endl;
     
     // Read body if present
     if (headers_done) {
