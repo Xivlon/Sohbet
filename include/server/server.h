@@ -591,6 +591,7 @@ private:
 
 
     void ensureDemoUserExists();
+    void ensureSecondDemoUserExists();
 
 
     int getUserIdFromAuth(const HttpRequest& request);
