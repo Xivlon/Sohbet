@@ -1112,7 +1112,11 @@ HttpResponse AcademicSocialServer::handleGetUserMedia(const HttpRequest& request
 
 int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
     // Extract user ID from Authorization header (JWT token)
+    // Try different cases of Authorization header
     auto it = request.headers.find("Authorization");
+    if (it == request.headers.end()) {
+        it = request.headers.find("authorization");
+    }
     if (it != request.headers.end()) {
         std::string auth_header = it->second;
         std::cerr << "DEBUG: Authorization header found, length: " << auth_header.length() << std::endl;
