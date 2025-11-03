@@ -321,16 +321,16 @@ void AcademicSocialServer::handleClient(int client_socket) {
 }
 
 HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_request) {
-    std::cerr << "DEBUG: parseHttpRequest called with " << raw_request.length() << " bytes" << std::endl;
-    std::cerr << "DEBUG: Raw request (first 500 chars):\n" << raw_request.substr(0, 500) << std::endl;
+        std::cerr << "DEBUG: parseHttpRequest called with " << raw_request.length() << " bytes" << std::endl;
     
     size_t headers_end = raw_request.find("\r\n\r\n");
     if (headers_end == std::string::npos) {
         std::cerr << "  WARNING: No \\r\\n\\r\\n found!" << std::endl;
     } else {
         std::cerr << "  Headers end at position: " << headers_end << std::endl;
+        std::cerr << "  Body starts at: " << (headers_end + 4) << std::endl;
+        std::cerr << "  Total body bytes: " << (raw_request.length() - headers_end - 4) << std::endl;
     }
-    
     std::istringstream stream(raw_request);
     std::string line;
     
@@ -340,13 +340,10 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
     std::string method, path, version;
     request_line >> method >> path >> version;
     
-    std::cerr << "DEBUG: Request line - Method: " << method << ", Path: " << path << std::endl;
-    
     HttpRequest request(method, path, "");
     
     // Parse headers
     bool headers_done = false;
-    int header_count = 0;
     while (std::getline(stream, line)) {
         if (line == "\r" || line.empty()) {
             headers_done = true;
@@ -357,9 +354,6 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
         if (!line.empty() && line.back() == '\r') {
             line.pop_back();
         }
-        
-        // DEBUG: Log every header received
-        std::cerr << "DEBUG: Header #" << (++header_count) << ": " << line.substr(0, 150) << std::endl;
         
         // Parse header (Name: Value)
         size_t colon_pos = line.find(':');
@@ -373,12 +367,9 @@ HttpRequest AcademicSocialServer::parseHttpRequest(const std::string& raw_reques
                 header_value = header_value.substr(start);
             }
             
-            std::cerr << "DEBUG: Storing header '" << header_name << "' = '" << header_value.substr(0, 100) << "'" << std::endl;
             request.headers[header_name] = header_value;
         }
     }
-    
-    std::cerr << "DEBUG: Total headers parsed: " << header_count << std::endl;
     
     // Read body if present
     if (headers_done) {
@@ -447,31 +438,23 @@ std::string AcademicSocialServer::formatHttpResponse(const HttpResponse& respons
 // -------------------- Request Handlers --------------------
 // Add this function right before handleGetPosts() (before line 420)
 HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
+    std::cerr << "DEBUG: handleCreatePost called, body length: " << std::endl;
+    std::cerr << "  Method: " << request.method << std::endl;
+    std::cerr << "  Path: " << request.path << std::endl;
+    std::cerr << "  Headers count: " << request.headers.size() << std::endl;
+    std::cerr << "  Body length: " << request.body.length() << std::endl;
+    std::cerr << "  Body content (first 200 chars): " << request.body.substr(0, 200) << std::endl;
+    int author_id = getUserIdFromAuth(request);
     // Extract base path (without query string)
     std::string base_path = request.path;
     size_t query_pos = base_path.find('?');
     if (query_pos != std::string::npos) {
         base_path = base_path.substr(0, query_pos);
     }
-    
-    // Handle CORS preflight requests FIRST (before logging/processing body)
+    // Handle CORS preflight requests
     if (request.method == "OPTIONS") {
-        std::cerr << "DEBUG: Handling OPTIONS preflight for " << base_path << std::endl;
         return HttpResponse(200, "text/plain", "");
     }
-    
-    // Now log debug info for actual requests
-    std::cerr << "DEBUG: handleRequest called" << std::endl;
-    std::cerr << "  Method: " << request.method << std::endl;
-    std::cerr << "  Path: " << request.path << std::endl;
-    std::cerr << "  Base Path: " << base_path << std::endl;
-    std::cerr << "  Headers count: " << request.headers.size() << std::endl;
-    std::cerr << "  Body length: " << request.body.length() << std::endl;
-    if (request.body.length() > 0) {
-        std::cerr << "  Body content (first 200 chars): " << request.body.substr(0, 200) << std::endl;
-    }
-    
-    int author_id = getUserIdFromAuth(request);
     // Status endpoint
     if (request.method == "GET" && base_path == "/api/status") {
         return handleStatus(request);
@@ -838,13 +821,69 @@ HttpResponse AcademicSocialServer::createErrorResponse(int status, const std::st
 }
 
 std::string AcademicSocialServer::extractJsonField(const std::string& json, const std::string& field) {
-    std::regex str_regex("\"" + field + "\"\\s*:\\s*\"([^\"]*)\"");
-    std::smatch match;
-    if (std::regex_search(json, match, str_regex)) return match[1].str();
-
-    std::regex num_regex("\"" + field + "\"\\s*:\\s*(\\d+)");
-    if (std::regex_search(json, match, num_regex)) return match[1].str();
-
+    std::cerr << "DEBUG: extractJsonField - field='" << field << "' json_len=" << json.length() << std::endl;
+    std::cerr << "DEBUG: json content: '" << json.substr(0, std::min((size_t)300, json.length())) << "'" << std::endl;
+    
+    // Try to find the field with double quotes
+    std::string search_key = "\"" + field + "\"";
+    size_t key_pos = json.find(search_key);
+    
+    if (key_pos == std::string::npos) {
+        std::cerr << "DEBUG: Field '" << field << "' not found" << std::endl;
+        return "";
+    }
+    
+    // Find the colon after the field name
+    size_t colon_pos = json.find(':', key_pos);
+    if (colon_pos == std::string::npos) {
+        return "";
+    }
+    
+    // Skip whitespace after colon
+    size_t value_start = colon_pos + 1;
+    while (value_start < json.length() && (json[value_start] == ' ' || json[value_start] == '\t')) {
+        value_start++;
+    }
+    
+    if (value_start >= json.length()) {
+        return "";
+    }
+    
+    // Check if value is a string (starts with quote)
+    if (json[value_start] == '"') {
+        value_start++; // Skip opening quote
+        size_t value_end = value_start;
+        
+        // Find closing quote (handle escaped quotes)
+        while (value_end < json.length() && json[value_end] != '"') {
+            if (json[value_end] == '\\' && value_end + 1 < json.length()) {
+                value_end += 2; // Skip escaped character
+            } else {
+                value_end++;
+            }
+        }
+        
+        if (value_end >= json.length()) {
+            return "";
+        }
+        
+        std::string result = json.substr(value_start, value_end - value_start);
+        std::cerr << "DEBUG: extractJsonField - Extracted '" << field << "' = '" << result << "'" << std::endl;
+        return result;
+    }
+    
+    // Check if value is a number
+    if (std::isdigit(json[value_start]) || json[value_start] == '-') {
+        size_t value_end = value_start;
+        while (value_end < json.length() && std::isdigit(json[value_end])) {
+            value_end++;
+        }
+        std::string result = json.substr(value_start, value_end - value_start);
+        std::cerr << "DEBUG: extractJsonField - Extracted numeric '" << field << "' = '" << result << "'" << std::endl;
+        return result;
+    }
+    
+    std::cerr << "DEBUG: extractJsonField - Could not parse field '" << field << "'" << std::endl;
     return "";
 }
 
@@ -1108,54 +1147,31 @@ HttpResponse AcademicSocialServer::handleGetUserMedia(const HttpRequest& request
 
 // ==================== Helper Methods ====================
 
-// COMPLETE getUserIdFromAuth function - Replace your entire function with this:
-
 int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
     // Extract user ID from Authorization header (JWT token)
-    // Try different cases of Authorization header
     auto it = request.headers.find("Authorization");
-    if (it == request.headers.end()) {
-        it = request.headers.find("authorization");
-    }
     if (it != request.headers.end()) {
         std::string auth_header = it->second;
-        std::cerr << "DEBUG: Authorization header found, length: " << auth_header.length() << std::endl;
-        
         if (auth_header.find("Bearer ") == 0) {
             std::string token = auth_header.substr(7);
-            std::cerr << "DEBUG: Extracted Bearer token (first 50 chars): " << token.substr(0, 50) << "..." << std::endl;
             
             // Verify and decode JWT token
             try {
                 std::string jwt_secret = config::get_jwt_secret();
-                std::cerr << "DEBUG: JWT secret loaded, length: " << jwt_secret.length() << std::endl;
-                
                 auto payload = security::verify_jwt_token(token, jwt_secret);
-                
                 if (payload.has_value()) {
-                    std::cerr << "DEBUG: JWT verified successfully, user_id: " << payload->user_id << std::endl;
                     return payload->user_id;
-                } else {
-                    std::cerr << "DEBUG: JWT verification returned empty payload (token invalid or expired)" << std::endl;
-                    return -1;
                 }
             } catch (const std::exception& e) {
                 std::cerr << "JWT verification error: " << e.what() << std::endl;
-                std::cerr << "DEBUG: Token was: " << token.substr(0, 100) << "..." << std::endl;
                 return -1;
             }
-        } else {
-            std::cerr << "DEBUG: Authorization header doesn't start with 'Bearer '" << std::endl;
-            std::cerr << "DEBUG: Header value: " << auth_header.substr(0, 50) << std::endl;
         }
-    } else {
-        std::cerr << "DEBUG: No Authorization header found" << std::endl;
     }
     
     // Fallback: check for X-User-ID header (for testing)
     it = request.headers.find("X-User-ID");
     if (it != request.headers.end()) {
-        std::cerr << "DEBUG: Using X-User-ID fallback header: " << it->second << std::endl;
         try {
             return std::stoi(it->second);
         } catch (...) {
@@ -1164,16 +1180,17 @@ int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
     }
     
     // Check for demo user in request body (for demo/testing purposes only)
+    // WARNING: This allows any request with "username": "demo_student" to authenticate
+    // as the demo user. This is intentional for demo/testing but should be disabled
+    // in production environments by removing or protecting the demo_student account.
     std::string username = extractJsonField(request.body, "username");
     if (username == "demo_student") {
-        std::cerr << "DEBUG: Using demo_student fallback from body" << std::endl;
         auto demo_user = user_repository_->findByUsername("demo_student");
         if (demo_user.has_value() && demo_user->getId().has_value()) {
             return demo_user->getId().value();
         }
     }
     
-    std::cerr << "DEBUG: All authentication methods failed, returning -1" << std::endl;
     return -1;
 }
 
