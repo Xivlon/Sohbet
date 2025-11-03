@@ -1099,6 +1099,8 @@ HttpResponse AcademicSocialServer::handleGetUserMedia(const HttpRequest& request
 
 // ==================== Helper Methods ====================
 
+// COMPLETE getUserIdFromAuth function - Replace your entire function with this:
+
 int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
     // Extract user ID from Authorization header (JWT token)
     auto it = request.headers.find("Authorization");
@@ -1136,7 +1138,6 @@ int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
     } else {
         std::cerr << "DEBUG: No Authorization header found" << std::endl;
     }
-}
     
     // Fallback: check for X-User-ID header (for testing)
     it = request.headers.find("X-User-ID");
