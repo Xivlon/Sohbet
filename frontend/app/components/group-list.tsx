@@ -7,13 +7,15 @@ import { Skeleton } from "@/app/components/ui/skeleton"
 import { apiClient, Group } from "@/app/lib/api-client"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent } from "@/app/components/ui/card"
+import { ArrowLeft } from "lucide-react"
 
 interface GroupListProps {
   currentUserId?: number
   onGroupSelect?: (groupId: number) => void
+  onLeave?: () => void
 }
 
-export function GroupList({ currentUserId, onGroupSelect }: GroupListProps) {
+export function GroupList({ currentUserId, onGroupSelect, onLeave }: GroupListProps) {
   const [allGroups, setAllGroups] = useState<Group[]>([])
   const [myGroups, setMyGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
@@ -175,11 +177,26 @@ export function GroupList({ currentUserId, onGroupSelect }: GroupListProps) {
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="all">Tüm Gruplar</TabsTrigger>
-        <TabsTrigger value="my">Gruplarım</TabsTrigger>
-      </TabsList>
+    <div className="w-full space-y-4">
+      {onLeave && (
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onLeave}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Ana Sayfaya Dön
+          </Button>
+        </div>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="all">Tüm Gruplar</TabsTrigger>
+          <TabsTrigger value="my">Gruplarım</TabsTrigger>
+        </TabsList>
       
       <TabsContent value="all" className="mt-6">
         {allGroups.length === 0 ? (
@@ -227,5 +244,6 @@ export function GroupList({ currentUserId, onGroupSelect }: GroupListProps) {
         )}
       </TabsContent>
     </Tabs>
+    </div>
   )
 }
