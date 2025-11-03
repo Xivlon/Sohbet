@@ -1454,9 +1454,20 @@ HttpResponse AcademicSocialServer::handleCreatePost(const HttpRequest& request) 
     
     auto created = post_repository_->create(post);
     if (created.has_value()) {
+        // Populate author information from user repository
+        auto author = user_repository_->findById(author_id);
+        if (author.has_value()) {
+            created->setAuthorUsername(author->getUsername());
+            if (author->getName().has_value()) {
+                created->setAuthorName(author->getName().value());
+            }
+            if (author->getAvatarUrl().has_value()) {
+                created->setAuthorAvatarUrl(author->getAvatarUrl().value());
+            }
+        }
         return createJsonResponse(201, created->toJson());
     }
-    
+
     return createErrorResponse(500, "Failed to create post");
 }
 
@@ -1482,15 +1493,15 @@ HttpResponse AcademicSocialServer::handleGetPosts(const HttpRequest& request) {
     }
     
     std::vector<Post> posts = post_repository_->findFeedForUser(user_id, limit, offset);
-    
+
     std::ostringstream oss;
-    oss << "[";
+    oss << "{\"posts\":[";
     for (size_t i = 0; i < posts.size(); ++i) {
         oss << posts[i].toJson();
         if (i < posts.size() - 1) oss << ",";
     }
-    oss << "]";
-    
+    oss << "],\"total\":" << posts.size() << "}";
+
     return createJsonResponse(200, oss.str());
 }
 
