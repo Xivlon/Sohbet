@@ -41,6 +41,18 @@ export function Khave() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cleanup: leave channel when component unmounts or user navigates away
+  useEffect(() => {
+    return () => {
+      if (currentChannel && isConnected) {
+        // Clean up the session when component unmounts
+        voiceService.leaveChannel(currentChannel.id).catch(err => {
+          console.error('Error leaving channel on unmount:', err);
+        });
+      }
+    };
+  }, [currentChannel, isConnected]);
+
   const loadChannels = async () => {
     setLoading(true);
     setError(null);
