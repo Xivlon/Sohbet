@@ -1136,6 +1136,7 @@ int AcademicSocialServer::getUserIdFromAuth(const HttpRequest& request) {
     } else {
         std::cerr << "DEBUG: No Authorization header found" << std::endl;
     }
+}
     
     // Fallback: check for X-User-ID header (for testing)
     it = request.headers.find("X-User-ID");
