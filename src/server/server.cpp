@@ -76,8 +76,9 @@ bool AcademicSocialServer::initialize() {
         }
     }
 
-    // Ensure demo user exists for demo/testing purposes
+    // Ensure demo users exist for demo/testing purposes
     ensureDemoUserExists();
+    ensureSecondDemoUserExists();
 
     std::cout << "Server initialized successfully" << std::endl;
     return true;
@@ -998,6 +999,84 @@ void AcademicSocialServer::ensureDemoUserExists() {
         ensureProfessorPrivileges(demo_user_id);
     } else {
         std::cerr << "Warning: Failed to create demo user" << std::endl;
+    }
+}
+
+void AcademicSocialServer::ensureSecondDemoUserExists() {
+    // Helper lambda to assign Admin role to a user
+    auto assignAdminRole = [this](int user_id) -> void {
+        auto admin_role = role_repository_->findByName("Admin");
+        if (admin_role.has_value()) {
+            // assignRoleToUser uses INSERT OR IGNORE, so it won't create duplicates
+            role_repository_->assignRoleToUser(user_id, admin_role->getId().value());
+            std::cout << "Second demo user ensured to have Admin permissions" << std::endl;
+        } else {
+            std::cerr << "Warning: Could not find Admin role for second demo user" << std::endl;
+        }
+    };
+
+    auto professor_role = role_repository_->findByName("Professor");
+    auto ensureProfessorPrivileges = [this, &professor_role](int user_id) -> void {
+        if (professor_role.has_value()) {
+            if (!role_repository_->assignRoleToUser(user_id, professor_role->getId().value())) {
+                std::cerr << "Warning: Failed to ensure Professor role assignment for second demo user" << std::endl;
+            }
+        } else {
+            std::cerr << "Warning: Could not find Professor role for second demo user" << std::endl;
+        }
+
+        db::Statement stmt(*database_, "UPDATE users SET role = ?, position = ? WHERE id = ?");
+        if (!stmt.isValid()) {
+            std::cerr << "Warning: Failed to prepare Professor role update for second demo user" << std::endl;
+            return;
+        }
+
+        stmt.bindText(1, "Professor");
+        stmt.bindText(2, "Professor");
+        stmt.bindInt(3, user_id);
+
+        if (stmt.step() != SQLITE_DONE) {
+            std::cerr << "Warning: Failed to persist Professor role for second demo user" << std::endl;
+        } else {
+            std::cout << "Second demo user flagged as Professor for primary role" << std::endl;
+        }
+    };
+
+    // Check if second demo user already exists
+    auto existing_user = user_repository_->findByUsername("demo_teacher");
+    if (existing_user.has_value()) {
+        int demo_user_id = existing_user->getId().value();
+        std::cout << "Second demo user already exists (ID: " << demo_user_id << ")" << std::endl;
+
+        // Always reset the demo user's password to ensure it works after any API changes
+        if (user_repository_->updatePassword(demo_user_id, "demo123")) {
+            std::cout << "Second demo user password reset successfully" << std::endl;
+        } else {
+            std::cerr << "Warning: Failed to reset second demo user password" << std::endl;
+        }
+
+        assignAdminRole(demo_user_id);
+        ensureProfessorPrivileges(demo_user_id);
+        return;
+    }
+
+    // Create second demo user
+    User demo_user("demo_teacher", "demo2@example.edu");
+    demo_user.setUniversity("Demo University");
+    demo_user.setDepartment("Computer Science");
+    demo_user.setEnrollmentYear(2023);
+    demo_user.setPrimaryLanguage("Turkish");
+    demo_user.setPosition(std::string("Professor"));
+    demo_user.setRole(std::string("Professor"));
+
+    auto created_user = user_repository_->create(demo_user, "demo123");
+    if (created_user.has_value()) {
+        int demo_user_id = created_user->getId().value();
+        std::cout << "Second demo user created successfully (ID: " << demo_user_id << ")" << std::endl;
+        assignAdminRole(demo_user_id);
+        ensureProfessorPrivileges(demo_user_id);
+    } else {
+        std::cerr << "Warning: Failed to create second demo user" << std::endl;
     }
 }
 

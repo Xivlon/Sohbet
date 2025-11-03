@@ -31,6 +31,24 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
     }
   };
 
+  const handleSecondDemoLogin = async () => {
+    setError('');
+    setIsLoading(true);
+    setUsername('demo_teacher');
+    setPassword('demo123');
+
+    try {
+      await login('demo_teacher', 'demo123');
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Demo login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -98,13 +116,20 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
         </button>
       </form>
 
-      <div className="mt-3">
+      <div className="mt-3 space-y-2">
         <button
           onClick={handleDemoLogin}
           disabled={isLoading}
           className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 dark:border-gray-600"
         >
-          🎓 Demo Hesabı Kullan
+          🎓 Demo Hesabı 1 Kullan
+        </button>
+        <button
+          onClick={handleSecondDemoLogin}
+          disabled={isLoading}
+          className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 dark:border-gray-600"
+        >
+          🎓 Demo Hesabı 2 Kullan
         </button>
         <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
           Uygulamayı denemek için demo hesabıyla giriş yapın
