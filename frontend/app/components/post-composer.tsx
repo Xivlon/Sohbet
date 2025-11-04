@@ -19,7 +19,7 @@ interface PostComposerProps {
 
 export function PostComposer({ onPostCreated }: PostComposerProps) {
   const [content, setContent] = useState("")
-  const [visibility, setVisibility] = useState("friends")
+  const [visibility, setVisibility] = useState("public")
   const [posting, setPosting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +32,7 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
 
       if (response.data) {
         setContent("")
-        setVisibility("friends")
+        setVisibility("public")
         onPostCreated?.()
       }
     } catch (error) {
