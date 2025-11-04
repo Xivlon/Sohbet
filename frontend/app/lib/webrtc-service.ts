@@ -21,11 +21,30 @@ export interface WebRTCConfig {
   iceServers: RTCIceServer[];
 }
 
-// Default STUN servers for NAT traversal
+// Default STUN and TURN servers for NAT traversal and relay
+// STUN servers help discover public IP addresses for NAT traversal
+// TURN servers provide relay when direct P2P connection fails
 const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
+  // Google's public STUN servers
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
+  // Open Relay Project TURN server (free public TURN server)
+  {
+    urls: 'turn:openrelay.metered.ca:80',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 class WebRTCService {
@@ -520,8 +539,31 @@ class WebRTCService {
       console.log(`Connection state with user ${userId}:`, pc.connectionState);
 
       if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+        console.error(`Connection failed or closed with user ${userId}`);
         this.closePeerConnection(userId);
+      } else if (pc.connectionState === 'connected') {
+        console.log(`Successfully connected to user ${userId}`);
       }
+    };
+
+    // Handle ICE connection state changes for better debugging
+    pc.oniceconnectionstatechange = () => {
+      console.log(`ICE connection state with user ${userId}:`, pc.iceConnectionState);
+
+      if (pc.iceConnectionState === 'failed') {
+        console.error(`ICE connection failed with user ${userId}. Attempting ICE restart...`);
+        // Attempt to restart ICE
+        this.restartIce(userId);
+      } else if (pc.iceConnectionState === 'disconnected') {
+        console.warn(`ICE connection disconnected with user ${userId}. May reconnect automatically.`);
+      } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        console.log(`ICE connection established with user ${userId}`);
+      }
+    };
+
+    // Handle ICE gathering state changes
+    pc.onicegatheringstatechange = () => {
+      console.log(`ICE gathering state with user ${userId}:`, pc.iceGatheringState);
     };
 
     this.peerConnections.set(userId, pc);
@@ -543,6 +585,34 @@ class WebRTCService {
 
     this.audioAnalyzers.set(userId, analyzer);
     this.monitorAudioLevel(userId, analyzer);
+  }
+
+  /**
+   * Attempt to restart ICE connection
+   */
+  private async restartIce(userId: number) {
+    const pc = this.peerConnections.get(userId);
+    if (!pc || !this.currentChannelId) return;
+
+    try {
+      console.log(`Restarting ICE connection with user ${userId}`);
+
+      // Create new offer with iceRestart flag
+      const offer = await pc.createOffer({ iceRestart: true });
+      await pc.setLocalDescription(offer);
+
+      websocketService.send('voice:offer', {
+        channel_id: this.currentChannelId,
+        target_user_id: userId,
+        from_user_id: this.currentUserId,
+        offer: {
+          type: offer.type,
+          sdp: offer.sdp,
+        },
+      });
+    } catch (error) {
+      console.error('Error restarting ICE:', error);
+    }
   }
 
   /**

@@ -49,7 +49,8 @@ private:
 class WebSocketServer {
 public:
     using MessageHandler = std::function<void(int user_id, const WebSocketMessage& message)>;
-    
+    using DisconnectHandler = std::function<void(int user_id)>;
+
     /**
      * Constructor
      * @param port Port to listen on for WebSocket connections
@@ -78,7 +79,13 @@ public:
      * @param handler Handler function
      */
     void registerHandler(const std::string& type, MessageHandler handler);
-    
+
+    /**
+     * Register a disconnect handler called when a user disconnects
+     * @param handler Handler function called with user_id
+     */
+    void registerDisconnectHandler(DisconnectHandler handler);
+
     /**
      * Send message to a specific user
      * @param user_id Target user ID
@@ -127,7 +134,8 @@ private:
     // Message handlers
     mutable std::mutex handlers_mutex_;
     std::map<std::string, MessageHandler> handlers_;
-    
+    DisconnectHandler disconnect_handler_;
+
     // Server methods
     bool initializeSocket();
     void acceptConnections();

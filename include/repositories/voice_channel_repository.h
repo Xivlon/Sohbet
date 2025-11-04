@@ -96,6 +96,13 @@ public:
      * @return Session ID if found, or 0 if not found
      */
     int getUserActiveSession(int user_id, int channel_id);
+
+    /**
+     * @brief End all active sessions for a user (used when user disconnects)
+     * @param user_id User ID
+     * @return Number of sessions ended
+     */
+    int endAllUserSessions(int user_id);
 };
 
 } // namespace repositories
