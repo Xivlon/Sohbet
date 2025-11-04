@@ -4,12 +4,24 @@
  */
 'use client';
 
-export type WebSocketMessageType = 
+export type WebSocketMessageType =
   | 'chat:send'
   | 'chat:message'
   | 'chat:typing'
   | 'user:online'
-  | 'user:offline';
+  | 'user:offline'
+  | 'voice:join'
+  | 'voice:leave'
+  | 'voice:offer'
+  | 'voice:answer'
+  | 'voice:ice-candidate'
+  | 'voice:mute'
+  | 'voice:video-toggle'
+  | 'voice:user-joined'
+  | 'voice:user-left'
+  | 'voice:participants'
+  | 'voice:user-muted'
+  | 'voice:user-video-toggled';
 
 export interface ChatMessagePayload {
   id?: number;
