@@ -72,7 +72,10 @@ class WebRTCService {
   private setupWebSocketHandlers() {
     // Handle new user joining the channel
     websocketService.on('voice:user-joined', (message) => {
-      const payload = message.payload as any;
+      // Parse payload if it's a string
+      const payload = typeof message.payload === 'string'
+        ? JSON.parse(message.payload)
+        : message.payload as any;
       const { user_id, username, university, channel_id } = payload;
 
       if (channel_id !== this.currentChannelId) return;
@@ -100,7 +103,10 @@ class WebRTCService {
 
     // Handle user leaving the channel
     websocketService.on('voice:user-left', (message) => {
-      const payload = message.payload as any;
+      // Parse payload if it's a string
+      const payload = typeof message.payload === 'string'
+        ? JSON.parse(message.payload)
+        : message.payload as any;
       const { user_id, channel_id } = payload;
 
       if (channel_id !== this.currentChannelId) return;
@@ -117,7 +123,10 @@ class WebRTCService {
 
     // Handle receiving list of existing participants
     websocketService.on('voice:participants', (message) => {
-      const payload = message.payload as any;
+      // Parse payload if it's a string
+      const payload = typeof message.payload === 'string'
+        ? JSON.parse(message.payload)
+        : message.payload as any;
       const { participants } = payload;
 
       participants.forEach((p: any) => {
@@ -140,25 +149,37 @@ class WebRTCService {
 
     // Handle WebRTC offer
     websocketService.on('voice:offer', (message) => {
-      const payload = message.payload as any;
+      // Parse payload if it's a string
+      const payload = typeof message.payload === 'string'
+        ? JSON.parse(message.payload)
+        : message.payload as any;
       this.handleOffer(payload);
     });
 
     // Handle WebRTC answer
     websocketService.on('voice:answer', (message) => {
-      const payload = message.payload as any;
+      // Parse payload if it's a string
+      const payload = typeof message.payload === 'string'
+        ? JSON.parse(message.payload)
+        : message.payload as any;
       this.handleAnswer(payload);
     });
 
     // Handle ICE candidate
     websocketService.on('voice:ice-candidate', (message) => {
-      const payload = message.payload as any;
+      // Parse payload if it's a string
+      const payload = typeof message.payload === 'string'
+        ? JSON.parse(message.payload)
+        : message.payload as any;
       this.handleIceCandidate(payload);
     });
 
     // Handle user mute status
     websocketService.on('voice:user-muted', (message) => {
-      const payload = message.payload as any;
+      // Parse payload if it's a string
+      const payload = typeof message.payload === 'string'
+        ? JSON.parse(message.payload)
+        : message.payload as any;
       const { user_id, muted } = payload;
 
       const participant = this.participants.get(user_id);
@@ -170,7 +191,10 @@ class WebRTCService {
 
     // Handle user video toggle
     websocketService.on('voice:user-video-toggled', (message) => {
-      const payload = message.payload as any;
+      // Parse payload if it's a string
+      const payload = typeof message.payload === 'string'
+        ? JSON.parse(message.payload)
+        : message.payload as any;
       const { user_id, video_enabled } = payload;
 
       const participant = this.participants.get(user_id);
