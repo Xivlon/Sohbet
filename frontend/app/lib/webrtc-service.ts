@@ -1,0 +1,595 @@
+/**
+ * WebRTC Service for Voice and Video Communication
+ * Manages peer-to-peer connections, media streams, and audio/video state
+ */
+'use client';
+
+import { websocketService } from './websocket-service';
+
+export interface VoiceParticipant {
+  userId: number;
+  username: string;
+  university: string;
+  isMuted: boolean;
+  isVideoEnabled: boolean;
+  isSpeaking: boolean;
+  audioLevel: number;
+  stream?: MediaStream;
+}
+
+export interface WebRTCConfig {
+  iceServers: RTCIceServer[];
+}
+
+// Default STUN servers for NAT traversal
+const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+];
+
+class WebRTCService {
+  private localStream: MediaStream | null = null;
+  private peerConnections: Map<number, RTCPeerConnection> = new Map();
+  private participants: Map<number, VoiceParticipant> = new Map();
+  private currentChannelId: number | null = null;
+  private currentUserId: number | null = null;
+  private audioContext: AudioContext | null = null;
+  private audioAnalyzers: Map<number, AnalyserNode> = new Map();
+  private isMuted: boolean = false;
+  private isVideoEnabled: boolean = false;
+
+  // Callbacks for UI updates
+  private onParticipantUpdateCallback: ((participants: VoiceParticipant[]) => void) | null = null;
+  private onRemoteStreamCallback: ((userId: number, stream: MediaStream) => void) | null = null;
+
+  constructor(private config: WebRTCConfig = { iceServers: DEFAULT_ICE_SERVERS }) {
+    this.setupWebSocketHandlers();
+  }
+
+  /**
+   * Setup WebSocket handlers for voice signaling
+   */
+  private setupWebSocketHandlers() {
+    // Handle new user joining the channel
+    websocketService.on('voice:user-joined', (message) => {
+      const payload = message.payload as any;
+      const { user_id, username, university, channel_id } = payload;
+
+      if (channel_id !== this.currentChannelId) return;
+
+      console.log('User joined voice channel:', username);
+
+      // Add to participants
+      this.participants.set(user_id, {
+        userId: user_id,
+        username,
+        university: university || '',
+        isMuted: false,
+        isVideoEnabled: false,
+        isSpeaking: false,
+        audioLevel: 0,
+      });
+
+      // Initiate WebRTC connection if this is not us
+      if (user_id !== this.currentUserId) {
+        this.createOffer(user_id);
+      }
+
+      this.notifyParticipantUpdate();
+    });
+
+    // Handle user leaving the channel
+    websocketService.on('voice:user-left', (message) => {
+      const payload = message.payload as any;
+      const { user_id, channel_id } = payload;
+
+      if (channel_id !== this.currentChannelId) return;
+
+      console.log('User left voice channel:', user_id);
+
+      // Close peer connection
+      this.closePeerConnection(user_id);
+
+      // Remove from participants
+      this.participants.delete(user_id);
+      this.notifyParticipantUpdate();
+    });
+
+    // Handle receiving list of existing participants
+    websocketService.on('voice:participants', (message) => {
+      const payload = message.payload as any;
+      const { participants } = payload;
+
+      participants.forEach((p: any) => {
+        this.participants.set(p.user_id, {
+          userId: p.user_id,
+          username: p.username,
+          university: p.university || '',
+          isMuted: false,
+          isVideoEnabled: false,
+          isSpeaking: false,
+          audioLevel: 0,
+        });
+
+        // We'll create offers to all existing participants
+        this.createOffer(p.user_id);
+      });
+
+      this.notifyParticipantUpdate();
+    });
+
+    // Handle WebRTC offer
+    websocketService.on('voice:offer', (message) => {
+      const payload = message.payload as any;
+      this.handleOffer(payload);
+    });
+
+    // Handle WebRTC answer
+    websocketService.on('voice:answer', (message) => {
+      const payload = message.payload as any;
+      this.handleAnswer(payload);
+    });
+
+    // Handle ICE candidate
+    websocketService.on('voice:ice-candidate', (message) => {
+      const payload = message.payload as any;
+      this.handleIceCandidate(payload);
+    });
+
+    // Handle user mute status
+    websocketService.on('voice:user-muted', (message) => {
+      const payload = message.payload as any;
+      const { user_id, muted } = payload;
+
+      const participant = this.participants.get(user_id);
+      if (participant) {
+        participant.isMuted = muted;
+        this.notifyParticipantUpdate();
+      }
+    });
+
+    // Handle user video toggle
+    websocketService.on('voice:user-video-toggled', (message) => {
+      const payload = message.payload as any;
+      const { user_id, video_enabled } = payload;
+
+      const participant = this.participants.get(user_id);
+      if (participant) {
+        participant.isVideoEnabled = video_enabled;
+        this.notifyParticipantUpdate();
+      }
+    });
+  }
+
+  /**
+   * Join a voice channel
+   */
+  async joinChannel(channelId: number, userId: number, audioOnly: boolean = true): Promise<void> {
+    this.currentChannelId = channelId;
+    this.currentUserId = userId;
+    this.isVideoEnabled = !audioOnly;
+
+    try {
+      // Get local media stream
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+        video: audioOnly ? false : {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+
+      console.log('Got local media stream');
+
+      // Setup audio analyzer for speaking detection
+      this.setupAudioAnalyzer();
+
+      // Notify server that we're joining
+      websocketService.send('voice:join', { channel_id: channelId });
+
+    } catch (error) {
+      console.error('Failed to get user media:', error);
+      throw new Error('Failed to access microphone/camera. Please grant permissions.');
+    }
+  }
+
+  /**
+   * Leave the current voice channel
+   */
+  leaveChannel() {
+    if (!this.currentChannelId) return;
+
+    // Notify server
+    websocketService.send('voice:leave', { channel_id: this.currentChannelId });
+
+    // Close all peer connections
+    this.peerConnections.forEach((pc, userId) => {
+      this.closePeerConnection(userId);
+    });
+    this.peerConnections.clear();
+
+    // Stop local stream
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream = null;
+    }
+
+    // Cleanup audio context
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+    this.audioAnalyzers.clear();
+
+    // Clear state
+    this.participants.clear();
+    this.currentChannelId = null;
+    this.currentUserId = null;
+    this.notifyParticipantUpdate();
+  }
+
+  /**
+   * Get local media stream
+   */
+  getLocalStream(): MediaStream | null {
+    return this.localStream;
+  }
+
+  /**
+   * Toggle mute status
+   */
+  toggleMute(): boolean {
+    if (!this.localStream) return false;
+
+    this.isMuted = !this.isMuted;
+
+    this.localStream.getAudioTracks().forEach(track => {
+      track.enabled = !this.isMuted;
+    });
+
+    // Notify other users
+    if (this.currentChannelId) {
+      websocketService.send('voice:mute', {
+        channel_id: this.currentChannelId,
+        muted: this.isMuted,
+      });
+    }
+
+    return this.isMuted;
+  }
+
+  /**
+   * Toggle video
+   */
+  toggleVideo(): boolean {
+    if (!this.localStream) return false;
+
+    this.isVideoEnabled = !this.isVideoEnabled;
+
+    this.localStream.getVideoTracks().forEach(track => {
+      track.enabled = this.isVideoEnabled;
+    });
+
+    // Notify other users
+    if (this.currentChannelId) {
+      websocketService.send('voice:video-toggle', {
+        channel_id: this.currentChannelId,
+        video_enabled: this.isVideoEnabled,
+      });
+    }
+
+    return this.isVideoEnabled;
+  }
+
+  /**
+   * Get current mute status
+   */
+  isMutedStatus(): boolean {
+    return this.isMuted;
+  }
+
+  /**
+   * Get current video status
+   */
+  isVideoEnabledStatus(): boolean {
+    return this.isVideoEnabled;
+  }
+
+  /**
+   * Setup audio analyzer for speaking detection
+   */
+  private setupAudioAnalyzer() {
+    if (!this.localStream) return;
+
+    this.audioContext = new AudioContext();
+    const source = this.audioContext.createMediaStreamSource(this.localStream);
+    const analyzer = this.audioContext.createAnalyser();
+    analyzer.fftSize = 256;
+    source.connect(analyzer);
+
+    // Store analyzer for this user
+    if (this.currentUserId) {
+      this.audioAnalyzers.set(this.currentUserId, analyzer);
+
+      // Start monitoring audio levels
+      this.monitorAudioLevel(this.currentUserId, analyzer);
+    }
+  }
+
+  /**
+   * Monitor audio level for speaking detection
+   */
+  private monitorAudioLevel(userId: number, analyzer: AnalyserNode) {
+    const bufferLength = analyzer.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const checkAudioLevel = () => {
+      if (!this.audioAnalyzers.has(userId)) return; // Stop if analyzer removed
+
+      analyzer.getByteFrequencyData(dataArray);
+
+      // Calculate average volume
+      const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+      const normalizedLevel = average / 255;
+
+      // Update speaking status (threshold: 0.01)
+      const isSpeaking = !this.isMuted && normalizedLevel > 0.01;
+
+      // Update local participant
+      const participant = this.participants.get(userId);
+      if (participant) {
+        participant.audioLevel = normalizedLevel;
+        participant.isSpeaking = isSpeaking;
+        this.notifyParticipantUpdate();
+      }
+
+      requestAnimationFrame(checkAudioLevel);
+    };
+
+    checkAudioLevel();
+  }
+
+  /**
+   * Create WebRTC peer connection and send offer
+   */
+  private async createOffer(targetUserId: number) {
+    if (!this.localStream || !this.currentChannelId) return;
+
+    const pc = this.createPeerConnection(targetUserId);
+
+    try {
+      // Add local tracks to peer connection
+      this.localStream.getTracks().forEach(track => {
+        pc.addTrack(track, this.localStream!);
+      });
+
+      // Create and send offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      console.log('Sending offer to user:', targetUserId);
+
+      websocketService.send('voice:offer', {
+        channel_id: this.currentChannelId,
+        target_user_id: targetUserId,
+        from_user_id: this.currentUserId,
+        offer: {
+          type: offer.type,
+          sdp: offer.sdp,
+        },
+      });
+    } catch (error) {
+      console.error('Error creating offer:', error);
+    }
+  }
+
+  /**
+   * Handle incoming WebRTC offer
+   */
+  private async handleOffer(payload: any) {
+    const { from_user_id, offer } = payload;
+
+    if (!this.localStream || !this.currentChannelId) return;
+
+    const pc = this.createPeerConnection(from_user_id);
+
+    try {
+      // Add local tracks
+      this.localStream.getTracks().forEach(track => {
+        pc.addTrack(track, this.localStream!);
+      });
+
+      // Set remote description
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+      // Create and send answer
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      console.log('Sending answer to user:', from_user_id);
+
+      websocketService.send('voice:answer', {
+        channel_id: this.currentChannelId,
+        target_user_id: from_user_id,
+        from_user_id: this.currentUserId,
+        answer: {
+          type: answer.type,
+          sdp: answer.sdp,
+        },
+      });
+    } catch (error) {
+      console.error('Error handling offer:', error);
+    }
+  }
+
+  /**
+   * Handle incoming WebRTC answer
+   */
+  private async handleAnswer(payload: any) {
+    const { from_user_id, answer } = payload;
+
+    const pc = this.peerConnections.get(from_user_id);
+    if (!pc) {
+      console.error('No peer connection found for user:', from_user_id);
+      return;
+    }
+
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      console.log('Set remote description from answer');
+    } catch (error) {
+      console.error('Error handling answer:', error);
+    }
+  }
+
+  /**
+   * Handle incoming ICE candidate
+   */
+  private async handleIceCandidate(payload: any) {
+    const { from_user_id, candidate } = payload;
+
+    const pc = this.peerConnections.get(from_user_id);
+    if (!pc) {
+      console.error('No peer connection found for user:', from_user_id);
+      return;
+    }
+
+    try {
+      if (candidate) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    } catch (error) {
+      console.error('Error adding ICE candidate:', error);
+    }
+  }
+
+  /**
+   * Create RTCPeerConnection for a specific user
+   */
+  private createPeerConnection(userId: number): RTCPeerConnection {
+    // Check if connection already exists
+    if (this.peerConnections.has(userId)) {
+      return this.peerConnections.get(userId)!;
+    }
+
+    const pc = new RTCPeerConnection({
+      iceServers: this.config.iceServers,
+    });
+
+    // Handle ICE candidates
+    pc.onicecandidate = (event) => {
+      if (event.candidate && this.currentChannelId) {
+        websocketService.send('voice:ice-candidate', {
+          channel_id: this.currentChannelId,
+          target_user_id: userId,
+          from_user_id: this.currentUserId,
+          candidate: event.candidate.toJSON(),
+        });
+      }
+    };
+
+    // Handle incoming remote stream
+    pc.ontrack = (event) => {
+      console.log('Received remote track from user:', userId);
+
+      const stream = event.streams[0];
+
+      // Update participant stream
+      const participant = this.participants.get(userId);
+      if (participant) {
+        participant.stream = stream;
+        this.notifyParticipantUpdate();
+      }
+
+      // Notify callback
+      if (this.onRemoteStreamCallback) {
+        this.onRemoteStreamCallback(userId, stream);
+      }
+
+      // Setup audio analysis for remote stream
+      this.setupRemoteAudioAnalyzer(userId, stream);
+    };
+
+    // Handle connection state changes
+    pc.onconnectionstatechange = () => {
+      console.log(`Connection state with user ${userId}:`, pc.connectionState);
+
+      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+        this.closePeerConnection(userId);
+      }
+    };
+
+    this.peerConnections.set(userId, pc);
+    return pc;
+  }
+
+  /**
+   * Setup audio analyzer for remote stream
+   */
+  private setupRemoteAudioAnalyzer(userId: number, stream: MediaStream) {
+    if (!this.audioContext) {
+      this.audioContext = new AudioContext();
+    }
+
+    const source = this.audioContext.createMediaStreamSource(stream);
+    const analyzer = this.audioContext.createAnalyser();
+    analyzer.fftSize = 256;
+    source.connect(analyzer);
+
+    this.audioAnalyzers.set(userId, analyzer);
+    this.monitorAudioLevel(userId, analyzer);
+  }
+
+  /**
+   * Close peer connection
+   */
+  private closePeerConnection(userId: number) {
+    const pc = this.peerConnections.get(userId);
+    if (pc) {
+      pc.close();
+      this.peerConnections.delete(userId);
+    }
+
+    this.audioAnalyzers.delete(userId);
+  }
+
+  /**
+   * Register callback for participant updates
+   */
+  onParticipantUpdate(callback: (participants: VoiceParticipant[]) => void) {
+    this.onParticipantUpdateCallback = callback;
+  }
+
+  /**
+   * Register callback for remote streams
+   */
+  onRemoteStream(callback: (userId: number, stream: MediaStream) => void) {
+    this.onRemoteStreamCallback = callback;
+  }
+
+  /**
+   * Get current participants
+   */
+  getParticipants(): VoiceParticipant[] {
+    return Array.from(this.participants.values());
+  }
+
+  /**
+   * Notify participant update
+   */
+  private notifyParticipantUpdate() {
+    if (this.onParticipantUpdateCallback) {
+      this.onParticipantUpdateCallback(this.getParticipants());
+    }
+  }
+}
+
+// Export singleton instance
+export const webrtcService = new WebRTCService();
+
+export default webrtcService;

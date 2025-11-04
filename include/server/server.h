@@ -330,6 +330,12 @@ private:
     int server_socket_;
 
 
+
+    // Voice channel state tracking: channel_id -> set of user_ids
+    mutable std::mutex voice_channels_mutex_;
+    std::map<int, std::set<int>> voice_channel_participants_;
+
+
     
 
 
@@ -570,6 +576,27 @@ private:
 
 
     void handleTypingIndicator(int user_id, const WebSocketMessage& message);
+
+
+    void handleVoiceJoin(int user_id, const WebSocketMessage& message);
+
+
+    void handleVoiceLeave(int user_id, const WebSocketMessage& message);
+
+
+    void handleVoiceOffer(int user_id, const WebSocketMessage& message);
+
+
+    void handleVoiceAnswer(int user_id, const WebSocketMessage& message);
+
+
+    void handleVoiceIceCandidate(int user_id, const WebSocketMessage& message);
+
+
+    void handleVoiceMute(int user_id, const WebSocketMessage& message);
+
+
+    void handleVoiceVideoToggle(int user_id, const WebSocketMessage& message);
 
 
     
