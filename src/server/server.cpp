@@ -2220,17 +2220,17 @@ HttpResponse AcademicSocialServer::handleGetOrganizations(const HttpRequest& req
     if (user_id < 0) {
         return createErrorResponse(401, "Unauthorized");
     }
-    
+
     std::vector<Organization> orgs = organization_repository_->findAll();
-    
+
     std::ostringstream oss;
-    oss << "[";
+    oss << "{\"organizations\":[";
     for (size_t i = 0; i < orgs.size(); ++i) {
         if (i > 0) oss << ",";
         oss << orgs[i].toJson();
     }
-    oss << "]";
-    
+    oss << "],\"total\":" << orgs.size() << "}";
+
     return createJsonResponse(200, oss.str());
 }
 
