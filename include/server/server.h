@@ -598,6 +598,8 @@ private:
 
     void handleVoiceVideoToggle(int user_id, const WebSocketMessage& message);
 
+    void handleUserDisconnect(int user_id);
+
 
     
 

@@ -2657,6 +2657,12 @@ void AcademicSocialServer::setupWebSocketHandlers() {
         [this](int user_id, const WebSocketMessage& message) {
             handleVoiceVideoToggle(user_id, message);
         });
+
+    // Register disconnect handler to cleanup voice sessions
+    websocket_server_->registerDisconnectHandler(
+        [this](int user_id) {
+            handleUserDisconnect(user_id);
+        });
 }
 
 void AcademicSocialServer::handleChatMessage(int user_id, const WebSocketMessage& message) {
@@ -3080,6 +3086,54 @@ void AcademicSocialServer::handleVoiceVideoToggle(int user_id, const WebSocketMe
 
     WebSocketMessage video_msg("voice:user-video-toggled", video_json.str());
     websocket_server_->sendToUsers(participants, video_msg);
+}
+
+void AcademicSocialServer::handleUserDisconnect(int user_id) {
+    std::cout << "Cleaning up voice sessions for disconnected user: " << user_id << std::endl;
+
+    // Find all channels the user was in
+    std::vector<int> channels_to_notify;
+    {
+        std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+        for (auto& [channel_id, participants] : voice_channel_participants_) {
+            if (participants.find(user_id) != participants.end()) {
+                channels_to_notify.push_back(channel_id);
+                participants.erase(user_id);
+
+                // Clean up empty channels
+                if (participants.empty()) {
+                    voice_channel_participants_.erase(channel_id);
+                }
+            }
+        }
+    }
+
+    // Notify other users in those channels that this user left
+    for (int channel_id : channels_to_notify) {
+        std::set<int> remaining_participants;
+        {
+            std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+            auto it = voice_channel_participants_.find(channel_id);
+            if (it != voice_channel_participants_.end()) {
+                remaining_participants = it->second;
+            }
+        }
+
+        std::ostringstream leave_json;
+        leave_json << "{\"channel_id\":" << channel_id
+                   << ",\"user_id\":" << user_id << "}";
+
+        WebSocketMessage leave_msg("voice:user-left", leave_json.str());
+        websocket_server_->sendToUsers(remaining_participants, leave_msg);
+
+        std::cout << "Notified channel " << channel_id << " that user " << user_id << " left" << std::endl;
+    }
+
+    // End all active voice sessions in the database
+    if (voice_channel_repository_) {
+        int sessions_ended = voice_channel_repository_->endAllUserSessions(user_id);
+        std::cout << "Ended " << sessions_ended << " voice session(s) for user " << user_id << std::endl;
+    }
 }
 
 // Voice/Murmur handler implementations
