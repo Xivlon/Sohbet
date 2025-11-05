@@ -1,17 +1,31 @@
-import { getRequestConfig } from 'next-intl/server';
-import { notFound } from 'next/navigation';
+import createNextIntlMiddleware from 'next-intl/middleware';
+import { locales, localePrefix } from './i18n';
 
-// Can be imported from a shared config
-export const locales = ['en', 'tr'] as const;
-export type Locale = (typeof locales)[number];
+export const proxy = createNextIntlMiddleware({
+  // A list of all locales that are supported
+  locales,
 
-export const localePrefix = 'always'; // Or 'as-needed' or 'never'
+  // Used when no locale matches
+  defaultLocale: 'en',
 
-export default getRequestConfig(async ({ locale }) => {
-  // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) notFound();
-
-  return {
-    messages: (await import(`../messages/${locale}.json`)).default
-  };
+  // The locale prefixing strategy
+  localePrefix,
 });
+
+export const config = {
+  // Match all pathnames except for
+  // - … if they start with `/api`, `/_next` or `/_vercel`
+  // - … the ones containing a dot (e.g. `favicon.ico`)
+  matcher: [
+    // Enable a redirect to a matching locale at the root
+    '/',
+
+    // Set a cookie to remember the previous locale for
+    // all requests that have a locale prefix
+    '/(tr|en)/:path*',
+
+    // Enable redirects that add a locale prefix
+    // (e.g. `/pathnames` -> `/en/pathnames`)
+    '/((?!_next|_vercel|.*\\..*).*)'
+  ]
+};
