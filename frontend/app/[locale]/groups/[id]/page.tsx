@@ -8,6 +8,7 @@ import { Button } from "@/app/components/ui/button"
 import { Skeleton } from "@/app/components/ui/skeleton"
 import { ArrowLeft, Users, Lock, Globe, Home } from "lucide-react"
 import { Badge } from "@/app/components/ui/badge"
+import { Header } from "@/app/components/header"
 import { GroupAnnouncements } from "@/app/components/group-announcements"
 import { GroupCloudAccess } from "@/app/components/group-cloud-access"
 import { apiClient, Group } from "@/app/lib/api-client"
@@ -22,6 +23,33 @@ export default function GroupDetailPage() {
   const [group, setGroup] = useState<Group | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  useEffect(() => {
+    // Check for dark mode preference
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('darkMode')
+      if (stored !== null) {
+        setIsDarkMode(stored === 'true')
+      } else {
+        setIsDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    // Apply dark mode class
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+    localStorage.setItem('darkMode', String(isDarkMode))
+  }, [isDarkMode])
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode)
+  }
 
   useEffect(() => {
     if (groupId) {
@@ -113,103 +141,112 @@ export default function GroupDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8 px-4">
-        <Skeleton className="h-8 w-64 mb-4" />
-        <Skeleton className="h-24 w-full mb-6" />
-        <Skeleton className="h-96 w-full" />
+      <div className="flex flex-col min-h-screen bg-background">
+        <Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+        <div className="container mx-auto py-8 px-4">
+          <Skeleton className="h-8 w-64 mb-4" />
+          <Skeleton className="h-24 w-full mb-6" />
+          <Skeleton className="h-96 w-full" />
+        </div>
       </div>
     )
   }
 
   if (error || !group) {
     return (
-      <div className="container mx-auto py-8 px-4">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-destructive mb-4">{error || "Group not found"}</p>
-            <div className="flex gap-2 justify-center">
-              <Button asChild variant="outline">
-                <Link href={`/${locale}`}>
-                  <Home className="h-4 w-4 mr-2" />
-                  Home
-                </Link>
-              </Button>
-              <Button asChild>
-                <Link href={`/${locale}/groups`}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Groups
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col min-h-screen bg-background">
+        <Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+        <div className="container mx-auto py-8 px-4">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-destructive mb-4">{error || "Group not found"}</p>
+              <div className="flex gap-2 justify-center">
+                <Button asChild variant="outline">
+                  <Link href={`/${locale}`}>
+                    <Home className="h-4 w-4 mr-2" />
+                    Home
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link href={`/${locale}/groups`}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Groups
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-6">
-        <div className="flex gap-2 mb-4">
-          <Button variant="ghost" asChild>
-            <Link href={`/${locale}`}>
-              <Home className="h-4 w-4 mr-2" />
-              Home
-            </Link>
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link href={`/${locale}/groups`}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Groups
-            </Link>
-          </Button>
-        </div>
+    <div className="flex flex-col min-h-screen bg-background">
+      <Header isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-6">
+          <div className="flex gap-2 mb-4">
+            <Button variant="ghost" asChild>
+              <Link href={`/${locale}`}>
+                <Home className="h-4 w-4 mr-2" />
+                Home
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href={`/${locale}/groups`}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Groups
+              </Link>
+            </Button>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-3xl">{group.name}</CardTitle>
-                <CardDescription className="mt-2 text-base">
-                  {group.description}
-                </CardDescription>
-                <div className="flex items-center gap-2 mt-4">
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    {getPrivacyIcon()}
-                    <span>{getPrivacyLabel()}</span>
-                  </Badge>
-                  {group.member_count !== undefined && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      <span>{group.member_count} members</span>
+          <Card>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-3xl">{group.name}</CardTitle>
+                  <CardDescription className="mt-2 text-base">
+                    {group.description}
+                  </CardDescription>
+                  <div className="flex items-center gap-2 mt-4">
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      {getPrivacyIcon()}
+                      <span>{getPrivacyLabel()}</span>
                     </Badge>
-                  )}
-                  {group.user_role && (
-                    <Badge variant="default" className="capitalize">
-                      {group.user_role}
-                    </Badge>
-                  )}
+                    {group.member_count !== undefined && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>{group.member_count} members</span>
+                      </Badge>
+                    )}
+                    {group.user_role && (
+                      <Badge variant="default" className="capitalize">
+                        {group.user_role}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardHeader>
-        </Card>
+            </CardHeader>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="announcements" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="announcements">Announcements</TabsTrigger>
+            <TabsTrigger value="cloud">Cloud Access</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="announcements" className="mt-6">
+            <GroupAnnouncements groupId={groupId} userRole={group.user_role} />
+          </TabsContent>
+
+          <TabsContent value="cloud" className="mt-6">
+            <GroupCloudAccess groupId={groupId} userRole={group.user_role} />
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <Tabs defaultValue="announcements" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="announcements">Announcements</TabsTrigger>
-          <TabsTrigger value="cloud">Cloud Access</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="announcements" className="mt-6">
-          <GroupAnnouncements groupId={groupId} userRole={group.user_role} />
-        </TabsContent>
-
-        <TabsContent value="cloud" className="mt-6">
-          <GroupCloudAccess groupId={groupId} userRole={group.user_role} />
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }
