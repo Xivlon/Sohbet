@@ -471,12 +471,15 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
     if (request.body.length() > 0) {
         std::cerr << "  Body content (first 200 chars): " << request.body.substr(0, 200) << std::endl;
     }
-    
-    int author_id = getUserIdFromAuth(request);
-    // Status endpoint
+
+    // Status endpoint - no authentication required for health checks
     if (request.method == "GET" && base_path == "/api/status") {
         return handleStatus(request);
-    } else if (request.method == "GET" && base_path == "/api/users") {
+    }
+
+    int author_id = getUserIdFromAuth(request);
+
+    if (request.method == "GET" && base_path == "/api/users") {
         return handleGetUsers(request);
     } else if (request.method == "GET" && base_path == "/api/users/demo") {
         return handleUsersDemo(request);
