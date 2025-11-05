@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import createIntlMiddleware from 'next-intl/middleware';
-import { locales } from './i18n';
+import { locales, localePrefix } from './i18n';
 
-// Create the i18n middleware
-const intlMiddleware = createIntlMiddleware({
+// Create the i18n proxy
+const intlProxy = createIntlMiddleware({
   locales,
   defaultLocale: 'en',
   localeDetection: true,
-  localePrefix: 'always'
+  localePrefix
 });
 
 /**
@@ -56,7 +56,7 @@ export function proxy(request: NextRequest) {
   }
 
   // Handle i18n routing
-  return intlMiddleware(request);
+  return intlProxy(request);
 }
 
 export const config = {
