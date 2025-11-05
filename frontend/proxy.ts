@@ -6,9 +6,9 @@ import { locales } from './i18n';
 // Create the i18n middleware
 const intlMiddleware = createIntlMiddleware({
   locales,
-  defaultLocale: 'tr',
+  defaultLocale: 'en',
   localeDetection: true,
-  localePrefix: 'as-needed'
+  localePrefix: 'always'
 });
 
 /**
