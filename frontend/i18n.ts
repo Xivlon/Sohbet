@@ -4,15 +4,14 @@ import { notFound } from 'next/navigation';
 // Can be imported from a shared config
 export const locales = ['en', 'tr'] as const;
 export type Locale = (typeof locales)[number];
+
 export const localePrefix = 'always'; // Or 'as-needed' or 'never'
 
 export default getRequestConfig(async ({ locale }) => {
   // Validate that the incoming `locale` parameter is valid
-  const validLocale = locale as string;
-  if (!locales.includes(validLocale as Locale)) notFound();
+  if (!locales.includes(locale as any)) notFound();
 
   return {
-    locale: validLocale,
-    messages: (await import(`./messages/${validLocale}.json`)).default
+    messages: (await import(`../messages/${locale}.json`)).default
   };
 });
