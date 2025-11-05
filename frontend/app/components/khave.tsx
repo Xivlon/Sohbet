@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Mic, MicOff, PhoneOff, Volume2, Settings, Plus, Video, VideoOff } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
@@ -20,6 +21,8 @@ interface Participant {
 }
 
 export function Khave() {
+  const t = useTranslations('khave');
+  const tCommon = useTranslations('common');
   const { user } = useAuth();
   const [channels, setChannels] = useState<VoiceChannel[]>([]);
   const [currentChannel, setCurrentChannel] = useState<VoiceChannel | null>(null);
@@ -197,12 +200,12 @@ export function Khave() {
         <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 p-4 -mx-4 mb-4 border-b border-border">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-primary">Khave - Sesli Sohbet</h2>
-              <p className="text-muted-foreground text-sm">Gerçek zamanlı sesli tartışma odaları</p>
+              <h2 className="text-primary">Khave - {t('voiceChat')}</h2>
+              <p className="text-muted-foreground text-sm">{t('activeRooms')}</p>
             </div>
             <Button onClick={() => setShowCreateChannel(!showCreateChannel)} size="sm">
               <Plus className="w-4 h-4 mr-2" />
-              Yeni Oda
+              {t('createRoom')}
             </Button>
           </div>
         </div>
@@ -211,29 +214,29 @@ export function Khave() {
         {showCreateChannel && (
           <Card className="mb-6">
             <CardHeader>
-              <h3>Yeni Sesli Oda Oluştur</h3>
+              <h3>{t('createRoom')}</h3>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-muted-foreground">Oda Adı</label>
+                  <label className="text-sm text-muted-foreground">{t('roomName')}</label>
                   <input
                     type="text"
                     value={newChannelName}
                     onChange={(e) => setNewChannelName(e.target.value)}
                     className="w-full p-2 border rounded mt-1"
-                    placeholder="Oda adını girin..."
+                    placeholder={t('enterRoomName')}
                   />
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={createChannel} disabled={!newChannelName.trim()}>
-                    Oluştur
+                    {tCommon('create')}
                   </Button>
                   <Button variant="outline" onClick={() => {
                     setShowCreateChannel(false);
                     setNewChannelName('');
                   }}>
-                    İptal
+                    {tCommon('cancel')}
                   </Button>
                 </div>
               </div>
@@ -261,11 +264,11 @@ export function Khave() {
                     {currentChannel.name}
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    {currentChannel.active_users} kullanıcı aktif
+                    {currentChannel.active_users} {t('participants').toLowerCase()}
                   </p>
                 </div>
                 <Badge variant="secondary">
-                  {currentChannel.active_users} kişi
+                  {currentChannel.active_users} {t('participants').toLowerCase()}
                 </Badge>
               </div>
             </CardHeader>
@@ -280,7 +283,7 @@ export function Khave() {
                     playsInline
                     className="w-full rounded-lg border"
                   />
-                  <p className="text-xs text-muted-foreground text-center mt-1">Your video</p>
+                  <p className="text-xs text-muted-foreground text-center mt-1">Video</p>
                 </div>
               )}
 
@@ -305,8 +308,8 @@ export function Khave() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{user.username} (You)</div>
-                      <div className="text-xs text-muted-foreground">{user.university || 'Unknown'}</div>
+                      <div className="font-medium text-sm truncate">{user.username}</div>
+                      <div className="text-xs text-muted-foreground">{user.university}</div>
                     </div>
                   </div>
                 )}
@@ -329,14 +332,14 @@ export function Khave() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">{participant.username}</div>
-                      <div className="text-xs text-muted-foreground">{participant.university || 'Unknown'}</div>
+                      <div className="text-xs text-muted-foreground">{participant.university}</div>
                     </div>
                   </div>
                 ))}
 
                 {participants.length === 0 && !user && (
                   <div className="col-span-2 text-center text-muted-foreground py-4">
-                    No participants in this channel yet
+                    {t('participants')}
                   </div>
                 )}
               </div>
@@ -349,7 +352,7 @@ export function Khave() {
                     size="lg"
                     onClick={toggleMute}
                     className="w-12 h-12 rounded-full"
-                    title={isMuted ? "Unmute" : "Mute"}
+                    title={isMuted ? t('unmute') : t('mute')}
                   >
                     {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                   </Button>
@@ -359,12 +362,12 @@ export function Khave() {
                     size="lg"
                     onClick={toggleVideo}
                     className="w-12 h-12 rounded-full"
-                    title={isVideoEnabled ? "Disable video" : "Enable video"}
+                    title={isVideoEnabled ? t('stopSharing') : t('shareScreen')}
                   >
                     {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
                   </Button>
 
-                  <Button variant="secondary" size="lg" className="w-12 h-12 rounded-full" title="Settings">
+                  <Button variant="secondary" size="lg" className="w-12 h-12 rounded-full" title={t('roomSettings')}>
                     <Settings className="w-5 h-5" />
                   </Button>
 
@@ -373,7 +376,7 @@ export function Khave() {
                     size="lg"
                     onClick={leaveChannel}
                     className="w-12 h-12 rounded-full"
-                    title="Leave channel"
+                    title={t('leaveRoom')}
                   >
                     <PhoneOff className="w-5 h-5" />
                   </Button>
@@ -400,11 +403,11 @@ export function Khave() {
         {/* Channel List */}
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Odalar yükleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">{tCommon('loading')}...</div>
           ) : channels.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-center text-muted-foreground">
-                <p>Henüz sesli oda yok. Yeni bir oda oluşturun!</p>
+                <p>{t('createRoom')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -423,16 +426,16 @@ export function Khave() {
                   <CardContent className="pt-0">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Katılımcı:</span>
-                        <span>{channel.active_users} kişi</span>
+                        <span className="text-muted-foreground">{t('participants')}:</span>
+                        <span>{channel.active_users} {t('participants').toLowerCase()}</span>
                       </div>
                     </div>
-                    <Button 
-                      className="w-full mt-4" 
+                    <Button
+                      className="w-full mt-4"
                       disabled={currentChannel?.id === channel.id}
                       onClick={() => joinChannel(channel)}
                     >
-                      {currentChannel?.id === channel.id ? 'Bağlısın' : 'Katıl'}
+                      {currentChannel?.id === channel.id ? t('leaveRoom') : t('joinRoom')}
                     </Button>
                   </CardContent>
                 </Card>

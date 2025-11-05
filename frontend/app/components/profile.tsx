@@ -1,10 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../contexts/auth-context';
 import { apiClient } from '../lib/api-client';
 import { User as UserIcon, Mail, Building2, BookOpen, GraduationCap, Phone, MapPin, Edit2, Save, X } from 'lucide-react';
 
 export function Profile() {
+  const t = useTranslations('profile');
+  const tCommon = useTranslations('common');
+  const tAuth = useTranslations('auth');
   const { user, isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,17 +56,17 @@ export function Profile() {
       const response = await apiClient.updateUser(user.id, formData);
 
       if (response.error) {
-        setError(response.error || 'Profil güncellenemedi');
+        setError(response.error || t('profileUpdateError'));
         return;
       }
 
       if (response.data) {
         apiClient.setUser(response.data);
-        setSuccess('Profil başarıyla güncellendi!');
+        setSuccess(t('profileUpdated'));
         setIsEditing(false);
       }
     } catch {
-      setError('Bir hata oluştu');
+      setError(tCommon('error'));
     } finally {
       setSaving(false);
     }
@@ -94,7 +98,7 @@ export function Profile() {
   if (!user) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Kullanıcı bulunamadı</p>
+        <p className="text-gray-500">{t('userNotFound')}</p>
       </div>
     );
   }
@@ -125,7 +129,7 @@ export function Profile() {
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-md transition"
                 >
                   <Edit2 className="w-4 h-4" />
-                  Profili Düzenle
+                  {t('editProfile')}
                 </button>
               )}
             </div>
@@ -146,7 +150,7 @@ export function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   <Mail className="w-4 h-4 inline mr-2" />
-                  E-posta
+                  {tAuth('email')}
                 </label>
                 <div className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white">
                   {user.email}
@@ -156,7 +160,7 @@ export function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   <UserIcon className="w-4 h-4 inline mr-2" />
-                  Ad Soyad
+                  {tAuth('firstName')} {tAuth('lastName')}
                 </label>
                 {isEditing ? (
                   <input
@@ -164,7 +168,7 @@ export function Profile() {
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Ad Soyad"
+                    placeholder={`${tAuth('firstName')} ${tAuth('lastName')}`}
                   />
                 ) : (
                   <div className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white">
@@ -221,7 +225,7 @@ export function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   <Building2 className="w-4 h-4 inline mr-2" />
-                  Üniversite
+                  {tAuth('university')}
                 </label>
                 {isEditing ? (
                   <input
@@ -229,7 +233,7 @@ export function Profile() {
                     value={formData.university}
                     onChange={(e) => handleInputChange('university', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="İstanbul Teknik Üniversitesi"
+                    placeholder={tAuth('university')}
                   />
                 ) : (
                   <div className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white">
@@ -241,7 +245,7 @@ export function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                   <BookOpen className="w-4 h-4 inline mr-2" />
-                  Bölüm
+                  {tAuth('department')}
                 </label>
                 {isEditing ? (
                   <input
@@ -249,7 +253,7 @@ export function Profile() {
                     value={formData.department}
                     onChange={(e) => handleInputChange('department', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Bilgisayar Mühendisliği"
+                    placeholder={tAuth('department')}
                   />
                 ) : (
                   <div className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white">
@@ -289,7 +293,7 @@ export function Profile() {
                     value={formData.primary_language}
                     onChange={(e) => handleInputChange('primary_language', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Türkçe"
+                    placeholder="Ana Dil"
                   />
                 ) : (
                   <div className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white">
@@ -307,7 +311,7 @@ export function Profile() {
                   className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50"
                 >
                   <X className="w-4 h-4" />
-                  İptal
+                  {tCommon('cancel')}
                 </button>
                 <button
                   onClick={handleSave}
@@ -315,7 +319,7 @@ export function Profile() {
                   className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-md transition disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
-                  {saving ? 'Kaydediliyor...' : 'Kaydet'}
+                  {saving ? tCommon('loading') : tCommon('save')}
                 </button>
               </div>
             )}

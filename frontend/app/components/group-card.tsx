@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslations } from "next-intl"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Users, Lock, Globe, Settings } from "lucide-react"
@@ -23,9 +24,13 @@ interface GroupCardProps {
 }
 
 export function GroupCard({ group, currentUserId, onJoin, onManage, onView }: GroupCardProps) {
+  const t = useTranslations('groups')
+  const tCommon = useTranslations('common')
+  const tPub = useTranslations('publications')
+
   const [isJoining, setIsJoining] = useState(false)
   const isMember = group.user_role !== undefined && group.user_role !== null
-  const canManage = group.user_role === 'admin' || group.user_role === 'moderator' || 
+  const canManage = group.user_role === 'admin' || group.user_role === 'moderator' ||
     (group.creator_id && group.creator_id === currentUserId) ||
     (group.created_by && group.created_by === currentUserId)
 
@@ -56,13 +61,13 @@ export function GroupCard({ group, currentUserId, onJoin, onManage, onView }: Gr
   const getPrivacyLabel = () => {
     switch (group.privacy) {
       case PRIVACY.PUBLIC:
-        return 'Public'
+        return t('publicGroup')
       case PRIVACY.PRIVATE:
-        return 'Private'
+        return t('privateGroup')
       case PRIVACY.INVITE_ONLY:
-        return 'Invite Only'
+        return t('requestToJoin')
       default:
-        return 'Private'
+        return t('privateGroup')
     }
   }
 
@@ -80,7 +85,7 @@ export function GroupCard({ group, currentUserId, onJoin, onManage, onView }: Gr
               {group.member_count !== undefined && (
                 <Badge variant="outline" className="flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  <span>{group.member_count} members</span>
+                  <span>{group.member_count} {t('members')}</span>
                 </Badge>
               )}
             </div>
@@ -106,7 +111,7 @@ export function GroupCard({ group, currentUserId, onJoin, onManage, onView }: Gr
             disabled={isJoining || group.privacy === PRIVACY.INVITE_ONLY}
             className="w-full"
           >
-            {isJoining ? 'Joining...' : group.privacy === PRIVACY.INVITE_ONLY ? 'Invite Required' : 'Join Group'}
+            {isJoining ? tCommon('processing') : group.privacy === PRIVACY.INVITE_ONLY ? t('requestToJoin') : t('joinGroup')}
           </Button>
         ) : (
           <Button
@@ -114,7 +119,7 @@ export function GroupCard({ group, currentUserId, onJoin, onManage, onView }: Gr
             onClick={() => onView?.(group.id)}
             className="w-full"
           >
-            View Group
+            {tPub('view')}
           </Button>
         )}
       </CardFooter>
