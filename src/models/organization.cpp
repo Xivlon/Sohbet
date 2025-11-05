@@ -14,7 +14,7 @@ std::string Organization::toJson() const {
     }
     oss << "\"name\":\"" << name_ << "\",";
     oss << "\"type\":\"" << type_ << "\",";
-    oss << "\"category\":\"" << type_ << "\"";
+    oss << "\"category\":\"" << type_ << "\"";  // Frontend expects 'category'
     if (description_) {
         oss << ",\"description\":\"" << *description_ << "\"";
     }

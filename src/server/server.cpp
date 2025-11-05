@@ -2224,7 +2224,27 @@ HttpResponse AcademicSocialServer::handleGetOrganizations(const HttpRequest& req
         return createErrorResponse(401, "Unauthorized");
     }
 
-    std::vector<Organization> orgs = organization_repository_->findAll();
+    // Parse pagination parameters
+    int limit = 100;
+    int offset = 0;
+
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::smatch match;
+
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
+    }
+    if (std::regex_search(request.path, match, offset_regex)) {
+        offset = std::stoi(match[1].str());
+    }
+
+    std::vector<Organization> orgs = organization_repository_->findAll(limit, offset);
+
+    // Count total organizations for pagination
+    // For now, return the size of current result
+    // In production, you'd want a separate count query
+    int total = orgs.size();
 
     std::ostringstream oss;
     oss << "{\"organizations\":[";
