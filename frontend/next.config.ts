@@ -5,6 +5,13 @@ const withNextIntl = createNextIntlPlugin('./i18n.ts');
 
 const nextConfig: NextConfig = {
   /* config options here */
+
+  // Disable source maps in production to avoid 404 errors
+  productionBrowserSourceMaps: false,
+
+  // React optimization
+  reactStrictMode: true,
+
   // Handle browser extension source map requests gracefully
   async headers() {
     return [
@@ -16,6 +23,11 @@ const nextConfig: NextConfig = {
             // Prevent browser from showing source map errors for extension scripts
             key: 'X-SourceMap',
             value: 'none',
+          },
+          {
+            // Security header
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
           },
         ],
       },
@@ -35,6 +47,15 @@ const nextConfig: NextConfig = {
         },
       ],
     };
+  },
+
+  // Webpack configuration for additional source map control
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && !isServer) {
+      // Disable source maps in production client builds
+      config.devtool = false;
+    }
+    return config;
   },
 };
 
