@@ -1,26 +1,29 @@
 "use client";
 import { Home, Globe, Mic, BookOpen, MessageCircle, User, Users, Building2 } from 'lucide-react';
-import { ActiveSection } from '../page';
+import { ActiveSection } from '../[locale]/page';
 import { useIsMobile } from './use-mobile';
+import { useTranslations } from 'next-intl';
 
 interface SidebarProps {
   activeSection: ActiveSection;
   onSectionChange: (section: ActiveSection) => void;
 }
 
-const navigationItems = [
-  { id: 'main' as const, label: 'Ana Sayfa', icon: Home, description: 'Kişiselleştirilmiş akış' },
-  { id: 'global' as const, label: 'Global', icon: Globe, description: 'Diğer üniversiteler' },
-  { id: 'groups' as const, label: 'Gruplar', icon: Users, description: 'Akademik gruplar' },
-  { id: 'organizations' as const, label: 'Organizasyonlar', icon: Building2, description: 'Kulüpler ve topluluklar' },
-  { id: 'khave' as const, label: 'Khave', icon: Mic, description: 'Sesli sohbet' },
-  { id: 'publications' as const, label: 'Yayınlar', icon: BookOpen, description: 'Akademik makaleler' },
-  { id: 'muhabbet' as const, label: 'Muhabbet', icon: MessageCircle, description: 'Özel sohbetler' },
-  { id: 'profile' as const, label: 'Profil', icon: User, description: 'Profil ayarları' },
+const getNavigationItems = (t: any) => [
+  { id: 'main' as const, label: t('home'), icon: Home, description: t('homeDescription') },
+  { id: 'global' as const, label: t('global'), icon: Globe, description: t('globalDescription') },
+  { id: 'groups' as const, label: t('groups'), icon: Users, description: t('groupsDescription') },
+  { id: 'organizations' as const, label: t('organizations'), icon: Building2, description: t('organizationsDescription') },
+  { id: 'khave' as const, label: t('khave'), icon: Mic, description: t('khaveDescription') },
+  { id: 'publications' as const, label: t('publications'), icon: BookOpen, description: t('publicationsDescription') },
+  { id: 'muhabbet' as const, label: t('muhabbet'), icon: MessageCircle, description: t('muhabbetDescription') },
+  { id: 'profile' as const, label: t('profile'), icon: User, description: t('profileDescription') },
 ];
 
 export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
+  const t = useTranslations('sidebar');
   const isMobile = useIsMobile();
+  const navigationItems = getNavigationItems(t);
 
   if (isMobile) {
     return (
@@ -56,8 +59,8 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
   return (
     <aside className="w-64 bg-white dark:bg-card border-r border-border/50 flex flex-col">
       <div className="p-6">
-        <h2 className="text-lg font-semibold text-primary mb-1">Navigasyon</h2>
-        <p className="text-sm text-muted-foreground">Bölümler arası geçiş</p>
+        <h2 className="text-lg font-semibold text-primary mb-1">{t('navigation')}</h2>
+        <p className="text-sm text-muted-foreground">{t('departmentSwitch')}</p>
       </div>
       <nav className="flex-1 px-3 space-y-1">
         {navigationItems.map((item) => {

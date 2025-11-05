@@ -5,6 +5,8 @@ import { Button } from './ui/button';
 import { useIsMobile } from './use-mobile';
 import { useAuth } from '../contexts/auth-context';
 import { AuthModal } from './auth-modal';
+import { LanguageSwitcher } from './language-switcher';
+import { useTranslations } from 'next-intl';
 
 interface HeaderProps {
   isDarkMode: boolean;
@@ -12,6 +14,7 @@ interface HeaderProps {
 }
 
 export function Header({ isDarkMode, onToggleDarkMode }: HeaderProps) {
+  const t = useTranslations('header');
   const isMobile = useIsMobile();
   const { user, isAuthenticated, logout } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -22,14 +25,15 @@ export function Header({ isDarkMode, onToggleDarkMode }: HeaderProps) {
         <div className={`flex items-center justify-between ${isMobile ? 'h-14 px-4' : 'h-16 px-6'}`}>
           <div className="flex items-center gap-2">
             <h1 className={`text-primary font-semibold ${isMobile ? 'text-lg' : 'text-2xl'}`}>
-              Sohbet
+              {t('title')}
             </h1>
             {!isMobile && (
-              <span className="text-sm text-muted-foreground ml-2">Akademik Sosyal Platform</span>
+              <span className="text-sm text-muted-foreground ml-2">{t('subtitle')}</span>
             )}
           </div>
           
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             {isAuthenticated && user ? (
               <>
                 {!isMobile && (
@@ -45,7 +49,7 @@ export function Header({ isDarkMode, onToggleDarkMode }: HeaderProps) {
                   className="text-primary hover:bg-accent"
                 >
                   <LogOut className={isMobile ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'} />
-                  {isMobile ? '' : 'Çıkış'}
+                  {isMobile ? '' : t('logout')}
                 </Button>
               </>
             ) : (
@@ -56,7 +60,7 @@ export function Header({ isDarkMode, onToggleDarkMode }: HeaderProps) {
                 className="text-primary hover:bg-accent"
               >
                 <LogIn className={isMobile ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'} />
-                {isMobile ? '' : 'Giriş'}
+                {isMobile ? '' : t('login')}
               </Button>
             )}
             
@@ -65,7 +69,7 @@ export function Header({ isDarkMode, onToggleDarkMode }: HeaderProps) {
               size="icon"
               onClick={onToggleDarkMode}
               className={`text-primary hover:bg-accent ${isMobile ? 'h-9 w-9' : 'h-10 w-10'}`}
-              aria-label={isDarkMode ? 'Light moda geç' : 'Dark moda geç'}
+              aria-label={isDarkMode ? t('lightMode') : t('darkMode')}
             >
               {isDarkMode ? (
                 <Sun className={isMobile ? 'h-5 w-5' : 'h-6 w-6'} />

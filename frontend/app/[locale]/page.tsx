@@ -1,22 +1,24 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Sidebar } from './components/sidebar';
-import { Header } from './components/header';
-import { MainFeed } from './components/main-feed';
-import { GlobalFeed } from './components/global-feed';
-import { Khave } from './components/khave';
-import { Publications } from './components/publications';
-import { Muhabbet } from './components/muhabbet';
-import { Profile } from './components/profile';
-import { GroupList } from './components/group-list';
-import { OrganizationDirectory } from './components/organization-directory';
-import { AuthModal } from './components/auth-modal';
-import { useIsMobile } from './components/use-mobile';
-import { useAuth } from './contexts/auth-context';
+import { Sidebar } from '../components/sidebar';
+import { Header } from '../components/header';
+import { MainFeed } from '../components/main-feed';
+import { GlobalFeed } from '../components/global-feed';
+import { Khave } from '../components/khave';
+import { Publications } from '../components/publications';
+import { Muhabbet } from '../components/muhabbet';
+import { Profile } from '../components/profile';
+import { GroupList } from '../components/group-list';
+import { OrganizationDirectory } from '../components/organization-directory';
+import { AuthModal } from '../components/auth-modal';
+import { useIsMobile } from '../components/use-mobile';
+import { useAuth } from '../contexts/auth-context';
+import { useTranslations } from 'next-intl';
 
 export type ActiveSection = 'main' | 'global' | 'groups' | 'organizations' | 'khave' | 'publications' | 'muhabbet' | 'profile';
 
 export default function App() {
+  const t = useTranslations('common');
   const [activeSection, setActiveSection] = useState<ActiveSection>('main');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check localStorage or system preference
@@ -88,7 +90,7 @@ export default function App() {
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 dark:border-red-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Yükleniyor...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
         </div>
       </div>
     );

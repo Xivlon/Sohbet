@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Search, Download, BookOpen, Eye, Star, Filter, Calendar, User, University } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
@@ -94,40 +95,52 @@ const mockPublications: Publication[] = [
   }
 ];
 
-const categories = ['Tümü', 'Bilgisayar Bilimleri', 'Mühendislik', 'Fizik', 'Biyomedikal', 'Matematik', 'Kimya'];
-const sortOptions = [
-  { value: 'newest', label: 'En Yeni' },
-  { value: 'oldest', label: 'En Eski' },
-  { value: 'mostViewed', label: 'En Çok Görüntülenen' },
-  { value: 'mostDownloaded', label: 'En Çok İndirilen' },
-  { value: 'highestRated', label: 'En Yüksek Puanlı' }
-];
-
 export function Publications() {
+  const t = useTranslations('publications');
+  const tCommon = useTranslations('common');
+
   const [publications] = useState<Publication[]>(mockPublications);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Tümü');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [selectedType, setSelectedType] = useState<string>('all');
+
+  const categories = [
+    { value: 'all', label: t('categories.all') },
+    { value: 'computerScience', label: t('categories.computerScience') },
+    { value: 'engineering', label: t('categories.engineering') },
+    { value: 'physics', label: t('categories.physics') },
+    { value: 'biomedical', label: t('categories.biomedical') },
+    { value: 'mathematics', label: t('categories.mathematics') },
+    { value: 'chemistry', label: t('categories.chemistry') }
+  ];
+
+  const sortOptions = [
+    { value: 'newest', label: t('newest') },
+    { value: 'oldest', label: t('oldest') },
+    { value: 'mostViewed', label: t('mostViewed') },
+    { value: 'mostDownloaded', label: t('mostDownloaded') },
+    { value: 'highestRated', label: t('highestRated') }
+  ];
 
   const filteredPublications = publications.filter(pub => {
     const matchesSearch = pub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          pub.authors.some(author => author.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          pub.abstract.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          pub.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesCategory = selectedCategory === 'Tümü' || pub.category === selectedCategory;
+
+    const matchesCategory = selectedCategory === 'all' || pub.category === selectedCategory;
     const matchesType = selectedType === 'all' || pub.type === selectedType;
-    
+
     return matchesSearch && matchesCategory && matchesType;
   });
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'research': return 'Araştırma';
-      case 'thesis': return 'Tez';
-      case 'article': return 'Makale';
-      case 'paper': return 'Bildiri';
+      case 'research': return t('types.research');
+      case 'thesis': return t('types.thesis');
+      case 'article': return t('types.article');
+      case 'paper': return t('types.paper');
       default: return type;
     }
   };
@@ -147,8 +160,8 @@ export function Publications() {
       <div className="max-w-full mx-auto p-4">
         {/* Header */}
         <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 p-4 -mx-4 mb-4 border-b border-border">
-          <h2 className="text-primary">Yayınlar</h2>
-          <p className="text-muted-foreground text-sm">Açık kaynak akademik makaleler ve araştırmalar</p>
+          <h2 className="text-primary">{t('title')}</h2>
+          <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
         </div>
 
         {/* Search and Filters */}
@@ -157,7 +170,7 @@ export function Publications() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="Başlık, yazar, etiket veya içerik ara..."
+                placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -165,25 +178,25 @@ export function Publications() {
             </div>
             <Button variant="outline" className="sm:w-auto w-full">
               <Filter className="w-4 h-4 mr-2" />
-              Gelişmiş Filtre
+              {t('advancedFilter')}
             </Button>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="sm:w-48 w-full">
-                <SelectValue placeholder="Kategori seç" />
+                <SelectValue placeholder={t('selectCategory')} />
               </SelectTrigger>
               <SelectContent>
                 {categories.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                  <SelectItem key={category.value} value={category.value}>{category.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="sm:w-48 w-full">
-                <SelectValue placeholder="Sırala" />
+                <SelectValue placeholder={t('sort')} />
               </SelectTrigger>
               <SelectContent>
                 {sortOptions.map(option => (
@@ -197,11 +210,11 @@ export function Publications() {
         {/* Type Tabs */}
         <Tabs value={selectedType} onValueChange={setSelectedType} className="mb-6">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all">Tümü</TabsTrigger>
-            <TabsTrigger value="research">Araştırma</TabsTrigger>
-            <TabsTrigger value="thesis">Tez</TabsTrigger>
-            <TabsTrigger value="article">Makale</TabsTrigger>
-            <TabsTrigger value="paper">Bildiri</TabsTrigger>
+            <TabsTrigger value="all">{t('types.all')}</TabsTrigger>
+            <TabsTrigger value="research">{t('types.research')}</TabsTrigger>
+            <TabsTrigger value="thesis">{t('types.thesis')}</TabsTrigger>
+            <TabsTrigger value="article">{t('types.article')}</TabsTrigger>
+            <TabsTrigger value="paper">{t('types.paper')}</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -218,7 +231,7 @@ export function Publications() {
                       </Badge>
                       {publication.isOpenSource && (
                         <Badge variant="outline" className="text-green-600 border-green-600">
-                          Açık Kaynak
+                          {t('openSource')}
                         </Badge>
                       )}
                     </div>
@@ -275,11 +288,11 @@ export function Publications() {
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="flex-1">
                     <BookOpen className="w-4 h-4 mr-2" />
-                    Oku
+                    {t('read')}
                   </Button>
                   <Button size="sm" className="flex-1">
                     <Download className="w-4 h-4 mr-2" />
-                    İndir
+                    {t('download')}
                   </Button>
                 </div>
               </CardContent>
@@ -290,8 +303,8 @@ export function Publications() {
         {filteredPublications.length === 0 && (
           <div className="text-center py-12">
             <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-medium mb-2">Yayın bulunamadı</h3>
-            <p className="text-muted-foreground">Arama kriterlerinizi değiştirmeyi deneyin.</p>
+            <h3 className="font-medium mb-2">{t('noPublications')}</h3>
+            <p className="text-muted-foreground">{t('tryDifferentCriteria')}</p>
           </div>
         )}
       </div>
