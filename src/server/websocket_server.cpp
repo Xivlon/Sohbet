@@ -237,11 +237,19 @@ void WebSocketServer::handleClient(int client_socket) {
     // Remove connection
     removeConnection(client_socket);
     close(client_socket);
-    
+
     // Send offline status notification
     WebSocketMessage offline_msg("user:offline", "{\"user_id\":" + std::to_string(user_id) + "}");
     broadcast(offline_msg);
-    
+
+    // Call disconnect handler if registered
+    {
+        std::lock_guard<std::mutex> lock(handlers_mutex_);
+        if (disconnect_handler_) {
+            disconnect_handler_(user_id);
+        }
+    }
+
     std::cout << "WebSocket client disconnected: user_id=" << user_id << std::endl;
 }
 
@@ -450,6 +458,11 @@ std::string WebSocketServer::encodeFrame(const std::string& message) {
 void WebSocketServer::registerHandler(const std::string& type, MessageHandler handler) {
     std::lock_guard<std::mutex> lock(handlers_mutex_);
     handlers_[type] = handler;
+}
+
+void WebSocketServer::registerDisconnectHandler(DisconnectHandler handler) {
+    std::lock_guard<std::mutex> lock(handlers_mutex_);
+    disconnect_handler_ = handler;
 }
 
 bool WebSocketServer::sendToUser(int user_id, const WebSocketMessage& message) {

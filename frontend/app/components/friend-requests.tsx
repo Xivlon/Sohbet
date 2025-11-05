@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useTranslations } from 'next-intl'
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { apiClient } from '@/app/lib/api-client'
@@ -20,6 +21,8 @@ interface FriendRequest {
 }
 
 export function FriendRequests() {
+  const t = useTranslations('friends')
+  const tCommon = useTranslations('common')
   const [requests, setRequests] = useState<FriendRequest[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -63,15 +66,15 @@ export function FriendRequests() {
   }
 
   if (loading) {
-    return <div>Loading...</div>
+    return <div>{tCommon('loading')}</div>
   }
 
   if (requests.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Friend Requests</CardTitle>
-          <CardDescription>No pending friend requests</CardDescription>
+          <CardTitle>{t('friendRequests')}</CardTitle>
+          <CardDescription>{t('noRequests')}</CardDescription>
         </CardHeader>
       </Card>
     )
@@ -80,7 +83,7 @@ export function FriendRequests() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Friend Requests</CardTitle>
+        <CardTitle>{t('friendRequests')}</CardTitle>
         <CardDescription>{requests.length} pending request(s)</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -97,10 +100,10 @@ export function FriendRequests() {
             </div>
             <div className="flex gap-2">
               <Button onClick={() => handleAccept(request.id)} size="sm">
-                Accept
+                {t('accept')}
               </Button>
               <Button onClick={() => handleReject(request.id)} variant="outline" size="sm">
-                Decline
+                {t('reject')}
               </Button>
             </div>
           </div>

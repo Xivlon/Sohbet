@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Mic, MicOff, PhoneOff, Volume2, Settings, Plus } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
+import { Mic, MicOff, PhoneOff, Volume2, Settings, Plus, Video, VideoOff } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Slider } from './ui/slider';
 import { voiceService, VoiceChannel } from '@/app/lib/voice-service';
+import { webrtcService, VoiceParticipant } from '@/app/lib/webrtc-service';
+import { useAuth } from '../contexts/auth-context';
 
 interface Participant {
   id: string;
@@ -17,23 +20,23 @@ interface Participant {
   isModerator: boolean;
 }
 
-const mockParticipants: Participant[] = [
-  { id: '1', name: 'Ali Uzun', university: 'İTÜ', isMuted: false, isSpeaking: true, isModerator: false },
-  { id: '2', name: 'Dr. Ahmet Yılmaz', university: 'İTÜ', isMuted: false, isSpeaking: false, isModerator: true },
-  { id: '3', name: 'Zeynep Kaya', university: 'İTÜ', isMuted: true, isSpeaking: false, isModerator: false },
-  { id: '4', name: 'Mehmet Demir', university: 'İTÜ', isMuted: false, isSpeaking: false, isModerator: false }
-];
-
 export function Khave() {
+  const t = useTranslations('khave');
+  const tCommon = useTranslations('common');
+  const { user } = useAuth();
   const [channels, setChannels] = useState<VoiceChannel[]>([]);
   const [currentChannel, setCurrentChannel] = useState<VoiceChannel | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [volume, setVolume] = useState([75]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
+  const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRefs = useRef<Map<number, HTMLAudioElement>>(new Map());
 
   // Load channels on mount
   useEffect(() => {
@@ -41,11 +44,44 @@ export function Khave() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Setup WebRTC callbacks
+  useEffect(() => {
+    // Listen for participant updates
+    webrtcService.onParticipantUpdate((updatedParticipants) => {
+      setParticipants(updatedParticipants);
+    });
+
+    // Listen for remote streams
+    webrtcService.onRemoteStream((userId, stream) => {
+      // Create or update audio element for this user
+      let audioElement = remoteAudioRefs.current.get(userId);
+      if (!audioElement) {
+        audioElement = new Audio();
+        audioElement.autoplay = true;
+        remoteAudioRefs.current.set(userId, audioElement);
+      }
+      audioElement.srcObject = stream;
+    });
+  }, []);
+
+  // Update local video preview
+  useEffect(() => {
+    if (localVideoRef.current && isConnected) {
+      const localStream = webrtcService.getLocalStream();
+      if (localStream) {
+        localVideoRef.current.srcObject = localStream;
+      }
+    }
+  }, [isConnected]);
+
   // Cleanup: leave channel when component unmounts or user navigates away
   useEffect(() => {
     return () => {
       if (currentChannel && isConnected) {
-        // Clean up the session when component unmounts
+        // Clean up WebRTC
+        webrtcService.leaveChannel();
+
+        // Clean up the session on backend
         voiceService.leaveChannel(currentChannel.id).catch(err => {
           console.error('Error leaving channel on unmount:', err);
         });
@@ -97,17 +133,27 @@ export function Khave() {
   };
 
   const joinChannel = async (channel: VoiceChannel) => {
+    if (!user) {
+      setError('You must be logged in to join a voice channel');
+      return;
+    }
+
     try {
+      // Join via REST API first
       const response = await voiceService.joinChannel(channel.id);
       if (response.data) {
+        // Initialize WebRTC connection
+        await webrtcService.joinChannel(channel.id, user.id, true); // true = audio only for now
+
         setCurrentChannel(channel);
         setIsConnected(true);
+        setError(null);
         console.log('Joined channel with token:', response.data);
       } else {
         setError(response.error || 'Failed to join channel');
       }
-    } catch (err) {
-      setError('Failed to join channel');
+    } catch (err: any) {
+      setError(err.message || 'Failed to join channel');
       console.error('Error joining channel:', err);
     }
   };
@@ -116,11 +162,17 @@ export function Khave() {
     if (!currentChannel) return;
 
     try {
+      // Leave WebRTC session first
+      webrtcService.leaveChannel();
+
+      // Then leave via REST API
       const response = await voiceService.leaveChannel(currentChannel.id);
       if (response.status === 200) {
         setCurrentChannel(null);
         setIsConnected(false);
         setIsMuted(false);
+        setIsVideoEnabled(false);
+        setParticipants([]);
         loadChannels(); // Reload to get updated user counts
       } else {
         setError(response.error || 'Failed to leave channel');
@@ -132,7 +184,13 @@ export function Khave() {
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    const newMutedState = webrtcService.toggleMute();
+    setIsMuted(newMutedState);
+  };
+
+  const toggleVideo = () => {
+    const newVideoState = webrtcService.toggleVideo();
+    setIsVideoEnabled(newVideoState);
   };
 
   return (
@@ -142,12 +200,12 @@ export function Khave() {
         <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 p-4 -mx-4 mb-4 border-b border-border">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-primary">Khave - Sesli Sohbet</h2>
-              <p className="text-muted-foreground text-sm">Gerçek zamanlı sesli tartışma odaları</p>
+              <h2 className="text-primary">Khave - {t('voiceChat')}</h2>
+              <p className="text-muted-foreground text-sm">{t('activeRooms')}</p>
             </div>
             <Button onClick={() => setShowCreateChannel(!showCreateChannel)} size="sm">
               <Plus className="w-4 h-4 mr-2" />
-              Yeni Oda
+              {t('createRoom')}
             </Button>
           </div>
         </div>
@@ -156,29 +214,29 @@ export function Khave() {
         {showCreateChannel && (
           <Card className="mb-6">
             <CardHeader>
-              <h3>Yeni Sesli Oda Oluştur</h3>
+              <h3>{t('createRoom')}</h3>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-muted-foreground">Oda Adı</label>
+                  <label className="text-sm text-muted-foreground">{t('roomName')}</label>
                   <input
                     type="text"
                     value={newChannelName}
                     onChange={(e) => setNewChannelName(e.target.value)}
                     className="w-full p-2 border rounded mt-1"
-                    placeholder="Oda adını girin..."
+                    placeholder={t('enterRoomName')}
                   />
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={createChannel} disabled={!newChannelName.trim()}>
-                    Oluştur
+                    {tCommon('create')}
                   </Button>
                   <Button variant="outline" onClick={() => {
                     setShowCreateChannel(false);
                     setNewChannelName('');
                   }}>
-                    İptal
+                    {tCommon('cancel')}
                   </Button>
                 </div>
               </div>
@@ -206,38 +264,84 @@ export function Khave() {
                     {currentChannel.name}
                   </h3>
                   <p className="text-muted-foreground text-sm">
-                    {currentChannel.active_users} kullanıcı aktif
+                    {currentChannel.active_users} {t('participants').toLowerCase()}
                   </p>
                 </div>
                 <Badge variant="secondary">
-                  {currentChannel.active_users} kişi
+                  {currentChannel.active_users} {t('participants').toLowerCase()}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
+              {/* Local Video Preview (if enabled) */}
+              {isVideoEnabled && (
+                <div className="mb-4">
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full rounded-lg border"
+                  />
+                  <p className="text-xs text-muted-foreground text-center mt-1">Video</p>
+                </div>
+              )}
+
               {/* Participants */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                {mockParticipants.map((participant) => (
-                  <div key={participant.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                {/* Show current user */}
+                {user && (
+                  <div className="flex items-center gap-3 p-3 border rounded-lg bg-primary/10">
                     <div className="relative">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        participant.isSpeaking ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+                        !isMuted && participants.find(p => p.userId === user.id)?.isSpeaking
+                          ? 'bg-primary text-primary-foreground ring-2 ring-primary'
+                          : 'bg-secondary text-secondary-foreground'
                       }`}>
-                        <span className="text-sm">{participant.name.split(' ').map(n => n[0]).join('')}</span>
+                        <span className="text-sm">{user.username.substring(0, 2).toUpperCase()}</span>
+                      </div>
+                      {isMuted && (
+                        <MicOff className="w-4 h-4 absolute -bottom-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5" />
+                      )}
+                      {!isMuted && (
+                        <Mic className="w-4 h-4 absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-0.5" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">{user.username}</div>
+                      <div className="text-xs text-muted-foreground">{user.university}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show other participants */}
+                {participants.filter(p => p.userId !== user?.id).map((participant) => (
+                  <div key={participant.userId} className="flex items-center gap-3 p-3 border rounded-lg">
+                    <div className="relative">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        participant.isSpeaking ? 'bg-primary text-primary-foreground ring-2 ring-primary' : 'bg-secondary text-secondary-foreground'
+                      }`}>
+                        <span className="text-sm">{participant.username.substring(0, 2).toUpperCase()}</span>
                       </div>
                       {participant.isMuted && (
                         <MicOff className="w-4 h-4 absolute -bottom-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5" />
                       )}
-                      {participant.isModerator && (
-                        <div className="w-3 h-3 bg-primary rounded-full absolute -top-1 -right-1"></div>
+                      {!participant.isMuted && (
+                        <Mic className="w-4 h-4 absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-0.5" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{participant.name}</div>
+                      <div className="font-medium text-sm truncate">{participant.username}</div>
                       <div className="text-xs text-muted-foreground">{participant.university}</div>
                     </div>
                   </div>
                 ))}
+
+                {participants.length === 0 && !user && (
+                  <div className="col-span-2 text-center text-muted-foreground py-4">
+                    {t('participants')}
+                  </div>
+                )}
               </div>
 
               {/* Controls */}
@@ -248,11 +352,22 @@ export function Khave() {
                     size="lg"
                     onClick={toggleMute}
                     className="w-12 h-12 rounded-full"
+                    title={isMuted ? t('unmute') : t('mute')}
                   >
                     {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                   </Button>
 
-                  <Button variant="secondary" size="lg" className="w-12 h-12 rounded-full">
+                  <Button
+                    variant={isVideoEnabled ? "secondary" : "outline"}
+                    size="lg"
+                    onClick={toggleVideo}
+                    className="w-12 h-12 rounded-full"
+                    title={isVideoEnabled ? t('stopSharing') : t('shareScreen')}
+                  >
+                    {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                  </Button>
+
+                  <Button variant="secondary" size="lg" className="w-12 h-12 rounded-full" title={t('roomSettings')}>
                     <Settings className="w-5 h-5" />
                   </Button>
 
@@ -261,6 +376,7 @@ export function Khave() {
                     size="lg"
                     onClick={leaveChannel}
                     className="w-12 h-12 rounded-full"
+                    title={t('leaveRoom')}
                   >
                     <PhoneOff className="w-5 h-5" />
                   </Button>
@@ -287,11 +403,11 @@ export function Khave() {
         {/* Channel List */}
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Odalar yükleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">{tCommon('loading')}...</div>
           ) : channels.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-center text-muted-foreground">
-                <p>Henüz sesli oda yok. Yeni bir oda oluşturun!</p>
+                <p>{t('createRoom')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -310,16 +426,16 @@ export function Khave() {
                   <CardContent className="pt-0">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Katılımcı:</span>
-                        <span>{channel.active_users} kişi</span>
+                        <span className="text-muted-foreground">{t('participants')}:</span>
+                        <span>{channel.active_users} {t('participants').toLowerCase()}</span>
                       </div>
                     </div>
-                    <Button 
-                      className="w-full mt-4" 
+                    <Button
+                      className="w-full mt-4"
                       disabled={currentChannel?.id === channel.id}
                       onClick={() => joinChannel(channel)}
                     >
-                      {currentChannel?.id === channel.id ? 'Bağlısın' : 'Katıl'}
+                      {currentChannel?.id === channel.id ? t('leaveRoom') : t('joinRoom')}
                     </Button>
                   </CardContent>
                 </Card>

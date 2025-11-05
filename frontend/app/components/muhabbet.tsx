@@ -7,14 +7,75 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
-import { apiClient, Conversation, Message as ApiMessage } from '@/app/lib/api-client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import { apiClient, Conversation, Message as ApiMessage, User } from '@/app/lib/api-client';
 import { useAuth } from '@/app/contexts/auth-context';
+import { useTranslations } from 'next-intl';
 
 interface Message extends ApiMessage {
   media_url?: string;
   read_at?: string;
   delivered_at?: string;
 }
+
+// Mock users for chat testing
+const MOCK_USERS: User[] = [
+  {
+    id: 1001,
+    username: 'ahmet_yilmaz',
+    email: 'ahmet@example.com',
+    name: 'Ahmet Yılmaz',
+    position: 'Öğrenci',
+    university: 'İstanbul Teknik Üniversitesi',
+    department: 'Bilgisayar Mühendisliği',
+    enrollment_year: 2021,
+    primary_language: 'Türkçe',
+  },
+  {
+    id: 1002,
+    username: 'ayse_demir',
+    email: 'ayse@example.com',
+    name: 'Ayşe Demir',
+    position: 'Öğrenci',
+    university: 'Boğaziçi Üniversitesi',
+    department: 'Elektrik-Elektronik Mühendisliği',
+    enrollment_year: 2020,
+    primary_language: 'Türkçe',
+  },
+  {
+    id: 1003,
+    username: 'mehmet_kaya',
+    email: 'mehmet@example.com',
+    name: 'Mehmet Kaya',
+    position: 'Asistan',
+    university: 'Orta Doğu Teknik Üniversitesi',
+    department: 'Yazılım Mühendisliği',
+    enrollment_year: 2019,
+    primary_language: 'Türkçe',
+  },
+  {
+    id: 1004,
+    username: 'fatma_ozturk',
+    email: 'fatma@example.com',
+    name: 'Fatma Öztürk',
+    position: 'Öğrenci',
+    university: 'Hacettepe Üniversitesi',
+    department: 'Bilgisayar Mühendisliği',
+    enrollment_year: 2022,
+    primary_language: 'Türkçe',
+  },
+  {
+    id: 1005,
+    username: 'can_arslan',
+    email: 'can@example.com',
+    name: 'Can Arslan',
+    position: 'Öğrenci',
+    university: 'İstanbul Üniversitesi',
+    department: 'Bilişim Sistemleri',
+    enrollment_year: 2021,
+    primary_language: 'Türkçe',
+  },
+];
 
 export function Muhabbet() {
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
@@ -25,9 +86,14 @@ export function Muhabbet() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sendingMessage, setSendingMessage] = useState(false);
-  
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+
   const { user } = useAuth();
   const currentUserId = user?.id;
+
+  const t = useTranslations('muhabbet');
+  const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
 
   useEffect(() => {
     if (currentUserId) {
@@ -74,7 +140,7 @@ export function Muhabbet() {
               ...conv,
               other_user: {
                 id: otherUserId,
-                username: 'Bilinmeyen Kullanıcı',
+                username: t('unknownUser'),
                 email: ''
               }
             };
@@ -83,10 +149,10 @@ export function Muhabbet() {
         
         setChats(conversationsWithUsers);
       } else {
-        setError(response.error || 'Sohbetler yüklenemedi');
+        setError(response.error || t('chatsLoadError'));
       }
     } catch (err) {
-      setError('Bir hata oluştu. Lütfen tekrar deneyin.');
+      setError(tErrors('somethingWentWrong'));
       console.error('Error fetching conversations:', err);
     } finally {
       setLoading(false);
@@ -117,7 +183,7 @@ export function Muhabbet() {
 
     setSendingMessage(true);
     const messageContent = newMessage.trim();
-    
+
     // Optimistic update
     const tempMessage: Message = {
       id: Date.now(),
@@ -126,38 +192,114 @@ export function Muhabbet() {
       content: messageContent,
       created_at: new Date().toISOString()
     };
-    
+
     setMessages([...messages, tempMessage]);
     setNewMessage('');
-    
+
+    // Check if this is a mock user conversation
+    const isMockUser = MOCK_USERS.some(u => u.id === selectedChat.other_user?.id);
+
+    if (isMockUser) {
+      // For mock users, just keep the message (no API call)
+      setSendingMessage(false);
+
+      // Update conversation's last_message_at
+      setChats(chats.map(chat =>
+        chat.id === selectedChat.id
+          ? { ...chat, last_message_at: new Date().toISOString() }
+          : chat
+      ));
+
+      // Simulate a response from the mock user after a delay
+      simulateMockUserResponse(selectedChat, messageContent);
+      return;
+    }
+
     try {
       const response = await apiClient.sendMessage(selectedChat.id, messageContent);
-      
+
       if (response.data) {
         // Replace temp message with real one
-        setMessages(prev => 
+        setMessages(prev =>
           prev.map(msg => msg.id === tempMessage.id && response.data ? response.data : msg)
         );
-        
+
         // Update conversation's last_message_at
-        setChats(chats.map(chat => 
-          chat.id === selectedChat.id 
+        setChats(chats.map(chat =>
+          chat.id === selectedChat.id
             ? { ...chat, last_message_at: new Date().toISOString() }
             : chat
         ));
       } else {
         // Remove temp message on error
         setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
-        alert('Mesaj gönderilemedi: ' + (response.error || 'Bilinmeyen hata'));
+        alert(tErrors('somethingWentWrong') + ': ' + (response.error || tErrors('somethingWentWrong')));
       }
     } catch (err) {
       // Remove temp message on error
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
-      alert('Mesaj gönderilemedi. Lütfen tekrar deneyin.');
+      alert(tErrors('somethingWentWrong'));
       console.error('Error sending message:', err);
     } finally {
       setSendingMessage(false);
     }
+  };
+
+  const simulateMockUserResponse = (conversation: Conversation, userMessage: string) => {
+    // Wait 1-3 seconds before responding
+    const delay = 1000 + Math.random() * 2000;
+
+    setTimeout(() => {
+      const mockResponses = [
+        'Çok ilginç! Devam et lütfen.',
+        'Anladım, peki sen ne düşünüyorsun?',
+        'Haklısın, ben de öyle düşünüyorum.',
+        'Hmm, ilginç bir bakış açısı.',
+        'Kesinlikle katılıyorum!',
+        'Bunu hiç düşünmemiştim, güzel fikir.',
+        'Evet, bence de öyle.',
+        'Çok doğru söylüyorsun.',
+        'Bu konuda sana tamamen katılıyorum.',
+        'Gerçekten mi? Çok ilginç!',
+        'Anlıyorum, mantıklı geliyor.',
+        'Evet, bu konu gerçekten önemli.',
+        'Harika bir gözlem!',
+        'Bunu daha detaylı anlatır mısın?',
+        'Tam olarak ne demek istediğini anlıyorum.',
+      ];
+
+      // If user asks a question, give a more specific response
+      let response;
+      if (userMessage.includes('?')) {
+        const questionResponses = [
+          'Bence bu konuda daha fazla araştırma yapmak gerekir.',
+          'İyi soru! Düşünmem lazım biraz.',
+          'Şu an kesin bir cevap veremem ama araştırırım.',
+          'Bu çok iyi bir soru, birlikte düşünelim.',
+          'Hmm, zor bir soru. Ne dersin sen?',
+        ];
+        response = questionResponses[Math.floor(Math.random() * questionResponses.length)];
+      } else {
+        response = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+      }
+
+      const mockMessage: Message = {
+        id: Date.now(),
+        conversation_id: conversation.id,
+        sender_id: conversation.other_user!.id,
+        content: response,
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, mockMessage]);
+
+      // Update conversation's last_message_at
+      setChats(prev => prev.map(chat =>
+        chat.id === conversation.id
+          ? { ...chat, last_message_at: new Date().toISOString() }
+          : chat
+      ));
+    }, delay);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -171,7 +313,7 @@ export function Muhabbet() {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 24) {
       return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     } else if (diffInHours < 48) {
@@ -181,10 +323,64 @@ export function Muhabbet() {
     }
   };
 
+  const createMockConversation = async (mockUser: User) => {
+    if (!currentUserId) return;
+
+    // Check if conversation already exists with this mock user
+    const existingChat = chats.find(
+      chat => chat.other_user?.id === mockUser.id
+    );
+
+    if (existingChat) {
+      // If conversation exists, just select it
+      setSelectedChat(existingChat);
+      setShowNewChatDialog(false);
+      return;
+    }
+
+    // Create a new mock conversation
+    const newConversation: Conversation = {
+      id: Date.now(), // Temporary ID for mock conversation
+      user1_id: currentUserId,
+      user2_id: mockUser.id,
+      created_at: new Date().toISOString(),
+      last_message_at: new Date().toISOString(),
+      other_user: mockUser,
+    };
+
+    // Add to chats list
+    setChats([newConversation, ...chats]);
+    setSelectedChat(newConversation);
+    setShowNewChatDialog(false);
+
+    // Send a welcome message from the mock user after a short delay
+    setTimeout(() => {
+      const welcomeMessages = [
+        'Merhaba! Nasılsın?',
+        'Selam, ne var ne yok?',
+        'Hey! Seni tanımak güzel :)',
+        'Merhaba, nasıl gidiyor?',
+        'Selam! Yardımcı olabileceğim bir şey var mı?',
+      ];
+
+      const randomMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+
+      const mockMessage: Message = {
+        id: Date.now(),
+        conversation_id: newConversation.id,
+        sender_id: mockUser.id,
+        content: randomMessage,
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages([mockMessage]);
+    }, 1000);
+  };
+
   if (!currentUserId) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-muted-foreground">Lütfen giriş yapın</p>
+        <p className="text-muted-foreground">{tCommon('loading')}</p>
       </div>
     );
   }
@@ -214,9 +410,9 @@ export function Muhabbet() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-medium">{selectedChat.other_user?.username || 'Bilinmeyen Kullanıcı'}</h3>
+                  <h3 className="font-medium">{selectedChat.other_user?.username || t('unknownUser')}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Son görülme: {selectedChat.last_message_at ? formatTimestamp(selectedChat.last_message_at) : 'Bilinmiyor'}
+                    {selectedChat.last_message_at ? formatTimestamp(selectedChat.last_message_at) : t('offline')}
                   </p>
                 </div>
               </div>
@@ -276,10 +472,10 @@ export function Muhabbet() {
               <Button variant="ghost" size="sm">
                 <Paperclip className="w-4 h-4" />
               </Button>
-              
+
               <div className="flex-1">
                 <Textarea
-                  placeholder="Mesaj yaz..."
+                  placeholder={t('typeMessage')}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -309,18 +505,18 @@ export function Muhabbet() {
           <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 p-4 -mx-4 border-b border-border">
             <div className="px-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-primary">Muhabbet</h2>
-                <Button size="sm">
+                <h2 className="text-primary">{t('chats')}</h2>
+                <Button size="sm" onClick={() => setShowNewChatDialog(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Yeni
+                  {t('newChat')}
                 </Button>
               </div>
-            
+
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Sohbet ara..."
+                  placeholder={t('searchChats')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -334,18 +530,18 @@ export function Muhabbet() {
             <div className="p-2">
               {loading ? (
                 <div className="p-4 text-center text-muted-foreground">
-                  Yükleniyor...
+                  {tCommon('loading')}
                 </div>
               ) : error ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <p className="text-destructive mb-4">{error}</p>
-                    <Button onClick={fetchConversations}>Tekrar Dene</Button>
+                    <Button onClick={fetchConversations}>{tErrors('tryAgain')}</Button>
                   </CardContent>
                 </Card>
               ) : filteredChats.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
-                  {searchTerm ? 'Sohbet bulunamadı' : 'Henüz mesajınız yok'}
+                  {searchTerm ? tErrors('notFound') : t('messages')}
                 </div>
               ) : (
                 filteredChats.map((chat) => (
@@ -362,16 +558,16 @@ export function Muhabbet() {
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium truncate">{chat.other_user?.username || 'Bilinmeyen Kullanıcı'}</h4>
+                          <h4 className="font-medium truncate">{chat.other_user?.username || t('unknownUser')}</h4>
                           <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
                             {chat.last_message_at ? formatTimestamp(chat.last_message_at) : ''}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">
-                          {chat.last_message_at ? new Date(chat.last_message_at).toLocaleDateString('tr-TR') : 'Mesaj yok'}
+                          {chat.last_message_at ? new Date(chat.last_message_at).toLocaleDateString('tr-TR') : t('messages')}
                         </p>
                       </div>
                     </div>
@@ -382,6 +578,50 @@ export function Muhabbet() {
           </ScrollArea>
         </div>
       )}
+
+      {/* New Chat Dialog */}
+      <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('newChat')}</DialogTitle>
+            <DialogDescription>
+              {t('searchChats')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-96 mt-4">
+            <div className="space-y-2">
+              {MOCK_USERS.map((mockUser) => (
+                <div
+                  key={mockUser.id}
+                  onClick={() => createMockConversation(mockUser)}
+                  className="p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent/50 active:bg-accent border border-border"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <span className="text-primary font-semibold">
+                        {mockUser.username.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{mockUser.name || mockUser.username}</h4>
+                      <p className="text-sm text-muted-foreground truncate">
+                        @{mockUser.username}
+                      </p>
+                      {mockUser.university && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {mockUser.university} - {mockUser.department}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

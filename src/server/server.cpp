@@ -76,8 +76,9 @@ bool AcademicSocialServer::initialize() {
         }
     }
 
-    // Ensure demo user exists for demo/testing purposes
+    // Ensure demo users exist for demo/testing purposes
     ensureDemoUserExists();
+    ensureSecondDemoUserExists();
 
     std::cout << "Server initialized successfully" << std::endl;
     return true;
@@ -470,12 +471,15 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
     if (request.body.length() > 0) {
         std::cerr << "  Body content (first 200 chars): " << request.body.substr(0, 200) << std::endl;
     }
-    
-    int author_id = getUserIdFromAuth(request);
-    // Status endpoint
+
+    // Status endpoint - no authentication required for health checks
     if (request.method == "GET" && base_path == "/api/status") {
         return handleStatus(request);
-    } else if (request.method == "GET" && base_path == "/api/users") {
+    }
+
+    int author_id = getUserIdFromAuth(request);
+
+    if (request.method == "GET" && base_path == "/api/users") {
         return handleGetUsers(request);
     } else if (request.method == "GET" && base_path == "/api/users/demo") {
         return handleUsersDemo(request);
@@ -998,6 +1002,84 @@ void AcademicSocialServer::ensureDemoUserExists() {
         ensureProfessorPrivileges(demo_user_id);
     } else {
         std::cerr << "Warning: Failed to create demo user" << std::endl;
+    }
+}
+
+void AcademicSocialServer::ensureSecondDemoUserExists() {
+    // Helper lambda to assign Admin role to a user
+    auto assignAdminRole = [this](int user_id) -> void {
+        auto admin_role = role_repository_->findByName("Admin");
+        if (admin_role.has_value()) {
+            // assignRoleToUser uses INSERT OR IGNORE, so it won't create duplicates
+            role_repository_->assignRoleToUser(user_id, admin_role->getId().value());
+            std::cout << "Second demo user ensured to have Admin permissions" << std::endl;
+        } else {
+            std::cerr << "Warning: Could not find Admin role for second demo user" << std::endl;
+        }
+    };
+
+    auto professor_role = role_repository_->findByName("Professor");
+    auto ensureProfessorPrivileges = [this, &professor_role](int user_id) -> void {
+        if (professor_role.has_value()) {
+            if (!role_repository_->assignRoleToUser(user_id, professor_role->getId().value())) {
+                std::cerr << "Warning: Failed to ensure Professor role assignment for second demo user" << std::endl;
+            }
+        } else {
+            std::cerr << "Warning: Could not find Professor role for second demo user" << std::endl;
+        }
+
+        db::Statement stmt(*database_, "UPDATE users SET role = ?, position = ? WHERE id = ?");
+        if (!stmt.isValid()) {
+            std::cerr << "Warning: Failed to prepare Professor role update for second demo user" << std::endl;
+            return;
+        }
+
+        stmt.bindText(1, "Professor");
+        stmt.bindText(2, "Professor");
+        stmt.bindInt(3, user_id);
+
+        if (stmt.step() != SQLITE_DONE) {
+            std::cerr << "Warning: Failed to persist Professor role for second demo user" << std::endl;
+        } else {
+            std::cout << "Second demo user flagged as Professor for primary role" << std::endl;
+        }
+    };
+
+    // Check if second demo user already exists
+    auto existing_user = user_repository_->findByUsername("demo_teacher");
+    if (existing_user.has_value()) {
+        int demo_user_id = existing_user->getId().value();
+        std::cout << "Second demo user already exists (ID: " << demo_user_id << ")" << std::endl;
+
+        // Always reset the demo user's password to ensure it works after any API changes
+        if (user_repository_->updatePassword(demo_user_id, "demo123")) {
+            std::cout << "Second demo user password reset successfully" << std::endl;
+        } else {
+            std::cerr << "Warning: Failed to reset second demo user password" << std::endl;
+        }
+
+        assignAdminRole(demo_user_id);
+        ensureProfessorPrivileges(demo_user_id);
+        return;
+    }
+
+    // Create second demo user
+    User demo_user("demo_teacher", "demo2@example.edu");
+    demo_user.setUniversity("Demo University");
+    demo_user.setDepartment("Computer Science");
+    demo_user.setEnrollmentYear(2023);
+    demo_user.setPrimaryLanguage("Turkish");
+    demo_user.setPosition(std::string("Professor"));
+    demo_user.setRole(std::string("Professor"));
+
+    auto created_user = user_repository_->create(demo_user, "demo123");
+    if (created_user.has_value()) {
+        int demo_user_id = created_user->getId().value();
+        std::cout << "Second demo user created successfully (ID: " << demo_user_id << ")" << std::endl;
+        assignAdminRole(demo_user_id);
+        ensureProfessorPrivileges(demo_user_id);
+    } else {
+        std::cerr << "Warning: Failed to create second demo user" << std::endl;
     }
 }
 
@@ -2170,7 +2252,7 @@ HttpResponse AcademicSocialServer::handleGetOrganizations(const HttpRequest& req
         if (i > 0) oss << ",";
         oss << orgs[i].toJson();
     }
-    oss << "],\"total\":" << total << "}";
+    oss << "],\"total\":" << orgs.size() << "}";
 
     return createJsonResponse(200, oss.str());
 }
@@ -2552,15 +2634,57 @@ HttpResponse AcademicSocialServer::handleMarkMessageRead(const HttpRequest& requ
 // WebSocket handler setup
 void AcademicSocialServer::setupWebSocketHandlers() {
     // Handler for chat messages
-    websocket_server_->registerHandler("chat:send", 
+    websocket_server_->registerHandler("chat:send",
         [this](int user_id, const WebSocketMessage& message) {
             handleChatMessage(user_id, message);
         });
-    
+
     // Handler for typing indicators
     websocket_server_->registerHandler("chat:typing",
         [this](int user_id, const WebSocketMessage& message) {
             handleTypingIndicator(user_id, message);
+        });
+
+    // Voice channel handlers
+    websocket_server_->registerHandler("voice:join",
+        [this](int user_id, const WebSocketMessage& message) {
+            handleVoiceJoin(user_id, message);
+        });
+
+    websocket_server_->registerHandler("voice:leave",
+        [this](int user_id, const WebSocketMessage& message) {
+            handleVoiceLeave(user_id, message);
+        });
+
+    websocket_server_->registerHandler("voice:offer",
+        [this](int user_id, const WebSocketMessage& message) {
+            handleVoiceOffer(user_id, message);
+        });
+
+    websocket_server_->registerHandler("voice:answer",
+        [this](int user_id, const WebSocketMessage& message) {
+            handleVoiceAnswer(user_id, message);
+        });
+
+    websocket_server_->registerHandler("voice:ice-candidate",
+        [this](int user_id, const WebSocketMessage& message) {
+            handleVoiceIceCandidate(user_id, message);
+        });
+
+    websocket_server_->registerHandler("voice:mute",
+        [this](int user_id, const WebSocketMessage& message) {
+            handleVoiceMute(user_id, message);
+        });
+
+    websocket_server_->registerHandler("voice:video-toggle",
+        [this](int user_id, const WebSocketMessage& message) {
+            handleVoiceVideoToggle(user_id, message);
+        });
+
+    // Register disconnect handler to cleanup voice sessions
+    websocket_server_->registerDisconnectHandler(
+        [this](int user_id) {
+            handleUserDisconnect(user_id);
         });
 }
 
@@ -2667,6 +2791,372 @@ void AcademicSocialServer::handleTypingIndicator(int user_id, const WebSocketMes
     
     WebSocketMessage ws_message("chat:typing", typing_json.str());
     websocket_server_->sendToUser(other_user_id, ws_message);
+}
+
+// Voice WebSocket handler implementations
+
+void AcademicSocialServer::handleVoiceJoin(int user_id, const WebSocketMessage& message) {
+    std::string payload = message.payload;
+
+    // Extract channel_id
+    std::regex channel_regex("\"channel_id\"\\s*:\\s*(\\d+)");
+    std::smatch matches;
+    int channel_id = 0;
+    if (std::regex_search(payload, matches, channel_regex)) {
+        channel_id = std::stoi(matches[1].str());
+    }
+
+    if (channel_id <= 0) {
+        std::cerr << "Invalid voice:join payload - missing channel_id" << std::endl;
+        return;
+    }
+
+    // Get user info
+    auto user_opt = user_repository_->findById(user_id);
+    if (!user_opt.has_value()) {
+        std::cerr << "User not found: " << user_id << std::endl;
+        return;
+    }
+    auto user = user_opt.value();
+
+    // Add user to voice channel participants
+    {
+        std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+        voice_channel_participants_[channel_id].insert(user_id);
+    }
+
+    std::cout << "User " << user.getUsername() << " (id=" << user_id
+              << ") joined voice channel " << channel_id << std::endl;
+
+    // Notify all users in the channel about the new participant
+    std::set<int> participants;
+    {
+        std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+        auto it = voice_channel_participants_.find(channel_id);
+        if (it != voice_channel_participants_.end()) {
+            participants = it->second;
+        }
+    }
+
+    // Prepare join notification with user info
+    std::string university_str = user.getUniversity().has_value() ? user.getUniversity().value() : "";
+    std::ostringstream join_json;
+    join_json << "{\"channel_id\":" << channel_id
+              << ",\"user_id\":" << user_id
+              << ",\"username\":\"" << user.getUsername() << "\""
+              << ",\"university\":\"" << university_str << "\"}";
+
+    WebSocketMessage join_msg("voice:user-joined", join_json.str());
+    websocket_server_->sendToUsers(participants, join_msg);
+
+    // Send list of existing participants to the new user
+    std::ostringstream participants_json;
+    participants_json << "{\"channel_id\":" << channel_id << ",\"participants\":[";
+    bool first = true;
+    for (int participant_id : participants) {
+        if (participant_id == user_id) continue; // Skip self
+
+        auto participant_opt = user_repository_->findById(participant_id);
+        if (participant_opt.has_value()) {
+            auto participant = participant_opt.value();
+            std::string participant_university = participant.getUniversity().has_value() ? participant.getUniversity().value() : "";
+            if (!first) participants_json << ",";
+            participants_json << "{\"user_id\":" << participant_id
+                             << ",\"username\":\"" << participant.getUsername() << "\""
+                             << ",\"university\":\"" << participant_university << "\"}";
+            first = false;
+        }
+    }
+    participants_json << "]}";
+
+    WebSocketMessage participants_msg("voice:participants", participants_json.str());
+    websocket_server_->sendToUser(user_id, participants_msg);
+}
+
+void AcademicSocialServer::handleVoiceLeave(int user_id, const WebSocketMessage& message) {
+    std::string payload = message.payload;
+
+    // Extract channel_id
+    std::regex channel_regex("\"channel_id\"\\s*:\\s*(\\d+)");
+    std::smatch matches;
+    int channel_id = 0;
+    if (std::regex_search(payload, matches, channel_regex)) {
+        channel_id = std::stoi(matches[1].str());
+    }
+
+    if (channel_id <= 0) {
+        std::cerr << "Invalid voice:leave payload - missing channel_id" << std::endl;
+        return;
+    }
+
+    // Get users currently in the channel before removing
+    std::set<int> participants;
+    {
+        std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+        auto it = voice_channel_participants_.find(channel_id);
+        if (it != voice_channel_participants_.end()) {
+            participants = it->second;
+            it->second.erase(user_id);
+
+            // Clean up empty channels
+            if (it->second.empty()) {
+                voice_channel_participants_.erase(it);
+            }
+        }
+    }
+
+    std::cout << "User " << user_id << " left voice channel " << channel_id << std::endl;
+
+    // Notify remaining users about the departure
+    std::ostringstream leave_json;
+    leave_json << "{\"channel_id\":" << channel_id
+               << ",\"user_id\":" << user_id << "}";
+
+    WebSocketMessage leave_msg("voice:user-left", leave_json.str());
+    websocket_server_->sendToUsers(participants, leave_msg);
+}
+
+void AcademicSocialServer::handleVoiceOffer(int user_id, const WebSocketMessage& message) {
+    std::string payload = message.payload;
+
+    // Extract target_user_id and channel_id
+    std::regex target_regex("\"target_user_id\"\\s*:\\s*(\\d+)");
+    std::regex channel_regex("\"channel_id\"\\s*:\\s*(\\d+)");
+    std::smatch matches;
+
+    int target_user_id = 0;
+    int channel_id = 0;
+
+    if (std::regex_search(payload, matches, target_regex)) {
+        target_user_id = std::stoi(matches[1].str());
+    }
+    if (std::regex_search(payload, matches, channel_regex)) {
+        channel_id = std::stoi(matches[1].str());
+    }
+
+    if (target_user_id <= 0 || channel_id <= 0) {
+        std::cerr << "Invalid voice:offer payload" << std::endl;
+        return;
+    }
+
+    // Verify both users are in the same channel
+    {
+        std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+        auto it = voice_channel_participants_.find(channel_id);
+        if (it == voice_channel_participants_.end() ||
+            it->second.find(user_id) == it->second.end() ||
+            it->second.find(target_user_id) == it->second.end()) {
+            std::cerr << "Users not in same voice channel" << std::endl;
+            return;
+        }
+    }
+
+    // Forward the offer to the target user, including sender info
+    WebSocketMessage offer_msg("voice:offer", payload);
+    websocket_server_->sendToUser(target_user_id, offer_msg);
+}
+
+void AcademicSocialServer::handleVoiceAnswer(int user_id, const WebSocketMessage& message) {
+    std::string payload = message.payload;
+
+    // Extract target_user_id and channel_id
+    std::regex target_regex("\"target_user_id\"\\s*:\\s*(\\d+)");
+    std::regex channel_regex("\"channel_id\"\\s*:\\s*(\\d+)");
+    std::smatch matches;
+
+    int target_user_id = 0;
+    int channel_id = 0;
+
+    if (std::regex_search(payload, matches, target_regex)) {
+        target_user_id = std::stoi(matches[1].str());
+    }
+    if (std::regex_search(payload, matches, channel_regex)) {
+        channel_id = std::stoi(matches[1].str());
+    }
+
+    if (target_user_id <= 0 || channel_id <= 0) {
+        std::cerr << "Invalid voice:answer payload" << std::endl;
+        return;
+    }
+
+    // Verify both users are in the same channel
+    {
+        std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+        auto it = voice_channel_participants_.find(channel_id);
+        if (it == voice_channel_participants_.end() ||
+            it->second.find(user_id) == it->second.end() ||
+            it->second.find(target_user_id) == it->second.end()) {
+            std::cerr << "Users not in same voice channel" << std::endl;
+            return;
+        }
+    }
+
+    // Forward the answer to the target user
+    WebSocketMessage answer_msg("voice:answer", payload);
+    websocket_server_->sendToUser(target_user_id, answer_msg);
+}
+
+void AcademicSocialServer::handleVoiceIceCandidate(int user_id, const WebSocketMessage& message) {
+    (void)user_id; // Unused - we just forward the ICE candidate
+    std::string payload = message.payload;
+
+    // Extract target_user_id and channel_id
+    std::regex target_regex("\"target_user_id\"\\s*:\\s*(\\d+)");
+    std::regex channel_regex("\"channel_id\"\\s*:\\s*(\\d+)");
+    std::smatch matches;
+
+    int target_user_id = 0;
+    int channel_id = 0;
+
+    if (std::regex_search(payload, matches, target_regex)) {
+        target_user_id = std::stoi(matches[1].str());
+    }
+    if (std::regex_search(payload, matches, channel_regex)) {
+        channel_id = std::stoi(matches[1].str());
+    }
+
+    if (target_user_id <= 0 || channel_id <= 0) {
+        std::cerr << "Invalid voice:ice-candidate payload" << std::endl;
+        return;
+    }
+
+    // Forward ICE candidate to target user
+    WebSocketMessage ice_msg("voice:ice-candidate", payload);
+    websocket_server_->sendToUser(target_user_id, ice_msg);
+}
+
+void AcademicSocialServer::handleVoiceMute(int user_id, const WebSocketMessage& message) {
+    std::string payload = message.payload;
+
+    // Extract channel_id and muted state
+    std::regex channel_regex("\"channel_id\"\\s*:\\s*(\\d+)");
+    std::regex muted_regex("\"muted\"\\s*:\\s*(true|false)");
+    std::smatch matches;
+
+    int channel_id = 0;
+    bool muted = false;
+
+    if (std::regex_search(payload, matches, channel_regex)) {
+        channel_id = std::stoi(matches[1].str());
+    }
+    if (std::regex_search(payload, matches, muted_regex)) {
+        muted = (matches[1].str() == "true");
+    }
+
+    if (channel_id <= 0) {
+        std::cerr << "Invalid voice:mute payload" << std::endl;
+        return;
+    }
+
+    // Get participants in the channel
+    std::set<int> participants;
+    {
+        std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+        auto it = voice_channel_participants_.find(channel_id);
+        if (it != voice_channel_participants_.end()) {
+            participants = it->second;
+        }
+    }
+
+    // Broadcast mute status to all users in channel
+    std::ostringstream mute_json;
+    mute_json << "{\"channel_id\":" << channel_id
+              << ",\"user_id\":" << user_id
+              << ",\"muted\":" << (muted ? "true" : "false") << "}";
+
+    WebSocketMessage mute_msg("voice:user-muted", mute_json.str());
+    websocket_server_->sendToUsers(participants, mute_msg);
+}
+
+void AcademicSocialServer::handleVoiceVideoToggle(int user_id, const WebSocketMessage& message) {
+    std::string payload = message.payload;
+
+    // Extract channel_id and video_enabled state
+    std::regex channel_regex("\"channel_id\"\\s*:\\s*(\\d+)");
+    std::regex video_regex("\"video_enabled\"\\s*:\\s*(true|false)");
+    std::smatch matches;
+
+    int channel_id = 0;
+    bool video_enabled = false;
+
+    if (std::regex_search(payload, matches, channel_regex)) {
+        channel_id = std::stoi(matches[1].str());
+    }
+    if (std::regex_search(payload, matches, video_regex)) {
+        video_enabled = (matches[1].str() == "true");
+    }
+
+    if (channel_id <= 0) {
+        std::cerr << "Invalid voice:video-toggle payload" << std::endl;
+        return;
+    }
+
+    // Get participants in the channel
+    std::set<int> participants;
+    {
+        std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+        auto it = voice_channel_participants_.find(channel_id);
+        if (it != voice_channel_participants_.end()) {
+            participants = it->second;
+        }
+    }
+
+    // Broadcast video toggle status to all users in channel
+    std::ostringstream video_json;
+    video_json << "{\"channel_id\":" << channel_id
+               << ",\"user_id\":" << user_id
+               << ",\"video_enabled\":" << (video_enabled ? "true" : "false") << "}";
+
+    WebSocketMessage video_msg("voice:user-video-toggled", video_json.str());
+    websocket_server_->sendToUsers(participants, video_msg);
+}
+
+void AcademicSocialServer::handleUserDisconnect(int user_id) {
+    std::cout << "Cleaning up voice sessions for disconnected user: " << user_id << std::endl;
+
+    // Find all channels the user was in
+    std::vector<int> channels_to_notify;
+    {
+        std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+        for (auto& [channel_id, participants] : voice_channel_participants_) {
+            if (participants.find(user_id) != participants.end()) {
+                channels_to_notify.push_back(channel_id);
+                participants.erase(user_id);
+
+                // Clean up empty channels
+                if (participants.empty()) {
+                    voice_channel_participants_.erase(channel_id);
+                }
+            }
+        }
+    }
+
+    // Notify other users in those channels that this user left
+    for (int channel_id : channels_to_notify) {
+        std::set<int> remaining_participants;
+        {
+            std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+            auto it = voice_channel_participants_.find(channel_id);
+            if (it != voice_channel_participants_.end()) {
+                remaining_participants = it->second;
+            }
+        }
+
+        std::ostringstream leave_json;
+        leave_json << "{\"channel_id\":" << channel_id
+                   << ",\"user_id\":" << user_id << "}";
+
+        WebSocketMessage leave_msg("voice:user-left", leave_json.str());
+        websocket_server_->sendToUsers(remaining_participants, leave_msg);
+
+        std::cout << "Notified channel " << channel_id << " that user " << user_id << " left" << std::endl;
+    }
+
+    // End all active voice sessions in the database
+    if (voice_channel_repository_) {
+        int sessions_ended = voice_channel_repository_->endAllUserSessions(user_id);
+        std::cout << "Ended " << sessions_ended << " voice session(s) for user " << user_id << std::endl;
+    }
 }
 
 // Voice/Murmur handler implementations

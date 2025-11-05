@@ -317,5 +317,27 @@ int VoiceChannelRepository::getUserActiveSession(int user_id, int channel_id) {
     return 0;
 }
 
+int VoiceChannelRepository::endAllUserSessions(int user_id) {
+    if (!database_ || !database_->isOpen()) return 0;
+
+    const std::string sql = R"(
+        UPDATE voice_sessions
+        SET left_at = CURRENT_TIMESTAMP
+        WHERE user_id = ? AND left_at IS NULL
+    )";
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return 0;
+
+    stmt.bindInt(1, user_id);
+
+    if (stmt.step() == SQLITE_DONE) {
+        // Get number of rows changed using sqlite3_changes
+        return sqlite3_changes(database_->getHandle());
+    }
+
+    return 0;
+}
+
 } // namespace repositories
 } // namespace sohbet

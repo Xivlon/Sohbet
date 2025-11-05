@@ -463,7 +463,7 @@ class ApiClient {
     return this.request(`/api/posts?limit=${limit}&offset=${offset}`);
   }
 
-  async createPost(content: string, visibility: string = 'friends'): Promise<ApiResponse<Post>> {
+  async createPost(content: string, visibility: string = 'public'): Promise<ApiResponse<Post>> {
     return this.request('/api/posts', {
       method: 'POST',
       body: JSON.stringify({ content, visibility }),
