@@ -5,7 +5,7 @@ primary_region = 'iad'
 
 [build]
 
-# Combined HTTP + WebSocket Service
+# HTTP API Service (port 8080)
 [[services]]
   internal_port = 8080
   protocol = "tcp"
@@ -13,11 +13,11 @@ primary_region = 'iad'
   auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 1
-  
+
   [[services.ports]]
     port = 80
     handlers = ["http"]
-  
+
   [[services.ports]]
     port = 443
     handlers = ["tls", "http"]
@@ -28,6 +28,19 @@ primary_region = 'iad'
     grace_period = 5000
     method = "GET"
     path = "/api/status"
+
+# WebSocket Service (port 8081)
+[[services]]
+  internal_port = 8081
+  protocol = "tcp"
+  processes = ["app"]
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 8081
+    handlers = ["tls"]
 
 # Persistent Storage for Database
 [[mounts]]
