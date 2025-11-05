@@ -10,7 +10,6 @@ import { ScrollArea } from './ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { apiClient, Conversation, Message as ApiMessage, User } from '@/app/lib/api-client';
 import { useAuth } from '@/app/contexts/auth-context';
-import { useTranslations } from 'next-intl';
 
 interface Message extends ApiMessage {
   media_url?: string;
@@ -91,10 +90,6 @@ export function Muhabbet() {
   const { user } = useAuth();
   const currentUserId = user?.id;
 
-  const t = useTranslations('muhabbet');
-  const tCommon = useTranslations('common');
-  const tErrors = useTranslations('errors');
-
   useEffect(() => {
     if (currentUserId) {
       fetchConversations();
@@ -140,7 +135,7 @@ export function Muhabbet() {
               ...conv,
               other_user: {
                 id: otherUserId,
-                username: t('unknownUser'),
+                username: 'Bilinmeyen Kullanıcı',
                 email: ''
               }
             };
@@ -149,10 +144,10 @@ export function Muhabbet() {
         
         setChats(conversationsWithUsers);
       } else {
-        setError(response.error || t('chatsLoadError'));
+        setError(response.error || 'Sohbetler yüklenemedi');
       }
     } catch (err) {
-      setError(tErrors('somethingWentWrong'));
+      setError('Bir hata oluştu. Lütfen tekrar deneyin.');
       console.error('Error fetching conversations:', err);
     } finally {
       setLoading(false);
@@ -233,12 +228,12 @@ export function Muhabbet() {
       } else {
         // Remove temp message on error
         setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
-        alert(tErrors('somethingWentWrong') + ': ' + (response.error || tErrors('somethingWentWrong')));
+        alert('Mesaj gönderilemedi: ' + (response.error || 'Bilinmeyen hata'));
       }
     } catch (err) {
       // Remove temp message on error
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
-      alert(tErrors('somethingWentWrong'));
+      alert('Mesaj gönderilemedi. Lütfen tekrar deneyin.');
       console.error('Error sending message:', err);
     } finally {
       setSendingMessage(false);
@@ -380,7 +375,7 @@ export function Muhabbet() {
   if (!currentUserId) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-muted-foreground">{tCommon('loading')}</p>
+        <p className="text-muted-foreground">Lütfen giriş yapın</p>
       </div>
     );
   }
@@ -410,9 +405,9 @@ export function Muhabbet() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-medium">{selectedChat.other_user?.username || t('unknownUser')}</h3>
+                  <h3 className="font-medium">{selectedChat.other_user?.username || 'Bilinmeyen Kullanıcı'}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {selectedChat.last_message_at ? formatTimestamp(selectedChat.last_message_at) : t('offline')}
+                    Son görülme: {selectedChat.last_message_at ? formatTimestamp(selectedChat.last_message_at) : 'Bilinmiyor'}
                   </p>
                 </div>
               </div>
@@ -472,10 +467,10 @@ export function Muhabbet() {
               <Button variant="ghost" size="sm">
                 <Paperclip className="w-4 h-4" />
               </Button>
-
+              
               <div className="flex-1">
                 <Textarea
-                  placeholder={t('typeMessage')}
+                  placeholder="Mesaj yaz..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -505,18 +500,18 @@ export function Muhabbet() {
           <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 p-4 -mx-4 border-b border-border">
             <div className="px-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-primary">{t('chats')}</h2>
+                <h2 className="text-primary">Muhabbet</h2>
                 <Button size="sm" onClick={() => setShowNewChatDialog(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  {t('newChat')}
+                  Yeni
                 </Button>
               </div>
-
+            
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder={t('searchChats')}
+                  placeholder="Sohbet ara..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -530,18 +525,18 @@ export function Muhabbet() {
             <div className="p-2">
               {loading ? (
                 <div className="p-4 text-center text-muted-foreground">
-                  {tCommon('loading')}
+                  Yükleniyor...
                 </div>
               ) : error ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <p className="text-destructive mb-4">{error}</p>
-                    <Button onClick={fetchConversations}>{tErrors('tryAgain')}</Button>
+                    <Button onClick={fetchConversations}>Tekrar Dene</Button>
                   </CardContent>
                 </Card>
               ) : filteredChats.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
-                  {searchTerm ? tErrors('notFound') : t('messages')}
+                  {searchTerm ? 'Sohbet bulunamadı' : 'Henüz mesajınız yok'}
                 </div>
               ) : (
                 filteredChats.map((chat) => (
@@ -558,16 +553,16 @@ export function Muhabbet() {
                           </span>
                         </div>
                       </div>
-
+                      
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium truncate">{chat.other_user?.username || t('unknownUser')}</h4>
+                          <h4 className="font-medium truncate">{chat.other_user?.username || 'Bilinmeyen Kullanıcı'}</h4>
                           <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
                             {chat.last_message_at ? formatTimestamp(chat.last_message_at) : ''}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">
-                          {chat.last_message_at ? new Date(chat.last_message_at).toLocaleDateString('tr-TR') : t('messages')}
+                          {chat.last_message_at ? new Date(chat.last_message_at).toLocaleDateString('tr-TR') : 'Mesaj yok'}
                         </p>
                       </div>
                     </div>
@@ -583,9 +578,9 @@ export function Muhabbet() {
       <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('newChat')}</DialogTitle>
+            <DialogTitle>Yeni Sohbet Başlat</DialogTitle>
             <DialogDescription>
-              {t('searchChats')}
+              Sohbet başlatmak için bir kullanıcı seçin
             </DialogDescription>
           </DialogHeader>
 

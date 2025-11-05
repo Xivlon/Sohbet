@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
 import { CommentThread } from "./comment-thread"
-import { useTranslations } from 'next-intl'
 
 interface PostCardProps {
   post: Post
@@ -26,14 +25,11 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [showComments, setShowComments] = useState(false)
-  const t = useTranslations('post')
-  const tCommon = useTranslations('common')
-  const tFeed = useTranslations('feed')
 
   const canDeleteAnyPost = usePermission(PERMISSIONS.DELETE_ANY_POST)
   const canEditAnyPost = usePermission(PERMISSIONS.EDIT_ANY_POST)
   const isOwner = currentUserId === (post.author_id || post.user_id)
-
+  
   // User can edit/delete if they own the post OR have admin permissions
   const canEdit = isOwner || canEditAnyPost
   const canDelete = isOwner || canDeleteAnyPost
@@ -59,7 +55,7 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
   }
 
   const handleDelete = async () => {
-    if (!confirm(tFeed('deletePostConfirm'))) return
+    if (!confirm('Are you sure you want to delete this post?')) return
 
     try {
       const response = await apiClient.deletePost(post.id)
@@ -106,12 +102,12 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
               <DropdownMenuContent align="end">
                 {canEdit && (
                   <DropdownMenuItem onClick={() => onEdit?.(post.id)}>
-                    {tCommon('edit')}
+                    Edit
                   </DropdownMenuItem>
                 )}
                 {canDelete && (
                   <DropdownMenuItem onClick={handleDelete} className="text-red-600">
-                    {tCommon('delete')}
+                    Delete
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -141,12 +137,12 @@ export function PostCard({ post, currentUserId, onDelete, onEdit }: PostCardProp
           onClick={() => setShowComments(!showComments)}
         >
           <MessageCircle className="h-4 w-4 mr-1" />
-          {t('comment')}
+          Comment
         </Button>
 
         <Button variant="ghost" size="sm">
           <Share2 className="h-4 w-4 mr-1" />
-          {t('share')}
+          Share
         </Button>
       </CardFooter>
 

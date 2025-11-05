@@ -1,26 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import createIntlMiddleware from 'next-intl/middleware';
-import { locales } from './i18n';
-
-// Create the i18n middleware
-const intlMiddleware = createIntlMiddleware({
-  locales,
-  defaultLocale: 'tr',
-  localeDetection: true,
-  localePrefix: 'as-needed'
-});
 
 /**
- * Combined proxy to handle:
- * 1. Internationalization (i18n) routing
- * 2. Browser extension source map requests
+ * Proxy to handle browser extension source map requests
+ * This prevents 404 errors in the console when browser extensions inject scripts
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Handle browser extension source map requests
+  
+  // Check if this is a source map request that likely comes from a browser extension
   if (pathname.endsWith('.js.map')) {
+    // List of known browser extension patterns
     const extensionPatterns = [
       'injection-',
       'content-script',
@@ -28,15 +18,18 @@ export function proxy(request: NextRequest) {
       'chrome-extension',
       'moz-extension',
     ];
-
-    const isExtensionSourceMap = extensionPatterns.some(pattern =>
+    
+    // Check if the path matches any extension pattern
+    const isExtensionSourceMap = extensionPatterns.some(pattern => 
       pathname.includes(pattern)
     );
-
-    const isAnonymousCode = pathname.includes('%3Canonymous') ||
+    
+    // Also check for encoded anonymous code paths
+    const isAnonymousCode = pathname.includes('%3Canonymous') || 
                            pathname.includes('<anonymous');
-
+    
     if (isExtensionSourceMap || isAnonymousCode) {
+      // Return an empty source map
       const emptySourceMap = {
         version: 3,
         sources: [],
@@ -44,7 +37,7 @@ export function proxy(request: NextRequest) {
         mappings: '',
         file: 'browser-extension.js'
       };
-
+      
       return NextResponse.json(emptySourceMap, {
         status: 200,
         headers: {
@@ -54,16 +47,18 @@ export function proxy(request: NextRequest) {
       });
     }
   }
-
-  // Handle i18n routing
-  return intlMiddleware(request);
+  
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    // Match all pathnames except for
-    // - … if they start with `/api`, `/_next` or `/_vercel`
-    // - … the ones containing a dot (e.g. `favicon.ico`)
-    '/((?!api|_next|_vercel|.*\\..*).*)',
-  ]
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
 };

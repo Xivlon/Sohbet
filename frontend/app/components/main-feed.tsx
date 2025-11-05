@@ -8,7 +8,6 @@ import { Textarea } from './ui/textarea';
 import { apiClient } from '@/app/lib/api-client';
 import { useAuth } from '@/app/contexts/auth-context';
 import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
 
 interface Post {
   id: number;
@@ -37,10 +36,6 @@ export function MainFeed() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
-  const t = useTranslations('feed');
-  const tCommon = useTranslations('common');
-  const tPost = useTranslations('post');
-  const tErrors = useTranslations('errors');
 
   useEffect(() => {
     // Only load posts if user is authenticated
@@ -57,10 +52,10 @@ export function MainFeed() {
       if (response.data) {
         setPosts(response.data.posts || []);
       } else {
-        setError(response.error || t('postError'));
+        setError(response.error || 'Gönderiler yüklenemedi');
       }
     } catch (err) {
-      setError(tErrors('somethingWentWrong'));
+      setError('Bir hata oluştu. Lütfen tekrar deneyin.');
       console.error('Failed to load posts:', err);
     } finally {
       setLoading(false);
@@ -91,7 +86,7 @@ export function MainFeed() {
           ? { ...p, has_reacted: wasLiked, reaction_count: oldCount }
           : p
       ));
-      toast.error(t('likeError'));
+      toast.error('Beğeni işlemi başarısız oldu. Lütfen tekrar deneyin.');
       console.error('Failed to react to post:', error);
     }
   };
@@ -106,12 +101,12 @@ export function MainFeed() {
         // Reload posts to get the new post with all metadata
         await loadPosts();
         setNewPost('');
-        toast.success(t('postSuccess'));
+        toast.success('Gönderi başarıyla paylaşıldı!');
       } else {
-        toast.error(t('deletePostError') + ': ' + (response.error || tCommon('error')));
+        toast.error('Gönderi paylaşılamadı: ' + (response.error || 'Bilinmeyen hata'));
       }
     } catch (err) {
-      toast.error(t('deletePostError'));
+      toast.error('Gönderi paylaşılamadı. Lütfen tekrar deneyin.');
       console.error('Failed to create post:', err);
     } finally {
       setSubmitting(false);
@@ -126,11 +121,11 @@ export function MainFeed() {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return tPost('justNow');
-    if (diffMins < 60) return `${diffMins} ${tPost('minutes')} ${tPost('ago')}`;
-    if (diffHours < 24) return `${diffHours} ${tPost('hours')} ${tPost('ago')}`;
-    if (diffDays < 7) return `${diffDays} ${tPost('days')} ${tPost('ago')}`;
-
+    if (diffMins < 1) return 'şimdi';
+    if (diffMins < 60) return `${diffMins} dakika önce`;
+    if (diffHours < 24) return `${diffHours} saat önce`;
+    if (diffDays < 7) return `${diffDays} gün önce`;
+    
     return date.toLocaleDateString('tr-TR');
   };
 
@@ -166,7 +161,7 @@ export function MainFeed() {
                   </div>
                   <div className="flex-1">
                     <Textarea
-                      placeholder={t('whatsOnYourMind')}
+                      placeholder="Ne düşünüyorsun? Bir araştırma, proje veya etkinlik paylaş..."
                       value={newPost}
                       onChange={(e) => setNewPost(e.target.value)}
                       className="min-h-20 resize-none"
@@ -177,7 +172,7 @@ export function MainFeed() {
                 <div className="flex justify-end">
                   <Button onClick={handleCreatePost} disabled={!newPost.trim() || submitting}>
                     <Plus className="w-4 h-4 mr-2" />
-                    {submitting ? tCommon('processing') + '...' : tPost('share')}
+                    {submitting ? 'Paylaşılıyor...' : 'Paylaş'}
                   </Button>
                 </div>
               </div>
@@ -188,19 +183,19 @@ export function MainFeed() {
         {/* Posts */}
         {loading ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">{tCommon('loading')}</p>
+            <p className="text-muted-foreground">Yükleniyor...</p>
           </div>
         ) : error ? (
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-destructive mb-4">{error}</p>
-              <Button onClick={loadPosts}>{tErrors('tryAgain')}</Button>
+              <Button onClick={loadPosts}>Tekrar Dene</Button>
             </CardContent>
           </Card>
         ) : posts.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">{t('noPostsYet')}</p>
+              <p className="text-muted-foreground">Henüz gönderi yok. İlk gönderiyi siz paylaşın!</p>
             </CardContent>
           </Card>
         ) : (

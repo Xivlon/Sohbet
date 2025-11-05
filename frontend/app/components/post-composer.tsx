@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select"
-import { useTranslations } from 'next-intl'
 
 interface PostComposerProps {
   onPostCreated?: () => void
@@ -22,9 +21,6 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
   const [content, setContent] = useState("")
   const [visibility, setVisibility] = useState("public")
   const [posting, setPosting] = useState(false)
-  const t = useTranslations('feed')
-  const tCommon = useTranslations('common')
-  const tPost = useTranslations('post')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,32 +45,32 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('createPost')}</CardTitle>
+        <CardTitle>Create Post</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Textarea
-            placeholder={t('whatsOnYourMind')}
+            placeholder="What's on your mind?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="min-h-[100px]"
             disabled={posting}
           />
-
+          
           <div className="flex items-center justify-between">
             <Select value={visibility} onValueChange={setVisibility}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder={t('postVisibility')} />
+                <SelectValue placeholder="Visibility" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="public">{t('public')}</SelectItem>
-                <SelectItem value="friends">{t('friendsOnly')}</SelectItem>
-                <SelectItem value="private">{t('private')}</SelectItem>
+                <SelectItem value="public">Public</SelectItem>
+                <SelectItem value="friends">Friends Only</SelectItem>
+                <SelectItem value="private">Private</SelectItem>
               </SelectContent>
             </Select>
 
             <Button type="submit" disabled={posting || !content.trim()}>
-              {posting ? tCommon('processing') + '...' : tPost('share')}
+              {posting ? "Posting..." : "Post"}
             </Button>
           </div>
         </form>

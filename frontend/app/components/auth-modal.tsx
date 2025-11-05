@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/auth-context';
 import { X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -12,8 +11,6 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, initialMode = 'login', required = false }: AuthModalProps) {
-  const t = useTranslations('auth');
-  const tCommon = useTranslations('common');
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -22,7 +19,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', required = f
   const [department, setDepartment] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
+  
   const { login, register } = useAuth();
 
   if (!isOpen) return null;
@@ -119,7 +116,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', required = f
         )}
 
         <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-          {mode === 'login' ? t('login') : t('register')}
+          {mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
         </h2>
 
         {error && (
@@ -131,7 +128,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', required = f
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              {t('username')}
+              Kullanıcı Adı
             </label>
             <input
               type="text"
@@ -146,7 +143,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', required = f
           {mode === 'register' && (
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                {t('email')}
+                E-posta
               </label>
               <input
                 type="email"
@@ -161,7 +158,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', required = f
 
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              {t('password')}
+              Şifre
             </label>
             <input
               type="password"
@@ -178,7 +175,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', required = f
             <>
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                  {t('university')}
+                  Üniversite (isteğe bağlı)
                 </label>
                 <input
                   type="text"
@@ -191,7 +188,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', required = f
 
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                  {t('department')}
+                  Bölüm (isteğe bağlı)
                 </label>
                 <input
                   type="text"
@@ -209,7 +206,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', required = f
             disabled={isLoading}
             className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? tCommon('processing') : mode === 'login' ? t('login') : t('register')}
+            {isLoading ? 'İşleniyor...' : mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
           </button>
         </form>
 
@@ -243,9 +240,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', required = f
             }}
             className="text-sm text-red-600 dark:text-red-400 hover:underline"
           >
-            {mode === 'login'
-              ? t('dontHaveAccount')
-              : t('alreadyHaveAccount')}
+            {mode === 'login' 
+              ? 'Hesabınız yok mu? Kayıt olun'
+              : 'Zaten hesabınız var mı? Giriş yapın'}
           </button>
         </div>
       </div>

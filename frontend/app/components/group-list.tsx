@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useTranslations } from "next-intl"
 import { GroupCard } from "./group-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { Skeleton } from "@/app/components/ui/skeleton"
@@ -17,12 +16,6 @@ interface GroupListProps {
 }
 
 export function GroupList({ currentUserId, onGroupSelect, onLeave }: GroupListProps) {
-  const t = useTranslations('groups')
-  const tCommon = useTranslations('common')
-  const tSearch = useTranslations('search')
-  const tErrors = useTranslations('errors')
-  const tSidebar = useTranslations('sidebar')
-
   const [allGroups, setAllGroups] = useState<Group[]>([])
   const [myGroups, setMyGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
@@ -141,11 +134,11 @@ export function GroupList({ currentUserId, onGroupSelect, onLeave }: GroupListPr
         // Refresh groups
         await fetchGroups()
       } else {
-        alert(`${tErrors('somethingWentWrong')}: ${response.error || tErrors('somethingWentWrong')}`)
+        alert('Gruba katılma başarısız: ' + (response.error || 'Bilinmeyen hata'))
       }
     } catch (error) {
       console.error('Error joining group:', error)
-      alert(`${tErrors('somethingWentWrong')}. ${tErrors('tryAgain')}.`)
+      alert('Gruba katılma başarısız. Lütfen tekrar deneyin.')
     }
   }
 
@@ -177,7 +170,7 @@ export function GroupList({ currentUserId, onGroupSelect, onLeave }: GroupListPr
       <Card>
         <CardContent className="p-8 text-center">
           <p className="text-destructive mb-4">{error}</p>
-          <Button onClick={fetchGroups}>{tErrors('tryAgain')}</Button>
+          <Button onClick={fetchGroups}>Tekrar Dene</Button>
         </CardContent>
       </Card>
     )
@@ -194,22 +187,22 @@ export function GroupList({ currentUserId, onGroupSelect, onLeave }: GroupListPr
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            {tCommon('back')} {tSidebar('home')}
+            Ana Sayfaya Dön
           </Button>
         </div>
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="all">{t('discoverGroups')}</TabsTrigger>
-          <TabsTrigger value="my">{t('myGroups')}</TabsTrigger>
+          <TabsTrigger value="all">Tüm Gruplar</TabsTrigger>
+          <TabsTrigger value="my">Gruplarım</TabsTrigger>
         </TabsList>
       
       <TabsContent value="all" className="mt-6">
         {allGroups.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">{tSearch('noResults')}</p>
+              <p className="text-muted-foreground">Henüz grup yok.</p>
             </CardContent>
           </Card>
         ) : (
@@ -232,7 +225,7 @@ export function GroupList({ currentUserId, onGroupSelect, onLeave }: GroupListPr
         {myGroups.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">{tSearch('noResults')}</p>
+              <p className="text-muted-foreground">Henüz hiçbir gruba katılmadınız.</p>
             </CardContent>
           </Card>
         ) : (

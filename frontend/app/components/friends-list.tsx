@@ -1,18 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTranslations } from 'next-intl'
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { apiClient, User as Friend, Friendship } from '@/app/lib/api-client'
 import { useAuth } from '@/app/contexts/auth-context'
 
 export function FriendsList() {
-  const t = useTranslations('profile')
-  const tCommon = useTranslations('common')
   const [friends, setFriends] = useState<Friend[]>([])
   const [loading, setLoading] = useState(true)
-
+  
   const { user } = useAuth()
 
   useEffect(() => {
@@ -66,14 +63,14 @@ export function FriendsList() {
   }
 
   if (loading) {
-    return <div>{tCommon('loading')}</div>
+    return <div>Loading...</div>
   }
 
   if (friends.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t('friends')}</CardTitle>
+          <CardTitle>Friends</CardTitle>
           <CardDescription>No friends yet</CardDescription>
         </CardHeader>
       </Card>
@@ -83,7 +80,7 @@ export function FriendsList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('friends')}</CardTitle>
+        <CardTitle>Friends</CardTitle>
         <CardDescription>{friends.length} friend(s)</CardDescription>
       </CardHeader>
       <CardContent>
@@ -103,7 +100,7 @@ export function FriendsList() {
                 </div>
               </div>
               <Button onClick={() => handleUnfriend(friend.id)} variant="outline" size="sm">
-                {t('unfriend')}
+                Unfriend
               </Button>
             </div>
           ))}

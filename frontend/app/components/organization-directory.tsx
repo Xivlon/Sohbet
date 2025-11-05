@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useTranslations } from "next-intl"
 import { OrganizationCard } from "./organization-card"
 import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
 import { Skeleton } from "@/app/components/ui/skeleton"
@@ -14,10 +13,6 @@ interface OrganizationDirectoryProps {
 }
 
 export function OrganizationDirectory({ currentUserId }: OrganizationDirectoryProps) {
-  const t = useTranslations('organizations')
-  const tSearch = useTranslations('search')
-  const tErrors = useTranslations('errors')
-
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,16 +28,16 @@ export function OrganizationDirectory({ currentUserId }: OrganizationDirectoryPr
   const fetchOrganizations = async () => {
     setLoading(true)
     setError(null)
-
+    
     try {
       const response = await apiClient.getOrganizations(100, 0)
       if (response.data) {
         setOrganizations(response.data.organizations || [])
       } else {
-        setError(response.error || tErrors('somethingWentWrong'))
+        setError(response.error || 'Organizasyonlar yüklenemedi')
       }
     } catch (err) {
-      setError(`${tErrors('somethingWentWrong')}. ${tErrors('tryAgain')}.`)
+      setError('Bir hata oluştu. Lütfen tekrar deneyin.')
       console.error('Error fetching organizations:', err)
     } finally {
       setLoading(false)
@@ -50,24 +45,14 @@ export function OrganizationDirectory({ currentUserId }: OrganizationDirectoryPr
   }
 
   const categories = ["all", "academic", "sports", "arts", "technology", "social"]
-
-  const getCategoryLabel = (category: string): string => {
-    switch (category) {
-      case "all":
-        return tSearch('all')
-      case "academic":
-        return "Akademik"
-      case "sports":
-        return "Spor"
-      case "arts":
-        return "Sanat"
-      case "technology":
-        return "Teknoloji"
-      case "social":
-        return "Sosyal"
-      default:
-        return category
-    }
+  
+  const categoryLabels: Record<string, string> = {
+    all: "Tümü",
+    academic: "Akademik",
+    sports: "Spor",
+    arts: "Sanat",
+    technology: "Teknoloji",
+    social: "Sosyal"
   }
 
   const filteredOrganizations = activeCategory === "all"
@@ -89,7 +74,7 @@ export function OrganizationDirectory({ currentUserId }: OrganizationDirectoryPr
       <Card>
         <CardContent className="p-8 text-center">
           <p className="text-destructive mb-4">{error}</p>
-          <Button onClick={fetchOrganizations}>{tErrors('tryAgain')}</Button>
+          <Button onClick={fetchOrganizations}>Tekrar Dene</Button>
         </CardContent>
       </Card>
     )
@@ -101,7 +86,7 @@ export function OrganizationDirectory({ currentUserId }: OrganizationDirectoryPr
         <TabsList className="grid w-full max-w-3xl grid-cols-3 md:grid-cols-6">
           {categories.map((cat) => (
             <TabsTrigger key={cat} value={cat}>
-              {getCategoryLabel(cat)}
+              {categoryLabels[cat]}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -111,7 +96,9 @@ export function OrganizationDirectory({ currentUserId }: OrganizationDirectoryPr
             <Card>
               <CardContent className="p-8 text-center">
                 <p className="text-muted-foreground">
-                  {tSearch('noResults')}
+                  {activeCategory === "all" 
+                    ? "Henüz organizasyon yok." 
+                    : "Bu kategoride organizasyon bulunamadı."}
                 </p>
               </CardContent>
             </Card>
