@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/ta
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
 import { Skeleton } from "@/app/components/ui/skeleton"
-import { ArrowLeft, Users, Lock, Globe } from "lucide-react"
+import { ArrowLeft, Users, Lock, Globe, Home } from "lucide-react"
 import { Badge } from "@/app/components/ui/badge"
 import { GroupAnnouncements } from "@/app/components/group-announcements"
 import { GroupCloudAccess } from "@/app/components/group-cloud-access"
@@ -17,6 +17,7 @@ import Link from "next/link"
 export default function GroupDetailPage() {
   const params = useParams()
   const groupId = parseInt(params.id as string)
+  const locale = params.locale as string
   const { user } = useAuth()
   const [group, setGroup] = useState<Group | null>(null)
   const [loading, setLoading] = useState(true)
@@ -126,12 +127,20 @@ export default function GroupDetailPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-destructive mb-4">{error || "Group not found"}</p>
-            <Button asChild>
-              <Link href="/groups">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Groups
-              </Link>
-            </Button>
+            <div className="flex gap-2 justify-center">
+              <Button asChild variant="outline">
+                <Link href={`/${locale}`}>
+                  <Home className="h-4 w-4 mr-2" />
+                  Home
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link href={`/${locale}/groups`}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Groups
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -141,12 +150,20 @@ export default function GroupDetailPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
-        <Button variant="ghost" asChild className="mb-4">
-          <Link href="/groups">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Groups
-          </Link>
-        </Button>
+        <div className="flex gap-2 mb-4">
+          <Button variant="ghost" asChild>
+            <Link href={`/${locale}`}>
+              <Home className="h-4 w-4 mr-2" />
+              Home
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href={`/${locale}/groups`}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Groups
+            </Link>
+          </Button>
+        </div>
 
         <Card>
           <CardHeader>
