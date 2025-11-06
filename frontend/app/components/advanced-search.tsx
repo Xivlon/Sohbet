@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { ScrollArea } from './ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Badge } from './ui/badge'
-import { apiClient } from '../lib/api-client'
+import { api } from '../lib/api-helpers'
 import { useRouter } from 'next/navigation'
 
 // Simple debounce utility
@@ -80,7 +80,7 @@ export function AdvancedSearch() {
 
     setIsSearching(true)
     try {
-      const response = await apiClient.get(`/api/search?q=${encodeURIComponent(searchQuery)}`)
+      const response = await api.get(`/api/search?q=${encodeURIComponent(searchQuery)}`)
       if (response.ok) {
         const data = await response.json()
         setResults({

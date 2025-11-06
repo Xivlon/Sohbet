@@ -23,7 +23,7 @@ import {
 } from './ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
-import { apiClient } from '../lib/api-client'
+import { api } from '../lib/api-helpers'
 import { useAuth } from '../contexts/auth-context'
 
 interface StudySession {
@@ -68,7 +68,7 @@ export function StudySessionScheduler({ groupId, onSessionCreated }: StudySessio
 
   const fetchSessions = async () => {
     try {
-      const response = await apiClient.get(`/api/groups/${groupId}/sessions`)
+      const response = await api.get(`/api/groups/${groupId}/sessions`)
       if (response.ok) {
         const data = await response.json()
         setSessions(data.sessions || [])
@@ -90,7 +90,7 @@ export function StudySessionScheduler({ groupId, onSessionCreated }: StudySessio
         ? new Date(`${formData.endDate}T${formData.endTime}`)
         : new Date(startDateTime.getTime() + 60 * 60 * 1000) // Default 1 hour
 
-      const response = await apiClient.post(`/api/groups/${groupId}/sessions`, {
+      const response = await api.post(`/api/groups/${groupId}/sessions`, {
         title: formData.title,
         description: formData.description,
         location: formData.location,
@@ -124,7 +124,7 @@ export function StudySessionScheduler({ groupId, onSessionCreated }: StudySessio
 
   const joinSession = async (sessionId: number) => {
     try {
-      const response = await apiClient.post(`/api/sessions/${sessionId}/join`)
+      const response = await api.post(`/api/sessions/${sessionId}/join`)
       if (response.ok) {
         fetchSessions()
       }
@@ -135,7 +135,7 @@ export function StudySessionScheduler({ groupId, onSessionCreated }: StudySessio
 
   const leaveSession = async (sessionId: number) => {
     try {
-      const response = await apiClient.post(`/api/sessions/${sessionId}/leave`)
+      const response = await api.post(`/api/sessions/${sessionId}/leave`)
       if (response.ok) {
         fetchSessions()
       }

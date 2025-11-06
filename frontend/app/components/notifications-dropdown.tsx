@@ -10,7 +10,7 @@ import {
 } from './ui/dropdown-menu'
 import { ScrollArea } from './ui/scroll-area'
 import { Badge } from './ui/badge'
-import { apiClient } from '../lib/api-client'
+import { api } from '../lib/api-helpers'
 import { useAuth } from '../contexts/auth-context'
 import { useRouter } from 'next/navigation'
 
@@ -51,7 +51,7 @@ export function NotificationsDropdown() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await apiClient.get('/api/notifications')
+      const response = await api.get('/api/notifications')
       if (response.ok) {
         const data = await response.json()
         setNotifications(data.notifications || [])
@@ -63,7 +63,7 @@ export function NotificationsDropdown() {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await apiClient.get('/api/notifications/unread/count')
+      const response = await api.get('/api/notifications/unread/count')
       if (response.ok) {
         const data = await response.json()
         setUnreadCount(data.count || 0)
@@ -75,7 +75,7 @@ export function NotificationsDropdown() {
 
   const markAsRead = async (notificationId: number) => {
     try {
-      await apiClient.put(`/api/notifications/${notificationId}/read`)
+      await api.put(`/api/notifications/${notificationId}/read`)
       setNotifications(notifications.map(n =>
         n.id === notificationId ? { ...n, is_read: true } : n
       ))
@@ -87,7 +87,7 @@ export function NotificationsDropdown() {
 
   const markAllAsRead = async () => {
     try {
-      await apiClient.put('/api/notifications/read-all')
+      await api.put('/api/notifications/read-all')
       setNotifications(notifications.map(n => ({ ...n, is_read: true })))
       setUnreadCount(0)
     } catch (error) {
@@ -97,7 +97,7 @@ export function NotificationsDropdown() {
 
   const deleteNotification = async (notificationId: number) => {
     try {
-      await apiClient.delete(`/api/notifications/${notificationId}`)
+      await api.delete(`/api/notifications/${notificationId}`)
       setNotifications(notifications.filter(n => n.id !== notificationId))
       const deleted = notifications.find(n => n.id === notificationId)
       if (deleted && !deleted.is_read) {

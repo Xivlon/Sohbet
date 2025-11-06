@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Bookmark } from 'lucide-react'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
-import { apiClient } from '../lib/api-client'
+import { api } from '../lib/api-helpers'
 import { useAuth } from '../contexts/auth-context'
 
 interface BookmarkButtonProps {
@@ -26,7 +26,7 @@ export function BookmarkButton({ postId, className, showLabel = false }: Bookmar
 
   const checkBookmarkStatus = async () => {
     try {
-      const response = await apiClient.get(`/api/posts/${postId}/bookmark`)
+      const response = await api.get(`/api/posts/${postId}/bookmark`)
       if (response.ok) {
         const data = await response.json()
         setIsBookmarked(data.is_bookmarked || false)
@@ -42,12 +42,12 @@ export function BookmarkButton({ postId, className, showLabel = false }: Bookmar
     setIsLoading(true)
     try {
       if (isBookmarked) {
-        const response = await apiClient.delete(`/api/posts/${postId}/bookmark`)
+        const response = await api.delete(`/api/posts/${postId}/bookmark`)
         if (response.ok) {
           setIsBookmarked(false)
         }
       } else {
-        const response = await apiClient.post(`/api/posts/${postId}/bookmark`)
+        const response = await api.post(`/api/posts/${postId}/bookmark`)
         if (response.ok) {
           setIsBookmarked(true)
         }
