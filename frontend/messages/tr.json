@@ -71,7 +71,9 @@
     "loginError": "Giriş başarısız",
     "registerSuccess": "Kayıt başarılı",
     "registerError": "Kayıt başarısız",
-    "logoutSuccess": "Çıkış yapıldı"
+    "logoutSuccess": "Çıkış yapıldı",
+    "registrationSuccess": "Kayıt Başarılı!",
+    "verifyEmailMessage": "Hesabınızı etkinleştirmek için lütfen e-postanıza gönderilen doğrulama bağlantısını kontrol edin."
   },
   "feed": {
     "whatsOnYourMind": "Ne düşünüyorsun?",

@@ -66,7 +66,13 @@
 #include "repositories/study_buddy_connection_repository.h"
 
 
+#include "repositories/email_verification_token_repository.h"
+
+
 #include "services/storage_service.h"
+
+
+#include "services/email_service.h"
 
 
 #include "services/study_buddy_matching_service.h"
@@ -372,7 +378,13 @@ private:
     std::shared_ptr<repositories::StudyBuddyConnectionRepository> study_buddy_connection_repository_;
 
 
+    std::shared_ptr<repositories::EmailVerificationTokenRepository> email_verification_token_repository_;
+
+
     std::shared_ptr<services::StorageService> storage_service_;
+
+
+    std::shared_ptr<services::EmailService> email_service_;
 
 
     std::shared_ptr<services::StudyBuddyMatchingService> study_buddy_matching_service_;
@@ -434,6 +446,9 @@ private:
 
 
     HttpResponse handleLogin(const HttpRequest& request);
+
+
+    HttpResponse handleVerifyEmail(const HttpRequest& request);
 
 
     HttpResponse handleUpdateUser(const HttpRequest& request);
