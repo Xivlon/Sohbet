@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Mic, MicOff, PhoneOff, Volume2, Settings, Plus, Video, VideoOff } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Volume2, VolumeX, Settings, Plus, Video, VideoOff, UserPlus, Radio } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -27,9 +27,13 @@ export function Khave() {
   const [channels, setChannels] = useState<VoiceChannel[]>([]);
   const [currentChannel, setCurrentChannel] = useState<VoiceChannel | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isDeafened, setIsDeafened] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [volume, setVolume] = useState([75]);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [connectionQuality, setConnectionQuality] = useState<'good' | 'medium' | 'poor'>('good');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateChannel, setShowCreateChannel] = useState(false);
@@ -61,6 +65,11 @@ export function Khave() {
         remoteAudioRefs.current.set(userId, audioElement);
       }
       audioElement.srcObject = stream;
+    });
+
+    // Listen for connection quality updates
+    webrtcService.onConnectionQuality((quality) => {
+      setConnectionQuality(quality);
     });
   }, []);
 
@@ -188,9 +197,27 @@ export function Khave() {
     setIsMuted(newMutedState);
   };
 
+  const toggleDeafen = () => {
+    const newDeafenedState = webrtcService.toggleDeafen();
+    setIsDeafened(newDeafenedState);
+    // If deafened, mute the user as well
+    if (newDeafenedState) {
+      setIsMuted(true);
+    }
+  };
+
   const toggleVideo = () => {
     const newVideoState = webrtcService.toggleVideo();
     setIsVideoEnabled(newVideoState);
+  };
+
+  const setParticipantVolume = (userId: number, volume: number) => {
+    webrtcService.setParticipantVolume(userId, volume / 100);
+    // Update the audio element volume
+    const audioElement = remoteAudioRefs.current.get(userId);
+    if (audioElement) {
+      audioElement.volume = volume / 100;
+    }
   };
 
   return (
@@ -263,16 +290,93 @@ export function Khave() {
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                     {currentChannel.name}
                   </h3>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-muted-foreground text-sm flex items-center gap-2">
+                    <Radio className={`w-3 h-3 ${
+                      connectionQuality === 'good' ? 'text-green-500' :
+                      connectionQuality === 'medium' ? 'text-yellow-500' :
+                      'text-red-500'
+                    }`} />
                     {currentChannel.active_users} {t('participants').toLowerCase()}
                   </p>
                 </div>
-                <Badge variant="secondary">
-                  {currentChannel.active_users} {t('participants').toLowerCase()}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {currentChannel.active_users} {t('participants').toLowerCase()}
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowInvite(!showInvite)}
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
+              {/* Invite Panel */}
+              {showInvite && (
+                <div className="mb-4 p-4 bg-accent rounded-lg">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    {t('inviteToRoom')}
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Share this room with your friends:
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${window.location.origin}/khave?room=${currentChannel.id}`}
+                      className="flex-1 p-2 text-sm border rounded bg-background"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `${window.location.origin}/khave?room=${currentChannel.id}`
+                        );
+                      }}
+                    >
+                      {tCommon('copy')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Room Settings Panel */}
+              {showSettings && (
+                <div className="mb-4 p-4 bg-accent rounded-lg">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    {t('roomSettings')}
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-muted-foreground block mb-1">
+                        Room Name
+                      </label>
+                      <p className="text-sm font-medium">{currentChannel.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground block mb-1">
+                        Room Type
+                      </label>
+                      <Badge variant="outline">{currentChannel.channel_type}</Badge>
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground block mb-1">
+                        Created At
+                      </label>
+                      <p className="text-sm">
+                        {new Date(currentChannel.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Local Video Preview (if enabled) */}
               {isVideoEnabled && (
                 <div className="mb-4">
@@ -316,23 +420,39 @@ export function Khave() {
 
                 {/* Show other participants */}
                 {participants.filter(p => p.userId !== user?.id).map((participant) => (
-                  <div key={participant.userId} className="flex items-center gap-3 p-3 border rounded-lg">
-                    <div className="relative">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        participant.isSpeaking ? 'bg-primary text-primary-foreground ring-2 ring-primary' : 'bg-secondary text-secondary-foreground'
-                      }`}>
-                        <span className="text-sm">{participant.username.substring(0, 2).toUpperCase()}</span>
+                  <div key={participant.userId} className="flex flex-col gap-2 p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          participant.isSpeaking ? 'bg-primary text-primary-foreground ring-2 ring-primary' : 'bg-secondary text-secondary-foreground'
+                        }`}>
+                          <span className="text-sm">{participant.username.substring(0, 2).toUpperCase()}</span>
+                        </div>
+                        {participant.isMuted && (
+                          <MicOff className="w-4 h-4 absolute -bottom-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5" />
+                        )}
+                        {!participant.isMuted && (
+                          <Mic className="w-4 h-4 absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-0.5" />
+                        )}
                       </div>
-                      {participant.isMuted && (
-                        <MicOff className="w-4 h-4 absolute -bottom-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5" />
-                      )}
-                      {!participant.isMuted && (
-                        <Mic className="w-4 h-4 absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-0.5" />
-                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{participant.username}</div>
+                        <div className="text-xs text-muted-foreground">{participant.university}</div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{participant.username}</div>
-                      <div className="text-xs text-muted-foreground">{participant.university}</div>
+                    {/* Individual volume control */}
+                    <div className="flex items-center gap-2 px-2">
+                      <Volume2 className="w-3 h-3 text-muted-foreground" />
+                      <Slider
+                        value={[webrtcService.getParticipantVolume(participant.userId) * 100]}
+                        onValueChange={(value) => setParticipantVolume(participant.userId, value[0])}
+                        max={100}
+                        step={1}
+                        className="flex-1"
+                      />
+                      <span className="text-xs text-muted-foreground w-8 text-right">
+                        {Math.round(webrtcService.getParticipantVolume(participant.userId) * 100)}%
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -346,15 +466,26 @@ export function Khave() {
 
               {/* Controls */}
               <div className="flex flex-col gap-4 p-4 bg-muted rounded-lg">
-                <div className="flex items-center justify-center gap-4">
+                <div className="flex items-center justify-center gap-3 flex-wrap">
                   <Button
                     variant={isMuted ? "destructive" : "secondary"}
                     size="lg"
                     onClick={toggleMute}
                     className="w-12 h-12 rounded-full"
                     title={isMuted ? t('unmute') : t('mute')}
+                    disabled={isDeafened}
                   >
                     {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  </Button>
+
+                  <Button
+                    variant={isDeafened ? "destructive" : "secondary"}
+                    size="lg"
+                    onClick={toggleDeafen}
+                    className="w-12 h-12 rounded-full"
+                    title={isDeafened ? t('undeafen') : t('deafen')}
+                  >
+                    {isDeafened ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                   </Button>
 
                   <Button
@@ -367,7 +498,13 @@ export function Khave() {
                     {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
                   </Button>
 
-                  <Button variant="secondary" size="lg" className="w-12 h-12 rounded-full" title={t('roomSettings')}>
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-12 h-12 rounded-full"
+                    title={t('roomSettings')}
+                    onClick={() => setShowSettings(!showSettings)}
+                  >
                     <Settings className="w-5 h-5" />
                   </Button>
 
