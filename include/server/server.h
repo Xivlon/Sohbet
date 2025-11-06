@@ -39,6 +39,15 @@
 #include "repositories/voice_channel_repository.h"
 
 
+#include "repositories/notification_repository.h"
+
+
+#include "repositories/user_presence_repository.h"
+
+
+#include "repositories/study_session_repository.h"
+
+
 #include "services/storage_service.h"
 
 
@@ -313,6 +322,15 @@ private:
 
 
     std::shared_ptr<repositories::VoiceChannelRepository> voice_channel_repository_;
+
+
+    std::shared_ptr<repositories::NotificationRepository> notification_repository_;
+
+
+    std::shared_ptr<repositories::UserPresenceRepository> user_presence_repository_;
+
+
+    std::shared_ptr<repositories::StudySessionRepository> study_session_repository_;
 
 
     std::shared_ptr<services::StorageService> storage_service_;

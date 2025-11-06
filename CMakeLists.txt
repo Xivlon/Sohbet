@@ -50,6 +50,9 @@ set(SOURCES
     src/models/organization.cpp
     src/models/conversation.cpp
     src/models/message.cpp
+    src/models/notification.cpp
+    src/models/user_presence.cpp
+    src/models/study_session.cpp
     src/db/database.cpp
     src/db/migration_runner.cpp
     src/init/database_initializer.cpp
@@ -66,6 +69,9 @@ set(SOURCES
     src/repositories/conversation_repository.cpp
     src/repositories/message_repository.cpp
     src/repositories/voice_channel_repository.cpp
+    src/repositories/notification_repository.cpp
+    src/repositories/user_presence_repository.cpp
+    src/repositories/study_session_repository.cpp
     src/services/permission_service.cpp
     src/services/storage_service.cpp
     src/utils/hash.cpp

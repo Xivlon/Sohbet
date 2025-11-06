@@ -42,8 +42,11 @@ bool AcademicSocialServer::initialize() {
     conversation_repository_ = std::make_shared<repositories::ConversationRepository>(database_);
     message_repository_ = std::make_shared<repositories::MessageRepository>(database_);
     voice_channel_repository_ = std::make_shared<repositories::VoiceChannelRepository>(database_);
+    notification_repository_ = std::make_shared<repositories::NotificationRepository>(database_);
+    user_presence_repository_ = std::make_shared<repositories::UserPresenceRepository>(database_);
+    study_session_repository_ = std::make_shared<repositories::StudySessionRepository>(database_);
     storage_service_ = std::make_shared<services::StorageService>("uploads/");
-    
+
     // Initialize voice service
     VoiceConfig voice_config;
     voice_config.enabled = true;
@@ -68,11 +71,27 @@ bool AcademicSocialServer::initialize() {
         buffer << migration_file.rdbuf();
         std::string migration_sql = buffer.str();
         migration_file.close();
-        
+
         if (!database_->execute(migration_sql)) {
             std::cerr << "Warning: Social features migration failed (may already be applied)" << std::endl;
         } else {
             std::cout << "Social features migration applied successfully" << std::endl;
+        }
+    }
+
+    // Run enhanced features migration if needed
+    const std::string enhanced_migration_path = "migrations/004_enhanced_features.sql";
+    std::ifstream enhanced_migration_file(enhanced_migration_path);
+    if (enhanced_migration_file.is_open()) {
+        std::stringstream buffer;
+        buffer << enhanced_migration_file.rdbuf();
+        std::string migration_sql = buffer.str();
+        enhanced_migration_file.close();
+
+        if (!database_->execute(migration_sql)) {
+            std::cerr << "Warning: Enhanced features migration failed (may already be applied)" << std::endl;
+        } else {
+            std::cout << "Enhanced features migration applied successfully" << std::endl;
         }
     }
 
