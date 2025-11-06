@@ -57,10 +57,13 @@ class WebRTCService {
   private audioAnalyzers: Map<number, AnalyserNode> = new Map();
   private isMuted: boolean = false;
   private isVideoEnabled: boolean = false;
+  private isDeafened: boolean = false;
+  private participantVolumes: Map<number, number> = new Map(); // Individual participant volumes (0-1)
 
   // Callbacks for UI updates
   private onParticipantUpdateCallback: ((participants: VoiceParticipant[]) => void) | null = null;
   private onRemoteStreamCallback: ((userId: number, stream: MediaStream) => void) | null = null;
+  private onConnectionQualityCallback: ((quality: 'good' | 'medium' | 'poor') => void) | null = null;
 
   constructor(private config: WebRTCConfig = { iceServers: DEFAULT_ICE_SERVERS }) {
     this.setupWebSocketHandlers();
@@ -344,6 +347,67 @@ class WebRTCService {
   }
 
   /**
+   * Toggle deafen status (mute all incoming audio)
+   */
+  toggleDeafen(): boolean {
+    this.isDeafened = !this.isDeafened;
+
+    // Mute/unmute all remote audio elements
+    this.peerConnections.forEach((pc, userId) => {
+      const remoteStreams = pc.getReceivers()
+        .map(receiver => receiver.track)
+        .filter(track => track.kind === 'audio');
+
+      remoteStreams.forEach(track => {
+        track.enabled = !this.isDeafened;
+      });
+    });
+
+    // If deafening, also mute microphone
+    if (this.isDeafened && !this.isMuted) {
+      this.toggleMute();
+    }
+
+    return this.isDeafened;
+  }
+
+  /**
+   * Get current deafen status
+   */
+  isDeafenedStatus(): boolean {
+    return this.isDeafened;
+  }
+
+  /**
+   * Set volume for a specific participant (0-1)
+   */
+  setParticipantVolume(userId: number, volume: number) {
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    this.participantVolumes.set(userId, clampedVolume);
+
+    // Apply volume to audio element if it exists
+    const pc = this.peerConnections.get(userId);
+    if (pc) {
+      const receivers = pc.getReceivers();
+      receivers.forEach(receiver => {
+        if (receiver.track.kind === 'audio') {
+          // Note: WebRTC doesn't have direct volume control on tracks
+          // This would need to be applied to the HTML audio element
+          // We'll expose this through the callback system
+          this.notifyParticipantUpdate();
+        }
+      });
+    }
+  }
+
+  /**
+   * Get volume for a specific participant
+   */
+  getParticipantVolume(userId: number): number {
+    return this.participantVolumes.get(userId) || 1.0;
+  }
+
+  /**
    * Setup audio analyzer for speaking detection
    */
   private setupAudioAnalyzer() {
@@ -565,8 +629,12 @@ class WebRTCService {
       if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
         console.error(`Connection failed or closed with user ${userId}`);
         this.closePeerConnection(userId);
+        this.updateConnectionQuality();
       } else if (pc.connectionState === 'connected') {
         console.log(`Successfully connected to user ${userId}`);
+        this.updateConnectionQuality();
+        // Start monitoring connection quality
+        this.monitorConnectionQuality(userId, pc);
       }
     };
 
@@ -667,6 +735,13 @@ class WebRTCService {
   }
 
   /**
+   * Register callback for connection quality updates
+   */
+  onConnectionQuality(callback: (quality: 'good' | 'medium' | 'poor') => void) {
+    this.onConnectionQualityCallback = callback;
+  }
+
+  /**
    * Get current participants
    */
   getParticipants(): VoiceParticipant[] {
@@ -679,6 +754,103 @@ class WebRTCService {
   private notifyParticipantUpdate() {
     if (this.onParticipantUpdateCallback) {
       this.onParticipantUpdateCallback(this.getParticipants());
+    }
+  }
+
+  /**
+   * Monitor connection quality using WebRTC stats
+   */
+  private async monitorConnectionQuality(userId: number, pc: RTCPeerConnection) {
+    const checkQuality = async () => {
+      const stats = await pc.getStats();
+      let packetsLost = 0;
+      let packetsReceived = 0;
+      let jitter = 0;
+
+      stats.forEach((report) => {
+        if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+          packetsLost = report.packetsLost || 0;
+          packetsReceived = report.packetsReceived || 0;
+          jitter = report.jitter || 0;
+        }
+      });
+
+      // Don't update if not connected anymore
+      if (!this.peerConnections.has(userId)) {
+        return;
+      }
+
+      this.updateConnectionQuality();
+
+      // Check again in 2 seconds
+      setTimeout(() => checkQuality(), 2000);
+    };
+
+    checkQuality();
+  }
+
+  /**
+   * Update overall connection quality based on all peer connections
+   */
+  private async updateConnectionQuality() {
+    if (this.peerConnections.size === 0) {
+      if (this.onConnectionQualityCallback) {
+        this.onConnectionQualityCallback('good');
+      }
+      return;
+    }
+
+    let totalConnections = 0;
+    let goodConnections = 0;
+    let mediumConnections = 0;
+    let poorConnections = 0;
+
+    for (const [userId, pc] of this.peerConnections) {
+      totalConnections++;
+      const state = pc.connectionState;
+
+      if (state === 'connected') {
+        try {
+          const stats = await pc.getStats();
+          let packetsLost = 0;
+          let packetsReceived = 0;
+
+          stats.forEach((report) => {
+            if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+              packetsLost = report.packetsLost || 0;
+              packetsReceived = report.packetsReceived || 0;
+            }
+          });
+
+          const lossRate = packetsReceived > 0 ? packetsLost / packetsReceived : 0;
+
+          if (lossRate < 0.02) {
+            goodConnections++;
+          } else if (lossRate < 0.05) {
+            mediumConnections++;
+          } else {
+            poorConnections++;
+          }
+        } catch (err) {
+          mediumConnections++;
+        }
+      } else if (state === 'connecting' || state === 'new') {
+        mediumConnections++;
+      } else {
+        poorConnections++;
+      }
+    }
+
+    // Determine overall quality
+    let quality: 'good' | 'medium' | 'poor' = 'good';
+    if (poorConnections > 0 || goodConnections < totalConnections / 2) {
+      quality = 'poor';
+    } else if (mediumConnections > 0) {
+      quality = 'medium';
+    }
+
+    if (this.onConnectionQualityCallback) {
+      this.onConnectionQualityCallback(quality);
     }
   }
 }
