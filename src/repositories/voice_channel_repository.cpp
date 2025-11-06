@@ -339,5 +339,41 @@ int VoiceChannelRepository::endAllUserSessions(int user_id) {
     return 0;
 }
 
+std::vector<int> VoiceChannelRepository::findEmptyInactiveChannels(int inactivity_minutes) {
+    std::vector<int> channel_ids;
+    if (!database_ || !database_->isOpen()) return channel_ids;
+
+    // Find channels that:
+    // 1. Have at least one session (have been used before)
+    // 2. Have no active sessions (all sessions have left_at set)
+    // 3. Last session ended more than inactivity_minutes ago
+    const std::string sql = R"(
+        SELECT vc.id
+        FROM voice_channels vc
+        INNER JOIN (
+            SELECT channel_id, MAX(left_at) as last_activity
+            FROM voice_sessions
+            GROUP BY channel_id
+        ) vs ON vc.id = vs.channel_id
+        WHERE vs.last_activity IS NOT NULL
+        AND vs.last_activity < datetime('now', '-' || ? || ' minutes')
+        AND NOT EXISTS (
+            SELECT 1 FROM voice_sessions
+            WHERE channel_id = vc.id AND left_at IS NULL
+        )
+    )";
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return channel_ids;
+
+    stmt.bindInt(1, inactivity_minutes);
+
+    while (stmt.step() == SQLITE_ROW) {
+        channel_ids.push_back(stmt.getInt(0));
+    }
+
+    return channel_ids;
+}
+
 } // namespace repositories
 } // namespace sohbet
