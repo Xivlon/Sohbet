@@ -365,6 +365,9 @@ private:
 
     int server_socket_;
 
+    // Voice channel cleanup thread
+    std::thread voice_cleanup_thread_;
+    std::atomic<bool> cleanup_running_;
 
 
     // Voice channel state tracking: channel_id -> set of user_ids
@@ -382,6 +385,8 @@ private:
     void handleClient(int client_socket);
 
     HttpRequest parseHttpRequest(const std::string& raw_request);
+
+    void runVoiceChannelCleanup();
 
     std::string formatHttpResponse(const HttpResponse& response, const HttpRequest& request);
 

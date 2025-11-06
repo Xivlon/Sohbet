@@ -17,6 +17,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <chrono>
 
 namespace sohbet {
 namespace server {
@@ -122,7 +123,11 @@ bool AcademicSocialServer::start() {
         std::cerr << "Failed to start WebSocket server" << std::endl;
         return false;
     }
-    
+
+    // Start voice channel cleanup task
+    cleanup_running_ = true;
+    voice_cleanup_thread_ = std::thread(&AcademicSocialServer::runVoiceChannelCleanup, this);
+
     running_ = true;
     std::cout << "🌐 HTTP Server listening on http://0.0.0.0:" << port_ << std::endl;
     std::cout << "Available endpoints:" << std::endl;
@@ -160,12 +165,18 @@ bool AcademicSocialServer::start() {
 
 void AcademicSocialServer::stop() {
     running_ = false;
-    
+
+    // Stop voice channel cleanup task
+    cleanup_running_ = false;
+    if (voice_cleanup_thread_.joinable()) {
+        voice_cleanup_thread_.join();
+    }
+
     // Stop WebSocket server
     if (websocket_server_) {
         websocket_server_->stop();
     }
-    
+
     if (server_socket_ >= 0) {
         close(server_socket_);
         server_socket_ = -1;
@@ -3255,6 +3266,45 @@ void AcademicSocialServer::handleUserDisconnect(int user_id) {
         int sessions_ended = voice_channel_repository_->endAllUserSessions(user_id);
         std::cout << "Ended " << sessions_ended << " voice session(s) for user " << user_id << std::endl;
     }
+}
+
+void AcademicSocialServer::runVoiceChannelCleanup() {
+    std::cout << "Voice channel cleanup task started" << std::endl;
+
+    while (cleanup_running_) {
+        // Sleep for 5 minutes before checking
+        for (int i = 0; i < 300 && cleanup_running_; i++) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        if (!cleanup_running_) break;
+
+        // Find and delete empty inactive channels
+        if (voice_channel_repository_) {
+            std::vector<int> inactive_channels = voice_channel_repository_->findEmptyInactiveChannels(30);
+
+            if (!inactive_channels.empty()) {
+                std::cout << "Found " << inactive_channels.size()
+                         << " voice channel(s) empty for more than 30 minutes" << std::endl;
+
+                for (int channel_id : inactive_channels) {
+                    if (voice_channel_repository_->deleteById(channel_id)) {
+                        std::cout << "Closed empty voice channel: " << channel_id << std::endl;
+
+                        // Clean up in-memory state if present
+                        {
+                            std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+                            voice_channel_participants_.erase(channel_id);
+                        }
+                    } else {
+                        std::cerr << "Failed to close voice channel: " << channel_id << std::endl;
+                    }
+                }
+            }
+        }
+    }
+
+    std::cout << "Voice channel cleanup task stopped" << std::endl;
 }
 
 // Voice/Murmur handler implementations

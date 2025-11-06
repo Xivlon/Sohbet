@@ -103,6 +103,13 @@ public:
      * @return Number of sessions ended
      */
     int endAllUserSessions(int user_id);
+
+    /**
+     * @brief Find voice channels that have been empty for more than the specified duration
+     * @param inactivity_minutes Number of minutes of inactivity to consider
+     * @return Vector of channel IDs that are empty and inactive
+     */
+    std::vector<int> findEmptyInactiveChannels(int inactivity_minutes = 30);
 };
 
 } // namespace repositories
