@@ -3,6 +3,9 @@
 #include "models/media.h"
 #include "models/group.h"
 #include "models/organization.h"
+#include "models/email_verification_token.h"
+#include "repositories/email_verification_token_repository.h"
+#include "services/email_service.h"
 #include "security/jwt.h"
 #include "config/env.h"
 #include "utils/hash.h"
@@ -53,7 +56,12 @@ bool AcademicSocialServer::initialize() {
     study_preferences_repository_ = std::make_shared<repositories::StudyPreferencesRepository>(database_);
     study_buddy_match_repository_ = std::make_shared<repositories::StudyBuddyMatchRepository>(database_);
     study_buddy_connection_repository_ = std::make_shared<repositories::StudyBuddyConnectionRepository>(database_);
+    email_verification_token_repository_ = std::make_shared<repositories::EmailVerificationTokenRepository>(database_);
     storage_service_ = std::make_shared<services::StorageService>("uploads/");
+    // TODO: Enable when CURL is available
+    // email_service_ = std::make_shared<services::EmailService>();
+    email_service_ = nullptr;
+    std::cout << "Note: Email service not available in this build (requires libcurl-dev)" << std::endl;
     study_buddy_matching_service_ = std::make_shared<services::StudyBuddyMatchingService>(
         study_preferences_repository_,
         study_buddy_match_repository_,
@@ -555,6 +563,8 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleUpdateUser(request);
     } else if (request.method == "POST" && base_path == "/api/login") {
         return handleLogin(request);
+    } else if (request.method == "POST" && base_path == "/api/verify-email") {
+        return handleVerifyEmail(request);
     } else if (request.method == "POST" && base_path == "/api/media/upload") {
         return handleUploadMedia(request);
     } else if (request.method == "GET" && base_path.find("/api/media/file/") == 0) {
@@ -842,6 +852,31 @@ HttpResponse AcademicSocialServer::handleCreateUser(const HttpRequest& request) 
             return createErrorResponse(500, "Failed to create user");
         }
 
+        // Create email verification token and send verification email
+        int user_id = created_user.value().getId().value();
+        auto token_opt = email_verification_token_repository_->createToken(user_id);
+        if (token_opt.has_value()) {
+            std::cout << "Email service not available in this build. Verification token created." << std::endl;
+            std::cout << "Verification token for " << email << ": " << token_opt.value().getToken() << std::endl;
+            std::cout << "In production, this token would be emailed to the user." << std::endl;
+            // TODO: Uncomment when CURL is available
+            // std::string user_name = created_user.value().getName().value_or(username);
+            // if (email_service_) {
+            //     bool email_sent = email_service_->sendVerificationEmail(
+            //         email,
+            //         user_name,
+            //         token_opt.value().getToken()
+            //     );
+            //     if (email_sent) {
+            //         std::cout << "Verification email sent to " << email << std::endl;
+            //     } else {
+            //         std::cerr << "Warning: Failed to send verification email to " << email << std::endl;
+            //     }
+            // }
+        } else {
+            std::cerr << "Warning: Failed to create verification token for user " << user_id << std::endl;
+        }
+
         return createJsonResponse(201, created_user.value().toJson());
     } catch (...) {
         return createErrorResponse(500, "Internal server error");
@@ -874,6 +909,45 @@ HttpResponse AcademicSocialServer::handleLogin(const HttpRequest& request) {
         return createErrorResponse(500, "Internal server error");
     } catch (...) {
         std::cerr << "Login error: Unknown exception" << std::endl;
+        return createErrorResponse(500, "Internal server error");
+    }
+}
+
+HttpResponse AcademicSocialServer::handleVerifyEmail(const HttpRequest& request) {
+    try {
+        std::string token = extractJsonField(request.body, "token");
+
+        if (token.empty()) {
+            return createErrorResponse(400, "Token is required");
+        }
+
+        // Verify the token using the repository
+        bool verified = email_verification_token_repository_->verifyToken(token);
+
+        if (verified) {
+            return createJsonResponse(200, "{\"message\":\"Email verified successfully\",\"verified\":true}");
+        } else {
+            // Token might be invalid, expired, or already used
+            auto token_opt = email_verification_token_repository_->findByToken(token);
+            if (!token_opt.has_value()) {
+                return createErrorResponse(400, "Invalid verification token");
+            }
+
+            if (token_opt->isExpired()) {
+                return createErrorResponse(400, "Verification token has expired");
+            }
+
+            if (token_opt->isVerified()) {
+                return createErrorResponse(400, "Email has already been verified");
+            }
+
+            return createErrorResponse(400, "Failed to verify email");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Email verification error: " << e.what() << std::endl;
+        return createErrorResponse(500, "Internal server error");
+    } catch (...) {
+        std::cerr << "Email verification error: Unknown exception" << std::endl;
         return createErrorResponse(500, "Internal server error");
     }
 }

@@ -71,7 +71,9 @@
     "loginError": "Login failed",
     "registerSuccess": "Registration successful",
     "registerError": "Registration failed",
-    "logoutSuccess": "Logged out"
+    "logoutSuccess": "Logged out",
+    "registrationSuccess": "Registration Successful!",
+    "verifyEmailMessage": "Please check your email for a verification link to activate your account."
   },
   "feed": {
     "whatsOnYourMind": "What's on your mind?",

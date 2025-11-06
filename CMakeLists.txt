@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Find packages
 find_package(SQLite3 REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(CURL)
 
 # Download and build bcrypt library using FetchContent
 include(FetchContent)
@@ -106,9 +107,19 @@ set(SOURCES
     src/voice/voice_service.cpp
 )
 
+# Conditionally add email service if CURL is found
+if(CURL_FOUND)
+    list(APPEND SOURCES src/services/email_service.cpp)
+endif()
+
 # Create library
 add_library(sohbet_lib ${SOURCES})
-target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt_lib OpenSSL::SSL OpenSSL::Crypto pthread nlohmann_json::nlohmann_json)
+if(CURL_FOUND)
+    target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt_lib OpenSSL::SSL OpenSSL::Crypto CURL::libcurl pthread nlohmann_json::nlohmann_json)
+else()
+    message(WARNING "CURL not found. Email service will not be available.")
+    target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt_lib OpenSSL::SSL OpenSSL::Crypto pthread nlohmann_json::nlohmann_json)
+endif()
 target_include_directories(sohbet_lib PUBLIC include)
 
 # Main executable
