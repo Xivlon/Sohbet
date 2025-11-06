@@ -57,7 +57,19 @@
 #include "repositories/announcement_repository.h"
 
 
+#include "repositories/study_preferences_repository.h"
+
+
+#include "repositories/study_buddy_match_repository.h"
+
+
+#include "repositories/study_buddy_connection_repository.h"
+
+
 #include "services/storage_service.h"
+
+
+#include "services/study_buddy_matching_service.h"
 
 
 #include "server/websocket_server.h"
@@ -351,7 +363,19 @@ private:
     std::shared_ptr<repositories::AnnouncementRepository> announcement_repository_;
 
 
+    std::shared_ptr<repositories::StudyPreferencesRepository> study_preferences_repository_;
+
+
+    std::shared_ptr<repositories::StudyBuddyMatchRepository> study_buddy_match_repository_;
+
+
+    std::shared_ptr<repositories::StudyBuddyConnectionRepository> study_buddy_connection_repository_;
+
+
     std::shared_ptr<services::StorageService> storage_service_;
+
+
+    std::shared_ptr<services::StudyBuddyMatchingService> study_buddy_matching_service_;
 
 
     std::shared_ptr<VoiceService> voice_service_;
@@ -552,6 +576,23 @@ private:
     HttpResponse handlePinAnnouncement(const HttpRequest& request);
 
     HttpResponse handleUnpinAnnouncement(const HttpRequest& request);
+
+
+    // Study Buddy Matching handlers
+
+    HttpResponse handleGetStudyPreferences(const HttpRequest& request);
+
+    HttpResponse handleSetStudyPreferences(const HttpRequest& request);
+
+    HttpResponse handleGetStudyBuddyMatches(const HttpRequest& request);
+
+    HttpResponse handleRefreshStudyBuddyMatches(const HttpRequest& request);
+
+    HttpResponse handleAcceptStudyBuddyMatch(const HttpRequest& request);
+
+    HttpResponse handleDeclineStudyBuddyMatch(const HttpRequest& request);
+
+    HttpResponse handleGetStudyBuddyConnections(const HttpRequest& request);
 
 
     // Mention handlers

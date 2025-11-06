@@ -18,6 +18,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(bcrypt)
 
+# Download nlohmann/json library
+FetchContent_Declare(
+    json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
+
 # Bcrypt source files from downloaded content
 set(BCRYPT_DIR ${CMAKE_BINARY_DIR}/_deps/bcrypt-src)
 set(BCRYPT_SOURCES
@@ -55,6 +63,10 @@ set(SOURCES
     src/models/study_session.cpp
     src/models/hashtag.cpp
     src/models/announcement.cpp
+    src/models/study_preferences.cpp
+    src/models/study_buddy_match.cpp
+    src/models/study_buddy_connection.cpp
+    src/models/study_session_plan.cpp
     src/db/database.cpp
     src/db/migration_runner.cpp
     src/init/database_initializer.cpp
@@ -77,7 +89,11 @@ set(SOURCES
     src/repositories/hashtag_repository.cpp
     src/repositories/mention_repository.cpp
     src/repositories/announcement_repository.cpp
+    src/repositories/study_preferences_repository.cpp
+    src/repositories/study_buddy_match_repository.cpp
+    src/repositories/study_buddy_connection_repository.cpp
     src/services/permission_service.cpp
+    src/services/study_buddy_matching_service.cpp
     src/services/storage_service.cpp
     src/utils/hash.cpp
     src/utils/multipart_parser.cpp
@@ -92,7 +108,7 @@ set(SOURCES
 
 # Create library
 add_library(sohbet_lib ${SOURCES})
-target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt_lib OpenSSL::SSL OpenSSL::Crypto pthread)
+target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt_lib OpenSSL::SSL OpenSSL::Crypto pthread nlohmann_json::nlohmann_json)
 target_include_directories(sohbet_lib PUBLIC include)
 
 # Main executable

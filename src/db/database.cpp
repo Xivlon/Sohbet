@@ -97,6 +97,11 @@ bool Statement::bindInt(int index, int value) {
     return sqlite3_bind_int(stmt_, index, value) == SQLITE_OK;
 }
 
+bool Statement::bindDouble(int index, double value) {
+    if (!stmt_) return false;
+    return sqlite3_bind_double(stmt_, index, value) == SQLITE_OK;
+}
+
 bool Statement::bindText(int index, const std::string& value) {
     if (!stmt_) return false;
     return sqlite3_bind_text(stmt_, index, value.c_str(), -1, SQLITE_TRANSIENT) == SQLITE_OK;
@@ -125,6 +130,11 @@ int Statement::getInt(int index) const {
 sqlite3_int64 Statement::getInt64(int index) const {
     if (!stmt_) return 0;
     return sqlite3_column_int64(stmt_, index);
+}
+
+double Statement::getDouble(int index) const {
+    if (!stmt_) return 0.0;
+    return sqlite3_column_double(stmt_, index);
 }
 
 std::string Statement::getText(int index) const {
