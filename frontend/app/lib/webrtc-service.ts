@@ -55,6 +55,7 @@ class WebRTCService {
   private currentUserId: number | null = null;
   private audioContext: AudioContext | null = null;
   private audioAnalyzers: Map<number, AnalyserNode> = new Map();
+  private audioGainNodes: Map<number, GainNode> = new Map(); // For volume control
   private isMuted: boolean = false;
   private isVideoEnabled: boolean = false;
   private isDeafened: boolean = false;
@@ -385,19 +386,16 @@ class WebRTCService {
     const clampedVolume = Math.max(0, Math.min(1, volume));
     this.participantVolumes.set(userId, clampedVolume);
 
-    // Apply volume to audio element if it exists
-    const pc = this.peerConnections.get(userId);
-    if (pc) {
-      const receivers = pc.getReceivers();
-      receivers.forEach(receiver => {
-        if (receiver.track.kind === 'audio') {
-          // Note: WebRTC doesn't have direct volume control on tracks
-          // This would need to be applied to the HTML audio element
-          // We'll expose this through the callback system
-          this.notifyParticipantUpdate();
-        }
-      });
+    // Apply volume to the GainNode if it exists
+    const gainNode = this.audioGainNodes.get(userId);
+    if (gainNode) {
+      gainNode.gain.value = clampedVolume;
+      console.log(`Set volume for user ${userId} to ${clampedVolume}`);
+    } else {
+      console.warn(`No gain node found for user ${userId}, volume will be applied when stream connects`);
     }
+
+    this.notifyParticipantUpdate();
   }
 
   /**
@@ -569,9 +567,12 @@ class WebRTCService {
     try {
       if (candidate) {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log(`Added ICE candidate from user ${from_user_id}`);
       }
     } catch (error) {
-      console.error('Error adding ICE candidate:', error);
+      console.error(`Error adding ICE candidate from user ${from_user_id}:`, error);
+      // Don't close connection on ICE candidate failure - connection might still work
+      // Just log the error and let ICE gathering continue
     }
   }
 
@@ -670,13 +671,36 @@ class WebRTCService {
       this.audioContext = new AudioContext();
     }
 
+    // Resume audio context if suspended (required by some browsers)
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume().catch(err =>
+        console.error('Failed to resume audio context:', err)
+      );
+    }
+
     const source = this.audioContext.createMediaStreamSource(stream);
     const analyzer = this.audioContext.createAnalyser();
     analyzer.fftSize = 256;
+
+    // Create gain node for volume control
+    const gainNode = this.audioContext.createGain();
+
+    // Apply stored volume or default to 1.0
+    const storedVolume = this.participantVolumes.get(userId) ?? 1.0;
+    gainNode.gain.value = storedVolume;
+
+    // CRITICAL FIX: Connect audio pipeline properly
+    // source → analyzer (for speaker detection)
+    // source → gainNode → destination (for audio output with volume control)
     source.connect(analyzer);
+    source.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
 
     this.audioAnalyzers.set(userId, analyzer);
+    this.audioGainNodes.set(userId, gainNode);
     this.monitorAudioLevel(userId, analyzer);
+
+    console.log(`Setup audio for user ${userId} with volume ${storedVolume}`);
   }
 
   /**
@@ -717,7 +741,15 @@ class WebRTCService {
       this.peerConnections.delete(userId);
     }
 
+    // Clean up audio nodes
+    const gainNode = this.audioGainNodes.get(userId);
+    if (gainNode) {
+      gainNode.disconnect();
+      this.audioGainNodes.delete(userId);
+    }
+
     this.audioAnalyzers.delete(userId);
+    this.participantVolumes.delete(userId);
   }
 
   /**
