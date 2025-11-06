@@ -61,6 +61,7 @@ public:
 
     // Bind parameters
     bool bindInt(int index, int value);
+    bool bindDouble(int index, double value);
     bool bindText(int index, const std::string& value);
     bool bindNull(int index);
 
@@ -71,10 +72,12 @@ public:
     // Column getters
     int getInt(int index) const;
     sqlite3_int64 getInt64(int index) const;
+    double getDouble(int index) const;
     std::string getText(int index) const;
     bool isNull(int index) const;
 
     bool isValid() const { return stmt_ != nullptr; }
+    sqlite3_stmt* getStatement() const { return stmt_; }
 
 private:
     sqlite3_stmt* stmt_;

@@ -49,7 +49,15 @@ bool AcademicSocialServer::initialize() {
     hashtag_repository_ = std::make_shared<repositories::HashtagRepository>(database_);
     mention_repository_ = std::make_shared<repositories::MentionRepository>(database_);
     announcement_repository_ = std::make_shared<repositories::AnnouncementRepository>(database_);
+    study_preferences_repository_ = std::make_shared<repositories::StudyPreferencesRepository>(database_);
+    study_buddy_match_repository_ = std::make_shared<repositories::StudyBuddyMatchRepository>(database_);
+    study_buddy_connection_repository_ = std::make_shared<repositories::StudyBuddyConnectionRepository>(database_);
     storage_service_ = std::make_shared<services::StorageService>("uploads/");
+    study_buddy_matching_service_ = std::make_shared<services::StudyBuddyMatchingService>(
+        study_preferences_repository_,
+        study_buddy_match_repository_,
+        user_repository_
+    );
 
     // Initialize voice service
     VoiceConfig voice_config;
@@ -96,6 +104,22 @@ bool AcademicSocialServer::initialize() {
             std::cerr << "Warning: Enhanced features migration failed (may already be applied)" << std::endl;
         } else {
             std::cout << "Enhanced features migration applied successfully" << std::endl;
+        }
+    }
+
+    // Run study buddy matching migration if needed
+    const std::string study_buddy_migration_path = "migrations/005_study_buddy_matching.sql";
+    std::ifstream study_buddy_migration_file(study_buddy_migration_path);
+    if (study_buddy_migration_file.is_open()) {
+        std::stringstream buffer;
+        buffer << study_buddy_migration_file.rdbuf();
+        std::string migration_sql = buffer.str();
+        study_buddy_migration_file.close();
+
+        if (!database_->execute(migration_sql)) {
+            std::cerr << "Warning: Study buddy matching migration failed (may already be applied)" << std::endl;
+        } else {
+            std::cout << "Study buddy matching migration applied successfully" << std::endl;
         }
     }
 
@@ -604,6 +628,22 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handlePinAnnouncement(request);
     } else if (request.method == "PUT" && base_path.find("/api/announcements/") == 0 && base_path.find("/unpin") != std::string::npos) {
         return handleUnpinAnnouncement(request);
+    }
+    // Study Buddy routes
+    else if (request.method == "GET" && base_path == "/api/study-buddies/preferences") {
+        return handleGetStudyPreferences(request);
+    } else if (request.method == "POST" && base_path == "/api/study-buddies/preferences") {
+        return handleSetStudyPreferences(request);
+    } else if (request.method == "GET" && base_path == "/api/study-buddies/matches") {
+        return handleGetStudyBuddyMatches(request);
+    } else if (request.method == "POST" && base_path == "/api/study-buddies/matches/refresh") {
+        return handleRefreshStudyBuddyMatches(request);
+    } else if (request.method == "PUT" && base_path.find("/api/study-buddies/matches/") == 0 && base_path.find("/accept") != std::string::npos) {
+        return handleAcceptStudyBuddyMatch(request);
+    } else if (request.method == "PUT" && base_path.find("/api/study-buddies/matches/") == 0 && base_path.find("/decline") != std::string::npos) {
+        return handleDeclineStudyBuddyMatch(request);
+    } else if (request.method == "GET" && base_path == "/api/study-buddies/connections") {
+        return handleGetStudyBuddyConnections(request);
     }
     // Mention routes
     else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/mentions") != std::string::npos) {
@@ -3907,6 +3947,202 @@ HttpResponse AcademicSocialServer::handleGetUserMentions(const HttpRequest& requ
             oss << post->toJson();
             if (i < post_ids.size() - 1) oss << ",";
         }
+    }
+    oss << "]}";
+
+    return createJsonResponse(200, oss.str());
+}
+
+// -------------------- Study Buddy Matching Handlers --------------------
+
+HttpResponse AcademicSocialServer::handleGetStudyPreferences(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    auto prefs = study_preferences_repository_->findByUserId(user_id);
+    if (!prefs) {
+        return createJsonResponse(200, "{\"has_preferences\": false}");
+    }
+
+    return createJsonResponse(200, prefs->toJson().dump());
+}
+
+HttpResponse AcademicSocialServer::handleSetStudyPreferences(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    try {
+        json j = json::parse(request.body);
+
+        StudyPreferences prefs;
+        prefs.user_id = user_id;
+        prefs.learning_style = StudyPreferences::stringToLearningStyle(j.value("learning_style", "mixed"));
+        prefs.study_environment = StudyPreferences::stringToStudyEnvironment(j.value("study_environment", "flexible"));
+        prefs.study_time_preference = StudyPreferences::stringToStudyTimePreference(j.value("study_time_preference", "flexible"));
+
+        if (j.contains("courses") && j["courses"].is_array()) {
+            for (const auto& course : j["courses"]) {
+                prefs.courses.push_back(course.get<std::string>());
+            }
+        }
+
+        if (j.contains("topics_of_interest") && j["topics_of_interest"].is_array()) {
+            for (const auto& topic : j["topics_of_interest"]) {
+                prefs.topics_of_interest.push_back(topic.get<std::string>());
+            }
+        }
+
+        if (j.contains("available_days") && j["available_days"].is_array()) {
+            for (const auto& day : j["available_days"]) {
+                prefs.available_days.push_back(day.get<std::string>());
+            }
+        }
+
+        prefs.academic_goals = j.value("academic_goals", "");
+        prefs.available_hours_per_week = j.value("available_hours_per_week", 5);
+        prefs.preferred_group_size = j.value("preferred_group_size", 2);
+        prefs.same_university_only = j.value("same_university_only", true);
+        prefs.same_department_only = j.value("same_department_only", false);
+        prefs.same_year_only = j.value("same_year_only", false);
+        prefs.is_active = j.value("is_active", true);
+
+        auto saved = study_preferences_repository_->upsert(prefs);
+        if (!saved) {
+            return createErrorResponse(500, "Failed to save preferences");
+        }
+
+        return createJsonResponse(200, saved->toJson().dump());
+    } catch (const std::exception& e) {
+        return createErrorResponse(400, std::string("Invalid request: ") + e.what());
+    }
+}
+
+HttpResponse AcademicSocialServer::handleGetStudyBuddyMatches(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    auto matches = study_buddy_matching_service_->getRecommendations(user_id, 20);
+
+    std::ostringstream oss;
+    oss << "{\"matches\":[";
+    for (size_t i = 0; i < matches.size(); ++i) {
+        if (i > 0) oss << ",";
+
+        json matchJson = matches[i].toJson();
+
+        // Add matched user details
+        auto matchedUser = user_repository_->findById(matches[i].matched_user_id);
+        if (matchedUser) {
+            json userJson;
+            userJson["id"] = matchedUser->getId().value_or(0);
+            userJson["username"] = matchedUser->getUsername();
+            userJson["name"] = matchedUser->getName().value_or("");
+            userJson["university"] = matchedUser->getUniversity().value_or("");
+            userJson["department"] = matchedUser->getDepartment().value_or("");
+            userJson["enrollment_year"] = matchedUser->getEnrollmentYear().value_or(0);
+            matchJson["matched_user"] = userJson;
+        }
+
+        oss << matchJson.dump();
+    }
+    oss << "]}";
+
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleRefreshStudyBuddyMatches(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    int count = study_buddy_matching_service_->refreshMatches(user_id);
+
+    std::ostringstream oss;
+    oss << "{\"matches_generated\":" << count << "}";
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleAcceptStudyBuddyMatch(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    int match_id = extractIdFromPath(request.path, "/api/study-buddies/matches/");
+    if (match_id < 0) {
+        return createErrorResponse(400, "Invalid match ID");
+    }
+
+    if (!study_buddy_match_repository_->updateStatus(match_id, MatchStatus::ACCEPTED)) {
+        return createErrorResponse(500, "Failed to accept match");
+    }
+
+    // Create a study buddy connection
+    auto match = study_buddy_match_repository_->findById(match_id);
+    if (match) {
+        StudyBuddyConnection conn;
+        conn.user_id = user_id;
+        conn.buddy_id = match->matched_user_id;
+        conn.connection_strength = static_cast<int>(match->compatibility_score);
+        study_buddy_connection_repository_->create(conn);
+    }
+
+    return createJsonResponse(200, "{\"status\":\"accepted\"}");
+}
+
+HttpResponse AcademicSocialServer::handleDeclineStudyBuddyMatch(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    int match_id = extractIdFromPath(request.path, "/api/study-buddies/matches/");
+    if (match_id < 0) {
+        return createErrorResponse(400, "Invalid match ID");
+    }
+
+    if (!study_buddy_match_repository_->updateStatus(match_id, MatchStatus::DECLINED)) {
+        return createErrorResponse(500, "Failed to decline match");
+    }
+
+    return createJsonResponse(200, "{\"status\":\"declined\"}");
+}
+
+HttpResponse AcademicSocialServer::handleGetStudyBuddyConnections(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    auto connections = study_buddy_connection_repository_->findByUserId(user_id);
+
+    std::ostringstream oss;
+    oss << "{\"connections\":[";
+    for (size_t i = 0; i < connections.size(); ++i) {
+        if (i > 0) oss << ",";
+
+        json connJson = connections[i].toJson();
+
+        // Add buddy user details
+        auto buddy = user_repository_->findById(connections[i].buddy_id);
+        if (buddy) {
+            json buddyJson;
+            buddyJson["id"] = buddy->getId().value_or(0);
+            buddyJson["username"] = buddy->getUsername();
+            buddyJson["name"] = buddy->getName().value_or("");
+            buddyJson["university"] = buddy->getUniversity().value_or("");
+            buddyJson["department"] = buddy->getDepartment().value_or("");
+            connJson["buddy"] = buddyJson;
+        }
+
+        oss << connJson.dump();
     }
     oss << "]}";
 
