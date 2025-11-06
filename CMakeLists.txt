@@ -53,6 +53,8 @@ set(SOURCES
     src/models/notification.cpp
     src/models/user_presence.cpp
     src/models/study_session.cpp
+    src/models/hashtag.cpp
+    src/models/announcement.cpp
     src/db/database.cpp
     src/db/migration_runner.cpp
     src/init/database_initializer.cpp
@@ -72,6 +74,9 @@ set(SOURCES
     src/repositories/notification_repository.cpp
     src/repositories/user_presence_repository.cpp
     src/repositories/study_session_repository.cpp
+    src/repositories/hashtag_repository.cpp
+    src/repositories/mention_repository.cpp
+    src/repositories/announcement_repository.cpp
     src/services/permission_service.cpp
     src/services/storage_service.cpp
     src/utils/hash.cpp

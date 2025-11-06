@@ -177,6 +177,30 @@ export interface Friendship {
   addressee?: User;
 }
 
+export interface Hashtag {
+  id: number;
+  tag: string;
+  usage_count: number;
+  created_at: string;
+  last_used_at: string;
+}
+
+export interface Announcement {
+  id: number;
+  group_id: number;
+  author_id: number;
+  title: string;
+  content: string;
+  is_pinned: boolean;
+  created_at: string;
+  updated_at?: string;
+  author?: {
+    id: number;
+    username: string;
+    name?: string;
+  };
+}
+
 export interface Conversation {
   id: number;
   user1_id: number;
