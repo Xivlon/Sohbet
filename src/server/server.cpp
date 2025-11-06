@@ -7,6 +7,7 @@
 #include "config/env.h"
 #include "utils/hash.h"
 #include "utils/multipart_parser.h"
+#include "utils/text_parser.h"
 #include <iostream>
 #include <fstream>
 #include <regex>
@@ -45,6 +46,9 @@ bool AcademicSocialServer::initialize() {
     notification_repository_ = std::make_shared<repositories::NotificationRepository>(database_);
     user_presence_repository_ = std::make_shared<repositories::UserPresenceRepository>(database_);
     study_session_repository_ = std::make_shared<repositories::StudySessionRepository>(database_);
+    hashtag_repository_ = std::make_shared<repositories::HashtagRepository>(database_);
+    mention_repository_ = std::make_shared<repositories::MentionRepository>(database_);
+    announcement_repository_ = std::make_shared<repositories::AnnouncementRepository>(database_);
     storage_service_ = std::make_shared<services::StorageService>("uploads/");
 
     // Initialize voice service
@@ -576,6 +580,34 @@ HttpResponse AcademicSocialServer::handleRequest(const HttpRequest& request) {
         return handleRemoveGroupMember(request);
     } else if (request.method == "PUT" && base_path.find("/api/groups/") == 0 && base_path.find("/members/") != std::string::npos && base_path.find("/role") != std::string::npos) {
         return handleUpdateGroupMemberRole(request);
+    }
+    // Hashtag routes
+    else if (request.method == "GET" && base_path == "/api/hashtags/trending") {
+        return handleGetTrendingHashtags(request);
+    } else if (request.method == "GET" && base_path == "/api/hashtags/search") {
+        return handleSearchHashtags(request);
+    } else if (request.method == "GET" && base_path.find("/api/hashtags/") == 0 && base_path.find("/posts") != std::string::npos) {
+        return handleGetPostsByHashtag(request);
+    }
+    // Announcement routes
+    else if (request.method == "POST" && base_path.find("/api/groups/") == 0 && base_path.find("/announcements") != std::string::npos && base_path.find("/api/groups/") == 0) {
+        return handleCreateAnnouncement(request);
+    } else if (request.method == "GET" && base_path.find("/api/groups/") == 0 && base_path.find("/announcements") != std::string::npos) {
+        return handleGetAnnouncements(request);
+    } else if (request.method == "GET" && base_path.find("/api/announcements/") == 0) {
+        return handleGetAnnouncement(request);
+    } else if (request.method == "PUT" && base_path.find("/api/announcements/") == 0 && base_path.find("/pin") == std::string::npos) {
+        return handleUpdateAnnouncement(request);
+    } else if (request.method == "DELETE" && base_path.find("/api/announcements/") == 0) {
+        return handleDeleteAnnouncement(request);
+    } else if (request.method == "PUT" && base_path.find("/api/announcements/") == 0 && base_path.find("/pin") != std::string::npos) {
+        return handlePinAnnouncement(request);
+    } else if (request.method == "PUT" && base_path.find("/api/announcements/") == 0 && base_path.find("/unpin") != std::string::npos) {
+        return handleUnpinAnnouncement(request);
+    }
+    // Mention routes
+    else if (request.method == "GET" && base_path.find("/api/users/") == 0 && base_path.find("/mentions") != std::string::npos) {
+        return handleGetUserMentions(request);
     }
     // Organization routes
     else if (request.method == "POST" && base_path == "/api/organizations") {
@@ -1555,8 +1587,55 @@ HttpResponse AcademicSocialServer::handleCreatePost(const HttpRequest& request) 
     
     auto created = post_repository_->create(post);
     if (created.has_value()) {
+        int post_id = created->getId().value();
+
+        // Extract and save hashtags
+        auto hashtags = utils::TextParser::extractHashtags(content);
+        if (!hashtags.empty()) {
+            auto hashtag_records = hashtag_repository_->findOrCreateTags(hashtags);
+            std::vector<int> hashtag_ids;
+            for (const auto& tag : hashtag_records) {
+                if (tag.getId().has_value()) {
+                    hashtag_ids.push_back(tag.getId().value());
+                }
+            }
+            hashtag_repository_->linkTagsToPost(hashtag_ids, post_id);
+        }
+
         // Populate author information from user repository
         auto author = user_repository_->findById(author_id);
+
+        // Extract and save mentions
+        auto mentions = utils::TextParser::extractMentions(content);
+        if (!mentions.empty() && author.has_value()) {
+            std::set<int> mentioned_user_ids;
+            for (const auto& username : mentions) {
+                auto user = user_repository_->findByUsername(username);
+                if (user.has_value() && user->getId().has_value()) {
+                    int mentioned_id = user->getId().value();
+                    mentioned_user_ids.insert(mentioned_id);
+
+                    // Create notification for mention (only if not mentioning self)
+                    if (mentioned_id != author_id) {
+                        notification_repository_->createNotification(
+                            mentioned_id,
+                            "mention",
+                            "You were mentioned in a post",
+                            author->getUsername() + " mentioned you in a post",
+                            author_id,
+                            post_id,
+                            std::nullopt,  // comment_id
+                            std::nullopt,  // group_id
+                            std::nullopt,  // session_id
+                            "/posts/" + std::to_string(post_id)
+                        );
+                    }
+                }
+            }
+            mention_repository_->createMentions(post_id, mentioned_user_ids);
+        }
+
+        // Set author information
         if (author.has_value()) {
             created->setAuthorUsername(author->getUsername());
             if (author->getName().has_value()) {
@@ -3412,6 +3491,426 @@ HttpResponse AcademicSocialServer::handleDeleteVoiceChannel(const HttpRequest& r
     }
     
     return createJsonResponse(200, "{\"message\":\"Voice channel deleted successfully\"}");
+}
+
+// ==================== Hashtag Handlers ====================
+
+HttpResponse AcademicSocialServer::handleGetTrendingHashtags(const HttpRequest& request) {
+    // Parse limit parameter
+    int limit = 10;
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::smatch match;
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
+    }
+
+    auto hashtags = hashtag_repository_->findTrending(limit);
+
+    std::ostringstream oss;
+    oss << "{\"hashtags\":[";
+    for (size_t i = 0; i < hashtags.size(); ++i) {
+        oss << hashtags[i].toJson();
+        if (i < hashtags.size() - 1) oss << ",";
+    }
+    oss << "]}";
+
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleSearchHashtags(const HttpRequest& request) {
+    // Parse query and limit parameters
+    std::string query = "";
+    int limit = 20;
+
+    std::regex query_regex("[?&]q=([^&]+)");
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::smatch match;
+
+    if (std::regex_search(request.path, match, query_regex)) {
+        query = match[1].str();
+    }
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
+    }
+
+    if (query.empty()) {
+        return createErrorResponse(400, "Query parameter 'q' is required");
+    }
+
+    auto hashtags = hashtag_repository_->searchTags(query, limit);
+
+    std::ostringstream oss;
+    oss << "{\"hashtags\":[";
+    for (size_t i = 0; i < hashtags.size(); ++i) {
+        oss << hashtags[i].toJson();
+        if (i < hashtags.size() - 1) oss << ",";
+    }
+    oss << "]}";
+
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleGetPostsByHashtag(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    // Extract hashtag from path (/api/hashtags/{tag}/posts)
+    std::string tag;
+    size_t pos = request.path.find("/api/hashtags/");
+    if (pos != std::string::npos) {
+        size_t start = pos + 14; // length of "/api/hashtags/"
+        size_t end = request.path.find("/", start);
+        if (end != std::string::npos) {
+            tag = request.path.substr(start, end - start);
+        }
+    }
+
+    if (tag.empty()) {
+        return createErrorResponse(400, "Invalid hashtag");
+    }
+
+    // Find hashtag
+    auto hashtag = hashtag_repository_->findByTag(tag);
+    if (!hashtag.has_value() || !hashtag->getId().has_value()) {
+        return createJsonResponse(200, "{\"posts\":[]}");
+    }
+
+    // Get posts with this hashtag
+    std::ostringstream oss;
+    oss << "{\"tag\":\"" << tag << "\",\"posts\":[";
+
+    // TODO: Implement getting posts by hashtag ID
+    // For now return empty array
+    oss << "]}";
+
+    return createJsonResponse(200, oss.str());
+}
+
+// ==================== Announcement Handlers ====================
+
+HttpResponse AcademicSocialServer::handleCreateAnnouncement(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    // Extract group_id from path
+    int group_id = -1;
+    size_t pos = request.path.find("/api/groups/");
+    if (pos != std::string::npos) {
+        size_t start = pos + 12; // length of "/api/groups/"
+        size_t end = request.path.find("/", start);
+        if (end != std::string::npos) {
+            std::string id_str = request.path.substr(start, end - start);
+            group_id = std::stoi(id_str);
+        }
+    }
+
+    if (group_id < 0) {
+        return createErrorResponse(400, "Invalid group ID");
+    }
+
+    // Check if user is group admin or moderator
+    std::string member_role = group_repository_->getMemberRole(group_id, user_id);
+    if (member_role.empty() || (member_role != "admin" && member_role != "moderator")) {
+        return createErrorResponse(403, "Only group admins and moderators can create announcements");
+    }
+
+    std::string title = extractJsonField(request.body, "title");
+    std::string content = extractJsonField(request.body, "content");
+    std::string is_pinned_str = extractJsonField(request.body, "is_pinned");
+
+    if (title.empty() || content.empty()) {
+        return createErrorResponse(400, "title and content are required");
+    }
+
+    Announcement announcement(group_id, user_id, title, content);
+    if (!is_pinned_str.empty() && is_pinned_str == "true") {
+        announcement.setPinned(true);
+    }
+
+    auto created = announcement_repository_->create(announcement);
+    if (created.has_value()) {
+        // Populate author information
+        auto author = user_repository_->findById(user_id);
+        if (author.has_value()) {
+            created->setAuthorUsername(author->getUsername());
+            if (author->getName().has_value()) {
+                created->setAuthorName(author->getName().value());
+            }
+        }
+
+        // TODO: Create notifications for all group members
+        return createJsonResponse(201, created->toJson());
+    }
+
+    return createErrorResponse(500, "Failed to create announcement");
+}
+
+HttpResponse AcademicSocialServer::handleGetAnnouncements(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    // Extract group_id from path
+    int group_id = -1;
+    size_t pos = request.path.find("/api/groups/");
+    if (pos != std::string::npos) {
+        size_t start = pos + 12; // length of "/api/groups/"
+        size_t end = request.path.find("/", start);
+        if (end != std::string::npos) {
+            std::string id_str = request.path.substr(start, end - start);
+            group_id = std::stoi(id_str);
+        }
+    }
+
+    if (group_id < 0) {
+        return createErrorResponse(400, "Invalid group ID");
+    }
+
+    // Check if user is a member of the group
+    std::string member_role = group_repository_->getMemberRole(group_id, user_id);
+    if (member_role.empty()) {
+        return createErrorResponse(403, "You must be a member of this group");
+    }
+
+    // Parse pagination parameters
+    int limit = 50;
+    int offset = 0;
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::smatch match;
+
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
+    }
+    if (std::regex_search(request.path, match, offset_regex)) {
+        offset = std::stoi(match[1].str());
+    }
+
+    auto announcements = announcement_repository_->findByGroupId(group_id, false, limit, offset);
+
+    std::ostringstream oss;
+    oss << "{\"announcements\":[";
+    for (size_t i = 0; i < announcements.size(); ++i) {
+        oss << announcements[i].toJson();
+        if (i < announcements.size() - 1) oss << ",";
+    }
+    oss << "]}";
+
+    return createJsonResponse(200, oss.str());
+}
+
+HttpResponse AcademicSocialServer::handleGetAnnouncement(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    int announcement_id = extractIdFromPath(request.path, "/api/announcements/");
+    if (announcement_id < 0) {
+        return createErrorResponse(400, "Invalid announcement ID");
+    }
+
+    auto announcement = announcement_repository_->findById(announcement_id);
+    if (!announcement.has_value()) {
+        return createErrorResponse(404, "Announcement not found");
+    }
+
+    // Check if user is a member of the group
+    std::string member_role = group_repository_->getMemberRole(announcement->getGroupId(), user_id);
+    if (member_role.empty()) {
+        return createErrorResponse(403, "You must be a member of this group");
+    }
+
+    return createJsonResponse(200, announcement->toJson());
+}
+
+HttpResponse AcademicSocialServer::handleUpdateAnnouncement(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    int announcement_id = extractIdFromPath(request.path, "/api/announcements/");
+    if (announcement_id < 0) {
+        return createErrorResponse(400, "Invalid announcement ID");
+    }
+
+    // Check if user can manage this announcement
+    if (!announcement_repository_->canUserManage(announcement_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to update this announcement");
+    }
+
+    auto announcement = announcement_repository_->findById(announcement_id);
+    if (!announcement.has_value()) {
+        return createErrorResponse(404, "Announcement not found");
+    }
+
+    std::string title = extractJsonField(request.body, "title");
+    std::string content = extractJsonField(request.body, "content");
+
+    if (!title.empty()) {
+        announcement->setTitle(title);
+    }
+    if (!content.empty()) {
+        announcement->setContent(content);
+    }
+
+    if (announcement_repository_->update(announcement.value())) {
+        return createJsonResponse(200, announcement->toJson());
+    }
+
+    return createErrorResponse(500, "Failed to update announcement");
+}
+
+HttpResponse AcademicSocialServer::handleDeleteAnnouncement(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    int announcement_id = extractIdFromPath(request.path, "/api/announcements/");
+    if (announcement_id < 0) {
+        return createErrorResponse(400, "Invalid announcement ID");
+    }
+
+    // Check if user can manage this announcement
+    if (!announcement_repository_->canUserManage(announcement_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to delete this announcement");
+    }
+
+    if (announcement_repository_->deleteById(announcement_id)) {
+        return HttpResponse(204, "text/plain", "");
+    }
+
+    return createErrorResponse(500, "Failed to delete announcement");
+}
+
+HttpResponse AcademicSocialServer::handlePinAnnouncement(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    int announcement_id = extractIdFromPath(request.path, "/api/announcements/");
+    if (announcement_id < 0) {
+        return createErrorResponse(400, "Invalid announcement ID");
+    }
+
+    // Check if user can manage this announcement
+    if (!announcement_repository_->canUserManage(announcement_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to pin this announcement");
+    }
+
+    if (announcement_repository_->pin(announcement_id)) {
+        auto announcement = announcement_repository_->findById(announcement_id);
+        if (announcement.has_value()) {
+            return createJsonResponse(200, announcement->toJson());
+        }
+    }
+
+    return createErrorResponse(500, "Failed to pin announcement");
+}
+
+HttpResponse AcademicSocialServer::handleUnpinAnnouncement(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    int announcement_id = extractIdFromPath(request.path, "/api/announcements/");
+    if (announcement_id < 0) {
+        return createErrorResponse(400, "Invalid announcement ID");
+    }
+
+    // Check if user can manage this announcement
+    if (!announcement_repository_->canUserManage(announcement_id, user_id)) {
+        return createErrorResponse(403, "You don't have permission to unpin this announcement");
+    }
+
+    if (announcement_repository_->unpin(announcement_id)) {
+        auto announcement = announcement_repository_->findById(announcement_id);
+        if (announcement.has_value()) {
+            return createJsonResponse(200, announcement->toJson());
+        }
+    }
+
+    return createErrorResponse(500, "Failed to unpin announcement");
+}
+
+// ==================== Mention Handlers ====================
+
+HttpResponse AcademicSocialServer::handleGetUserMentions(const HttpRequest& request) {
+    int user_id = getUserIdFromAuth(request);
+    if (user_id < 0) {
+        return createErrorResponse(401, "Unauthorized");
+    }
+
+    // Extract user_id from path or use authenticated user
+    int target_user_id = user_id;
+    size_t pos = request.path.find("/api/users/");
+    if (pos != std::string::npos) {
+        size_t start = pos + 11; // length of "/api/users/"
+        size_t end = request.path.find("/", start);
+        if (end != std::string::npos) {
+            std::string id_str = request.path.substr(start, end - start);
+            try {
+                target_user_id = std::stoi(id_str);
+            } catch (...) {
+                // Keep using authenticated user_id if parsing fails
+            }
+        }
+    }
+
+    // Users can only see their own mentions
+    if (target_user_id != user_id) {
+        return createErrorResponse(403, "You can only view your own mentions");
+    }
+
+    // Parse pagination parameters
+    int limit = 50;
+    int offset = 0;
+    std::regex limit_regex("[?&]limit=(\\d+)");
+    std::regex offset_regex("[?&]offset=(\\d+)");
+    std::smatch match;
+
+    if (std::regex_search(request.path, match, limit_regex)) {
+        limit = std::stoi(match[1].str());
+    }
+    if (std::regex_search(request.path, match, offset_regex)) {
+        offset = std::stoi(match[1].str());
+    }
+
+    auto post_ids = mention_repository_->findPostIdsByUserId(user_id, limit, offset);
+
+    // Fetch the actual posts
+    std::ostringstream oss;
+    oss << "{\"mentions\":[";
+    for (size_t i = 0; i < post_ids.size(); ++i) {
+        auto post = post_repository_->findById(post_ids[i]);
+        if (post.has_value()) {
+            // Populate author information
+            auto author = user_repository_->findById(post->getAuthorId());
+            if (author.has_value()) {
+                post->setAuthorUsername(author->getUsername());
+                if (author->getName().has_value()) {
+                    post->setAuthorName(author->getName().value());
+                }
+                if (author->getAvatarUrl().has_value()) {
+                    post->setAuthorAvatarUrl(author->getAvatarUrl().value());
+                }
+            }
+            oss << post->toJson();
+            if (i < post_ids.size() - 1) oss << ",";
+        }
+    }
+    oss << "]}";
+
+    return createJsonResponse(200, oss.str());
 }
 
 } // namespace server

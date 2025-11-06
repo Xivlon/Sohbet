@@ -48,6 +48,15 @@
 #include "repositories/study_session_repository.h"
 
 
+#include "repositories/hashtag_repository.h"
+
+
+#include "repositories/mention_repository.h"
+
+
+#include "repositories/announcement_repository.h"
+
+
 #include "services/storage_service.h"
 
 
@@ -333,6 +342,15 @@ private:
     std::shared_ptr<repositories::StudySessionRepository> study_session_repository_;
 
 
+    std::shared_ptr<repositories::HashtagRepository> hashtag_repository_;
+
+
+    std::shared_ptr<repositories::MentionRepository> mention_repository_;
+
+
+    std::shared_ptr<repositories::AnnouncementRepository> announcement_repository_;
+
+
     std::shared_ptr<services::StorageService> storage_service_;
 
 
@@ -503,7 +521,37 @@ private:
     HttpResponse handleUpdateGroupMemberRole(const HttpRequest& request);
 
 
-    
+
+
+    // Hashtag handlers
+
+    HttpResponse handleGetTrendingHashtags(const HttpRequest& request);
+
+    HttpResponse handleSearchHashtags(const HttpRequest& request);
+
+    HttpResponse handleGetPostsByHashtag(const HttpRequest& request);
+
+
+    // Announcement handlers
+
+    HttpResponse handleCreateAnnouncement(const HttpRequest& request);
+
+    HttpResponse handleGetAnnouncements(const HttpRequest& request);
+
+    HttpResponse handleGetAnnouncement(const HttpRequest& request);
+
+    HttpResponse handleUpdateAnnouncement(const HttpRequest& request);
+
+    HttpResponse handleDeleteAnnouncement(const HttpRequest& request);
+
+    HttpResponse handlePinAnnouncement(const HttpRequest& request);
+
+    HttpResponse handleUnpinAnnouncement(const HttpRequest& request);
+
+
+    // Mention handlers
+
+    HttpResponse handleGetUserMentions(const HttpRequest& request);
 
 
     // Organization handlers
