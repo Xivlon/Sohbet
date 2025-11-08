@@ -3,7 +3,9 @@
 #include "config/env.h"
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include <cstring>
+#include <cerrno>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -19,6 +21,31 @@ namespace server {
 
 // WebSocket GUID for handshake
 static const std::string WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+// Helper function to escape JSON strings
+static std::string escapeJsonString(const std::string& input) {
+    std::ostringstream output;
+    for (char c : input) {
+        switch (c) {
+            case '"':  output << "\\\""; break;
+            case '\\': output << "\\\\"; break;
+            case '\b': output << "\\b"; break;
+            case '\f': output << "\\f"; break;
+            case '\n': output << "\\n"; break;
+            case '\r': output << "\\r"; break;
+            case '\t': output << "\\t"; break;
+            default:
+                // Escape control characters
+                if (c < 0x20) {
+                    output << "\\u" << std::hex << std::setw(4) << std::setfill('0') << static_cast<int>(c);
+                } else {
+                    output << c;
+                }
+                break;
+        }
+    }
+    return output.str();
+}
 
 // Helper function to validate Origin header format
 static bool isValidOrigin(const std::string& origin) {
@@ -51,8 +78,39 @@ static std::string base64_encode(const unsigned char* input, int length) {
 
 // WebSocketConnection implementation
 bool WebSocketConnection::sendMessage(const std::string& message) {
-    ssize_t sent = send(socket_fd_, message.c_str(), message.length(), 0);
-    return sent > 0;
+    // Lock to ensure thread-safe sending (prevents interleaved data)
+    std::lock_guard<std::mutex> lock(send_mutex_);
+
+    size_t total_sent = 0;
+    size_t remaining = message.length();
+    const char* data = message.c_str();
+
+    // Keep sending until all data is sent or an error occurs
+    while (total_sent < message.length()) {
+        ssize_t sent = send(socket_fd_, data + total_sent, remaining, MSG_NOSIGNAL);
+
+        if (sent < 0) {
+            // Error occurred
+            if (errno == EINTR) {
+                // Interrupted by signal, retry
+                continue;
+            }
+            // Other error (connection closed, etc.)
+            std::cerr << "WebSocket send error: " << strerror(errno) << std::endl;
+            return false;
+        }
+
+        if (sent == 0) {
+            // Connection closed
+            std::cerr << "WebSocket connection closed during send" << std::endl;
+            return false;
+        }
+
+        total_sent += sent;
+        remaining -= sent;
+    }
+
+    return true;
 }
 
 // WebSocketServer implementation

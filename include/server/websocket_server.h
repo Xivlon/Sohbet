@@ -30,17 +30,18 @@ class WebSocketConnection {
 public:
     WebSocketConnection(int socket_fd, int user_id)
         : socket_fd_(socket_fd), user_id_(user_id), authenticated_(true) {}
-    
+
     int getSocketFd() const { return socket_fd_; }
     int getUserId() const { return user_id_; }
     bool isAuthenticated() const { return authenticated_; }
-    
+
     bool sendMessage(const std::string& message);
-    
+
 private:
     int socket_fd_;
     int user_id_;
     bool authenticated_;
+    std::mutex send_mutex_; // Protects concurrent sends on the same socket
 };
 
 /**

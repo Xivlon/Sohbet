@@ -127,10 +127,32 @@ class WebSocketService {
 
         this.ws.onmessage = (event) => {
           try {
-            const message: WebSocketMessage = JSON.parse(event.data);
+            const rawData = event.data;
+
+            // Try to parse as JSON
+            const message: WebSocketMessage = JSON.parse(rawData);
             this.handleMessage(message);
           } catch (error) {
+            // Enhanced error logging to help diagnose the issue
             console.error('Failed to parse WebSocket message:', error);
+
+            // Log the problematic data for debugging
+            const rawData = event.data;
+            console.error('Raw WebSocket data:', rawData);
+            console.error('Data length:', rawData.length);
+            console.error('Data type:', typeof rawData);
+
+            // Try to handle multiple concatenated JSON objects
+            // This can happen if the server sends data incorrectly
+            try {
+              const messages = this.parseMultipleMessages(rawData);
+              if (messages.length > 0) {
+                console.warn(`Recovered ${messages.length} messages from corrupted data`);
+                messages.forEach(msg => this.handleMessage(msg));
+              }
+            } catch (recoveryError) {
+              console.error('Failed to recover messages:', recoveryError);
+            }
           }
         };
 
@@ -294,6 +316,50 @@ class WebSocketService {
         console.error('Error in connection listener:', error);
       }
     });
+  }
+
+  /**
+   * Attempt to parse multiple concatenated JSON messages
+   * This handles the case where the server incorrectly sends multiple JSON objects
+   * in a single WebSocket frame (e.g., "}{" concatenation issue)
+   */
+  private parseMultipleMessages(rawData: string): WebSocketMessage[] {
+    const messages: WebSocketMessage[] = [];
+
+    // Try to find and parse all valid JSON objects in the string
+    // Look for patterns like "}{"  which indicate concatenated objects
+    let remaining = rawData.trim();
+    let braceCount = 0;
+    let startIndex = 0;
+
+    for (let i = 0; i < remaining.length; i++) {
+      if (remaining[i] === '{') {
+        if (braceCount === 0) {
+          startIndex = i;
+        }
+        braceCount++;
+      } else if (remaining[i] === '}') {
+        braceCount--;
+
+        // Found a complete JSON object
+        if (braceCount === 0) {
+          const jsonStr = remaining.substring(startIndex, i + 1);
+          try {
+            const parsed = JSON.parse(jsonStr);
+
+            // Validate that it looks like a WebSocket message
+            if (parsed && typeof parsed === 'object' && 'type' in parsed && 'payload' in parsed) {
+              messages.push(parsed as WebSocketMessage);
+            }
+          } catch (e) {
+            // Skip invalid JSON fragments
+            console.warn('Skipping invalid JSON fragment:', jsonStr.substring(0, 100));
+          }
+        }
+      }
+    }
+
+    return messages;
   }
 }
 
