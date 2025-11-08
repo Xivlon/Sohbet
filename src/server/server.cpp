@@ -15,6 +15,7 @@
 #include <fstream>
 #include <regex>
 #include <sstream>
+#include <iomanip>
 #include <cstring>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -24,6 +25,31 @@
 
 namespace sohbet {
 namespace server {
+
+// Helper function to escape JSON strings
+static std::string escapeJsonString(const std::string& input) {
+    std::ostringstream output;
+    for (char c : input) {
+        switch (c) {
+            case '"':  output << "\\\""; break;
+            case '\\': output << "\\\\"; break;
+            case '\b': output << "\\b"; break;
+            case '\f': output << "\\f"; break;
+            case '\n': output << "\\n"; break;
+            case '\r': output << "\\r"; break;
+            case '\t': output << "\\t"; break;
+            default:
+                // Escape control characters
+                if (c < 0x20) {
+                    output << "\\u" << std::hex << std::setw(4) << std::setfill('0') << static_cast<int>(c);
+                } else {
+                    output << c;
+                }
+                break;
+        }
+    }
+    return output.str();
+}
 
 AcademicSocialServer::AcademicSocialServer(int port, const std::string& db_path)
     : port_(port), db_path_(db_path), running_(false), server_socket_(-1) {
@@ -3063,11 +3089,14 @@ void AcademicSocialServer::handleVoiceJoin(int user_id, const WebSocketMessage& 
 
     // Prepare join notification with user info
     std::string university_str = user.getUniversity().has_value() ? user.getUniversity().value() : "";
+    std::string escaped_username = escapeJsonString(user.getUsername());
+    std::string escaped_university = escapeJsonString(university_str);
+
     std::ostringstream join_json;
     join_json << "{\"channel_id\":" << channel_id
               << ",\"user_id\":" << user_id
-              << ",\"username\":\"" << user.getUsername() << "\""
-              << ",\"university\":\"" << university_str << "\"}";
+              << ",\"username\":\"" << escaped_username << "\""
+              << ",\"university\":\"" << escaped_university << "\"}";
 
     WebSocketMessage join_msg("voice:user-joined", join_json.str());
     websocket_server_->sendToUsers(participants, join_msg);
@@ -3083,10 +3112,13 @@ void AcademicSocialServer::handleVoiceJoin(int user_id, const WebSocketMessage& 
         if (participant_opt.has_value()) {
             auto participant = participant_opt.value();
             std::string participant_university = participant.getUniversity().has_value() ? participant.getUniversity().value() : "";
+            std::string escaped_participant_username = escapeJsonString(participant.getUsername());
+            std::string escaped_participant_university = escapeJsonString(participant_university);
+
             if (!first) participants_json << ",";
             participants_json << "{\"user_id\":" << participant_id
-                             << ",\"username\":\"" << participant.getUsername() << "\""
-                             << ",\"university\":\"" << participant_university << "\"}";
+                             << ",\"username\":\"" << escaped_participant_username << "\""
+                             << ",\"university\":\"" << escaped_participant_university << "\"}";
             first = false;
         }
     }
