@@ -215,7 +215,7 @@ class WebRTCService {
   async joinChannel(channelId: number, userId: number, audioOnly: boolean = true): Promise<void> {
     this.currentChannelId = channelId;
     this.currentUserId = userId;
-    this.isVideoEnabled = !audioOnly;
+    this.isVideoEnabled = false;
 
     try {
       // Get local media stream
@@ -313,14 +313,56 @@ class WebRTCService {
   /**
    * Toggle video
    */
-  toggleVideo(): boolean {
+  async toggleVideo(): Promise<boolean> {
     if (!this.localStream) return false;
 
-    this.isVideoEnabled = !this.isVideoEnabled;
+    const videoTracks = this.localStream.getVideoTracks();
 
-    this.localStream.getVideoTracks().forEach(track => {
-      track.enabled = this.isVideoEnabled;
-    });
+    // If no video tracks exist, request camera permission and add video tracks
+    if (videoTracks.length === 0) {
+      try {
+        console.log('No video tracks found, requesting camera permission...');
+
+        // Request video stream
+        const videoStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        });
+
+        // Add video tracks to the local stream
+        videoStream.getVideoTracks().forEach(track => {
+          this.localStream!.addTrack(track);
+
+          // Add the new video track to all existing peer connections
+          this.peerConnections.forEach((pc, userId) => {
+            const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+            if (!sender) {
+              // No video sender exists, add one
+              pc.addTrack(track, this.localStream!);
+              console.log(`Added video track to peer connection with user ${userId}`);
+            } else {
+              // Replace existing video sender's track
+              sender.replaceTrack(track);
+              console.log(`Replaced video track in peer connection with user ${userId}`);
+            }
+          });
+        });
+
+        this.isVideoEnabled = true;
+        console.log('Camera enabled successfully');
+      } catch (error) {
+        console.error('Failed to get camera permission:', error);
+        throw new Error('Failed to access camera. Please grant camera permissions.');
+      }
+    } else {
+      // Video tracks exist, just toggle them
+      this.isVideoEnabled = !this.isVideoEnabled;
+      videoTracks.forEach(track => {
+        track.enabled = this.isVideoEnabled;
+      });
+    }
 
     // Notify other users
     if (this.currentChannelId) {
