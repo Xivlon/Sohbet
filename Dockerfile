@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libsqlite3-dev \
     libssl-dev \
+    libcurl4-openssl-dev \
     pkg-config \
     git \
     && rm -rf /var/lib/apt/lists/*
@@ -29,6 +30,7 @@ FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y \
     libsqlite3-0 \
     libssl3 \
+    libcurl4 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy built binary from builder
