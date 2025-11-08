@@ -40,7 +40,6 @@ export function Khave() {
   const [newChannelName, setNewChannelName] = useState('');
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteAudioRefs = useRef<Map<number, HTMLAudioElement>>(new Map());
 
   // Load channels on mount
   useEffect(() => {
@@ -55,16 +54,10 @@ export function Khave() {
       setParticipants(updatedParticipants);
     });
 
-    // Listen for remote streams
+    // Listen for remote streams - no need to create audio elements
+    // as webrtc-service.ts handles audio routing via Web Audio API
     webrtcService.onRemoteStream((userId, stream) => {
-      // Create or update audio element for this user
-      let audioElement = remoteAudioRefs.current.get(userId);
-      if (!audioElement) {
-        audioElement = new Audio();
-        audioElement.autoplay = true;
-        remoteAudioRefs.current.set(userId, audioElement);
-      }
-      audioElement.srcObject = stream;
+      console.log(`Received remote stream from user ${userId}`);
     });
 
     // Listen for connection quality updates
@@ -151,8 +144,8 @@ export function Khave() {
       // Join via REST API first
       const response = await voiceService.joinChannel(channel.id);
       if (response.data) {
-        // Initialize WebRTC connection
-        await webrtcService.joinChannel(channel.id, user.id, true); // true = audio only for now
+        // Initialize WebRTC connection (audio only initially)
+        await webrtcService.joinChannel(channel.id, user.id, true); // true = audio only
 
         setCurrentChannel(channel);
         setIsConnected(true);
@@ -206,18 +199,18 @@ export function Khave() {
     }
   };
 
-  const toggleVideo = () => {
-    const newVideoState = webrtcService.toggleVideo();
-    setIsVideoEnabled(newVideoState);
+  const toggleVideo = async () => {
+    try {
+      const newVideoState = await webrtcService.toggleVideo();
+      setIsVideoEnabled(newVideoState);
+    } catch (err: any) {
+      setError(err.message || 'Failed to toggle video');
+      console.error('Error toggling video:', err);
+    }
   };
 
   const setParticipantVolume = (userId: number, volume: number) => {
     webrtcService.setParticipantVolume(userId, volume / 100);
-    // Update the audio element volume
-    const audioElement = remoteAudioRefs.current.get(userId);
-    if (audioElement) {
-      audioElement.volume = volume / 100;
-    }
   };
 
   return (
