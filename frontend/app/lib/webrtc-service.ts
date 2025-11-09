@@ -217,6 +217,9 @@ class WebRTCService {
     this.currentUserId = userId;
     this.isVideoEnabled = false;
 
+    // Clear any existing participants from previous channels
+    this.participants.clear();
+
     try {
       // Get local media stream
       this.localStream = await navigator.mediaDevices.getUserMedia({
