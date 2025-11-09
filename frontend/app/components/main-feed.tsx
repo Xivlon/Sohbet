@@ -101,7 +101,7 @@ export function MainFeed() {
 
     setSubmitting(true);
     try {
-      const response = await apiClient.createPost(newPost.trim(), 'friends');
+      const response = await apiClient.createPost(newPost.trim(), 'public');
       if (response.data) {
         // Reload posts to get the new post with all metadata
         await loadPosts();
