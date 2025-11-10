@@ -1,0 +1,49 @@
+# Example terraform.tfvars file
+# Copy this to terraform.tfvars and customize
+
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "production"
+project_name = "sohbet-voice"
+
+# Network
+vpc_cidr = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
+
+# Backend
+backend_instance_count = 3
+backend_instance_type  = "t3.large"  # 2 vCPU, 8GB RAM
+
+# Redis
+redis_node_type      = "cache.t3.medium"  # 2 vCPU, 3.09GB RAM
+redis_num_cache_nodes = 3
+
+# LiveKit
+livekit_node_count    = 3
+livekit_instance_type = "c5.2xlarge"  # 8 vCPU, 16GB RAM
+
+# TURN Servers
+turn_regions       = ["us-east-1", "eu-west-1", "ap-northeast-1"]
+turn_instance_type = "t3.large"  # 2 vCPU, 8GB RAM
+
+# Load Balancer
+lb_type = "application"
+certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERT_ID"  # Replace with your ACM cert
+
+# Monitoring
+enable_monitoring         = true
+monitoring_instance_type = "t3.large"
+
+# Secrets (DO NOT commit these to git!)
+# Instead, use environment variables or AWS Secrets Manager
+livekit_api_key    = "your-livekit-api-key"
+livekit_api_secret = "your-livekit-api-secret"
+turn_secret_key    = "your-turn-secret-key"
+redis_auth_token   = "your-redis-auth-token"
+
+# Additional Tags
+additional_tags = {
+  Team        = "Platform"
+  CostCenter  = "Engineering"
+  Compliance  = "GDPR"
+}
