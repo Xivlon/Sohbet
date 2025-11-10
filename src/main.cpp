@@ -19,11 +19,12 @@ void signalHandler(int signal) {
 int main() {
     std::cout << "Starting Sohbet Academic Social Backend v0.3.0-academic" << std::endl;
 
-    // Get HTTP port from environment or use default
+    // Get HTTP port and database URL from environment
     int http_port = sohbet::config::get_http_port();
-    
-    // Create server instance with configurable port and database file
-    sohbet::server::AcademicSocialServer server(http_port, "/app/data/academic.db");
+    std::string database_url = sohbet::config::get_database_url();
+
+    // Create server instance with PostgreSQL connection
+    sohbet::server::AcademicSocialServer server(http_port, database_url);
     global_server = &server;
     
     // Set up signal handlers for graceful shutdown

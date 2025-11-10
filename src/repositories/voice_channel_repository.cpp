@@ -332,8 +332,8 @@ int VoiceChannelRepository::endAllUserSessions(int user_id) {
     stmt.bindInt(1, user_id);
 
     if (stmt.step() == SQLITE_DONE) {
-        // Get number of rows changed using sqlite3_changes
-        return sqlite3_changes(database_->getHandle());
+        // Get number of rows changed
+        return static_cast<int>(stmt.affectedRows());
     }
 
     return 0;

@@ -23,9 +23,9 @@ bool MigrationRunner::initialize() {
     // Create schema_migrations table
     const std::string sql = R"(
         CREATE TABLE IF NOT EXISTS schema_migrations (
-            version INTEGER PRIMARY KEY,
+            version BIGINT PRIMARY KEY,
             name TEXT NOT NULL,
-            applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     )";
 

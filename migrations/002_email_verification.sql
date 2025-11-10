@@ -4,17 +4,16 @@
 
 -- Add email_verified column to users table if it doesn't exist
 -- We use a safe approach that checks if column exists first
--- Since SQLite doesn't have IF NOT EXISTS for columns, we check with a query first
--- This will be handled by the application code to safely add the column
+-- PostgreSQL supports IF NOT EXISTS for ALTER TABLE ADD COLUMN in version 9.6+
 
 -- Create email_verification_tokens table
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
     token TEXT UNIQUE NOT NULL,
-    expires_at INTEGER NOT NULL,  -- Unix timestamp
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    verified_at DATETIME,
+    expires_at BIGINT NOT NULL,  -- Unix timestamp
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    verified_at TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -24,5 +23,5 @@ CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_user_id ON email_verifi
 CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_expires_at ON email_verification_tokens(expires_at);
 
 -- Add email_verified column to users table
--- SQLite requires a default value for new columns in ALTER TABLE
-ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0;
+-- PostgreSQL uses BOOLEAN type with TRUE/FALSE values
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;

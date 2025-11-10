@@ -261,7 +261,7 @@ bool UserRepository::updatePassword(int userId, const std::string& newPassword) 
     }
 
     // Verify that exactly one row was updated
-    int changes = sqlite3_changes(database_->getHandle());
+    size_t changes = stmt.affectedRows();
     if (changes == 0) {
         std::cerr << "updatePassword: User ID " << userId << " not found" << std::endl;
         return false;

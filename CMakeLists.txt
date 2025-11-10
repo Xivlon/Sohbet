@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Find packages
-find_package(SQLite3 REQUIRED)
+find_package(PostgreSQL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(CURL)
 
@@ -26,6 +26,15 @@ FetchContent_Declare(
     GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(json)
+
+# Download libpqxx library for PostgreSQL
+FetchContent_Declare(
+    libpqxx
+    GIT_REPOSITORY https://github.com/jtv/libpqxx.git
+    GIT_TAG 7.8.1
+)
+set(SKIP_BUILD_TEST ON)
+FetchContent_MakeAvailable(libpqxx)
 
 # Bcrypt source files from downloaded content
 set(BCRYPT_DIR ${CMAKE_BINARY_DIR}/_deps/bcrypt-src)
@@ -115,10 +124,10 @@ endif()
 # Create library
 add_library(sohbet_lib ${SOURCES})
 if(CURL_FOUND)
-    target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt_lib OpenSSL::SSL OpenSSL::Crypto CURL::libcurl pthread nlohmann_json::nlohmann_json)
+    target_link_libraries(sohbet_lib PostgreSQL::PostgreSQL pqxx bcrypt_lib OpenSSL::SSL OpenSSL::Crypto CURL::libcurl pthread nlohmann_json::nlohmann_json)
 else()
     message(WARNING "CURL not found. Email service will not be available.")
-    target_link_libraries(sohbet_lib SQLite::SQLite3 bcrypt_lib OpenSSL::SSL OpenSSL::Crypto pthread nlohmann_json::nlohmann_json)
+    target_link_libraries(sohbet_lib PostgreSQL::PostgreSQL pqxx bcrypt_lib OpenSSL::SSL OpenSSL::Crypto pthread nlohmann_json::nlohmann_json)
 endif()
 target_include_directories(sohbet_lib PUBLIC include)
 
