@@ -314,18 +314,6 @@ function KhaveContent() {
     }
   }, [showSettings]);
 
-  // Keyboard navigation for participant list
-  const handleParticipantKeyDown = (
-    event: React.KeyboardEvent<HTMLDivElement>,
-    participant: VoiceParticipant
-  ) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      // Could add actions like opening participant options
-      console.log('Participant selected:', participant.username);
-    }
-  };
-
   return (
     <div className="h-full overflow-y-auto bg-background">
       {/* Screen reader announcements for participant events */}
