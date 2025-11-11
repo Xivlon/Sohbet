@@ -405,11 +405,25 @@ void AcademicSocialServer::handleClient(int client_socket) {
     
     // Handle request
     HttpResponse response = handleRequest(request);
-    
+
+    std::cerr << "DEBUG: Response created - Status: " << response.status_code
+              << ", Content-Type: " << response.content_type
+              << ", Body length: " << response.body.length() << std::endl;
+    if (response.body.length() > 0 && response.body.length() <= 200) {
+        std::cerr << "DEBUG: Response body: " << response.body << std::endl;
+    }
+
     // Format and send response
     std::string http_response = formatHttpResponse(response, request);
-    send(client_socket, http_response.c_str(), http_response.length(), 0);
-    
+    std::cerr << "DEBUG: Formatted HTTP response length: " << http_response.length() << " bytes" << std::endl;
+
+    ssize_t bytes_sent = send(client_socket, http_response.c_str(), http_response.length(), 0);
+    if (bytes_sent < 0) {
+        std::cerr << "ERROR: Failed to send response: " << strerror(errno) << std::endl;
+    } else {
+        std::cerr << "DEBUG: Successfully sent " << bytes_sent << " bytes to client" << std::endl;
+    }
+
     close(client_socket);
 }
 
