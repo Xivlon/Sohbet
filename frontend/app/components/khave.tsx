@@ -309,8 +309,11 @@ function KhaveContent() {
 
   useEffect(() => {
     if (showSettings && settingsPanelRef.current) {
-      // Focus settings panel
-      settingsPanelRef.current.focus();
+      // Focus first focusable element in settings panel
+      const focusableElement = settingsPanelRef.current.querySelector<HTMLElement>(
+        'button, input, [tabindex]:not([tabindex="-1"])'
+      );
+      focusableElement?.focus();
     }
   }, [showSettings]);
 
