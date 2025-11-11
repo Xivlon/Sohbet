@@ -290,6 +290,18 @@ function KhaveContent() {
     webrtcService.setParticipantVolume(userId, volume / 100);
   };
 
+  // Keyboard navigation for participant list
+  const handleParticipantKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    participant: VoiceParticipant
+  ) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      // Could add actions like opening participant options
+      console.log('Participant selected:', participant.username);
+    }
+  };
+
   // Focus management for modals
   useEffect(() => {
     if (showCreateChannel && createChannelInputRef.current) {
@@ -560,6 +572,7 @@ function KhaveContent() {
                 {user && (
                   <li
                     className="flex items-center gap-3 p-3 border rounded-lg bg-primary/10"
+                    role="listitem"
                     aria-label={`You: ${user.username}, ${isMuted ? 'muted' : 'unmuted'}`}
                   >
                     <div className="relative">
