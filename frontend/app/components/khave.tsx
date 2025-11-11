@@ -51,6 +51,30 @@ function KhaveContent() {
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const loadChannels = useCallback(async (showRefreshingIndicator = false) => {
+    if (showRefreshingIndicator) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+
+    try {
+      const response = await voiceService.getChannels('public');
+      if (response.data) {
+        setChannels(response.data.channels || []);
+      } else {
+        setError(response.error || 'Failed to load channels');
+      }
+    } catch (err) {
+      setError('Failed to load channels');
+      console.error('Error loading channels:', err);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
   // Load channels on mount
   useEffect(() => {
     loadChannels();
