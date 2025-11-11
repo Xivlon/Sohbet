@@ -46,6 +46,7 @@ function KhaveContent() {
   const announcementRef = useRef<HTMLDivElement>(null);
   const [announcement, setAnnouncement] = useState('');
   const createChannelInputRef = useRef<HTMLInputElement>(null);
+  const createChannelDialogRef = useRef<HTMLDivElement>(null);
   const invitePanelRef = useRef<HTMLDivElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -290,10 +291,43 @@ function KhaveContent() {
     webrtcService.setParticipantVolume(userId, volume / 100);
   };
 
-  // Focus management for modals
+  // Focus management and focus trap for create channel dialog
   useEffect(() => {
-    if (showCreateChannel && createChannelInputRef.current) {
-      createChannelInputRef.current.focus();
+    if (showCreateChannel && createChannelDialogRef.current) {
+      // Focus the input when dialog opens
+      createChannelInputRef.current?.focus();
+
+      // Focus trap implementation
+      const dialog = createChannelDialogRef.current;
+      const focusableElements = dialog.querySelectorAll<HTMLElement>(
+        'button, input, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      const handleTabKey = (e: KeyboardEvent) => {
+        if (e.key !== 'Tab') return;
+
+        if (e.shiftKey) {
+          // Shift + Tab
+          if (document.activeElement === firstFocusable) {
+            e.preventDefault();
+            lastFocusable?.focus();
+          }
+        } else {
+          // Tab
+          if (document.activeElement === lastFocusable) {
+            e.preventDefault();
+            firstFocusable?.focus();
+          }
+        }
+      };
+
+      dialog.addEventListener('keydown', handleTabKey);
+
+      return () => {
+        dialog.removeEventListener('keydown', handleTabKey);
+      };
     }
   }, [showCreateChannel]);
 
@@ -363,7 +397,19 @@ function KhaveContent() {
 
         {/* Create Channel Dialog */}
         {showCreateChannel && (
-          <Card className="mb-6" role="dialog" aria-labelledby="create-channel-title">
+          <Card 
+            ref={createChannelDialogRef}
+            className="mb-6" 
+            role="dialog" 
+            aria-labelledby="create-channel-title"
+            aria-modal="true"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setShowCreateChannel(false);
+                setNewChannelName('');
+              }
+            }}
+          >
             <CardHeader>
               <h3 id="create-channel-title">{t('createRoom')}</h3>
             </CardHeader>
@@ -382,9 +428,6 @@ function KhaveContent() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && newChannelName.trim()) {
                         createChannel();
-                      } else if (e.key === 'Escape') {
-                        setShowCreateChannel(false);
-                        setNewChannelName('');
                       }
                     }}
                     className="w-full p-2 border rounded mt-1"
