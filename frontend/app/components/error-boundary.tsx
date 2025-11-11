@@ -74,12 +74,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default fallback UI
       return (
-        <div className="flex items-center justify-center min-h-[400px] p-4">
+        <div className="flex items-center justify-center min-h-[400px] p-4" role="alert">
           <Card className="max-w-2xl w-full border-destructive">
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-destructive/10 rounded-full">
-                  <AlertTriangle className="w-6 h-6 text-destructive" />
+                  <AlertTriangle className="w-6 h-6 text-destructive" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-destructive">
@@ -114,13 +114,15 @@ export class ErrorBoundary extends Component<Props, State> {
                   onClick={this.handleReset}
                   variant="default"
                   className="flex items-center gap-2"
+                  aria-label="Try to recover from error"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4" aria-hidden="true" />
                   Try Again
                 </Button>
                 <Button
                   onClick={() => window.location.reload()}
                   variant="outline"
+                  aria-label="Reload the entire page"
                 >
                   Reload Page
                 </Button>
