@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Mic, MicOff, PhoneOff, Volume2, VolumeX, Settings, Plus, Video, VideoOff, UserPlus, Radio } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
@@ -50,11 +50,34 @@ function KhaveContent() {
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const loadChannels = useCallback(async (showRefreshingIndicator = false) => {
+    if (showRefreshingIndicator) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+
+    try {
+      const response = await voiceService.getChannels('public');
+      if (response.data) {
+        setChannels(response.data.channels || []);
+      } else {
+        setError(response.error || 'Failed to load channels');
+      }
+    } catch (err) {
+      setError('Failed to load channels');
+      console.error('Error loading channels:', err);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
   // Load channels on mount
   useEffect(() => {
     loadChannels();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadChannels]);
 
   // Auto-refresh channels periodically (every 30 seconds)
   useEffect(() => {
@@ -66,8 +89,7 @@ function KhaveContent() {
     }, 30000); // 30 seconds
 
     return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected]);
+  }, [isConnected, loadChannels]);
 
   // Listen for WebSocket events to refresh channel list
   useEffect(() => {
@@ -91,8 +113,7 @@ function KhaveContent() {
       websocketService.off('voice:user-joined', handleUserJoined);
       websocketService.off('voice:user-left', handleUserLeft);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected]);
+  }, [isConnected, loadChannels]);
 
   // Setup WebRTC callbacks
   useEffect(() => {
@@ -157,30 +178,6 @@ function KhaveContent() {
       }
     };
   }, [currentChannel, isConnected]);
-
-  const loadChannels = async (showRefreshingIndicator = false) => {
-    if (showRefreshingIndicator) {
-      setIsRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-
-    try {
-      const response = await voiceService.getChannels('public');
-      if (response.data) {
-        setChannels(response.data.channels || []);
-      } else {
-        setError(response.error || 'Failed to load channels');
-      }
-    } catch (err) {
-      setError('Failed to load channels');
-      console.error('Error loading channels:', err);
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
-    }
-  };
 
   const handleRefreshChannels = async () => {
     await loadChannels(true);
