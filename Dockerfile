@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y \
     cmake \
     make \
     build-essential \
-    libsqlite3-dev \
+    libpq-dev \
+    postgresql-server-dev-all \
     libssl-dev \
     libcurl4-openssl-dev \
     pkg-config \
@@ -28,7 +29,7 @@ FROM ubuntu:22.04
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y \
-    libsqlite3-0 \
+    libpq5 \
     libssl3 \
     libcurl4 \
     && rm -rf /var/lib/apt/lists/*
@@ -39,16 +40,14 @@ COPY --from=builder /app/build/sohbet /app/sohbet
 # Copy migrations
 COPY --from=builder /app/migrations /app/migrations
 
-# Create directory for database
-RUN mkdir -p /app/data
-
 WORKDIR /app
 
 # Expose ports
 EXPOSE 8080 8081
 
-# Set JWT secret (must be provided at runtime)
+# Environment variables (must be provided at runtime)
 ENV SOHBET_JWT_SECRET=${SOHBET_JWT_SECRET}
+ENV DATABASE_URL=${DATABASE_URL}
 
 # Run server
 CMD ["./sohbet"]
