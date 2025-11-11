@@ -51,14 +51,14 @@ static std::string escapeJsonString(const std::string& input) {
     return output.str();
 }
 
-AcademicSocialServer::AcademicSocialServer(int port, const std::string& db_path)
-    : port_(port), db_path_(db_path), running_(false), server_socket_(-1) {
+AcademicSocialServer::AcademicSocialServer(int port, const std::string& connection_string)
+    : port_(port), connection_string_(connection_string), running_(false), server_socket_(-1) {
 }
 
 bool AcademicSocialServer::initialize() {
-    database_ = std::make_shared<db::Database>(db_path_);
+    database_ = std::make_shared<db::Database>(connection_string_);
     if (!database_->isOpen()) {
-        std::cerr << "Failed to open database: " << db_path_ << std::endl;
+        std::cerr << "Failed to open database with connection string" << std::endl;
         return false;
     }
 
@@ -168,7 +168,7 @@ bool AcademicSocialServer::initialize() {
 
 bool AcademicSocialServer::start() {
     std::cout << "Academic Social Server starting on port " << port_ << std::endl;
-    std::cout << "Database: " << db_path_ << std::endl;
+    std::cout << "Database: PostgreSQL (connection configured)" << std::endl;
     std::cout << "Version: 0.3.0-academic" << std::endl;
     
     if (!initializeSocket()) {

@@ -112,7 +112,7 @@ private:
     /**
      * Helper to build StudyBuddyMatch from database row
      */
-    StudyBuddyMatch buildFromRow(sqlite3_stmt* stmt);
+    StudyBuddyMatch buildFromRow(db::Statement& stmt);
 };
 
 } // namespace repositories

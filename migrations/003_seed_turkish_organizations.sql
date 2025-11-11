@@ -7,7 +7,7 @@
 -- =============================================================================
 
 -- Technology & Engineering Clubs
-INSERT OR IGNORE INTO organizations (name, type, description, email, website) VALUES
+INSERT INTO organizations (name, type, description, email, website) VALUES
 ('Yazılım Geliştirme Kulübü', 'technology', 'Yazılım geliştirme, web programlama ve mobil uygulama geliştirme konularında etkinlikler düzenleyen teknoloji kulübü', 'yazilim@universite.edu.tr', 'https://yazilimkulubu.org'),
 ('Robotik ve Otomasyon Topluluğu', 'technology', 'Robot tasarımı, otomasyon sistemleri ve yapay zeka üzerine çalışan öğrenci topluluğu', 'robotik@universite.edu.tr', 'https://robotik-toplulugu.org'),
 ('Siber Güvenlik Kulübü', 'technology', 'Siber güvenlik, etik hacking ve bilgi güvenliği konularında eğitimler veren topluluk', 'siberkul@universite.edu.tr', 'https://sibergüvenlik.org'),
@@ -60,7 +60,8 @@ INSERT OR IGNORE INTO organizations (name, type, description, email, website) VA
 
 -- Debate & Public Speaking
 ('Münazara ve Tartışma Kulübü', 'academic', 'Münazara turnuvaları, kamu konuşması ve tartışma teknikleri eğitimi veren kulüp', 'munazara@universite.edu.tr', 'https://munazara.org'),
-('Model Birleşmiş Milletler Topluluğu', 'academic', 'Uluslararası ilişkiler simülasyonu ve diplomasi eğitimi sağlayan akademik topluluk', 'mun@universite.edu.tr', 'https://mun-turkiye.org');
+('Model Birleşmiş Milletler Topluluğu', 'academic', 'Uluslararası ilişkiler simülasyonu ve diplomasi eğitimi sağlayan akademik topluluk', 'mun@universite.edu.tr', 'https://mun-turkiye.org')
+ON CONFLICT (name) DO NOTHING;
 
 -- =============================================================================
 -- SEED DATA SUMMARY

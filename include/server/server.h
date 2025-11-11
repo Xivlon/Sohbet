@@ -209,13 +209,13 @@ public:
      * @param port Port to listen on
 
 
-     * @param db_path Path to SQLite database file
+     * @param connection_string PostgreSQL connection string
 
 
      */
 
 
-    AcademicSocialServer(int port = 8080, const std::string& db_path = "academic.db");
+    AcademicSocialServer(int port, const std::string& connection_string);
 
 
     
@@ -312,7 +312,7 @@ private:
     int port_;
 
 
-    std::string db_path_;
+    std::string connection_string_;
 
 
     std::shared_ptr<db::Database> database_;

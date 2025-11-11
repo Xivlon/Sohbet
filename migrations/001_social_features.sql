@@ -1,6 +1,6 @@
 -- Migration: Add Social Features to Sohbet Academic Platform
 -- Date: October 27, 2025
--- Description: Adds role-based permissions, groups, organizations, posts, comments, 
+-- Description: Adds role-based permissions, groups, organizations, posts, comments,
 --              friendships, chat, and voice features
 
 -- =============================================================================
@@ -9,16 +9,16 @@
 
 -- Roles table: Student, Professor, Admin
 CREATE TABLE IF NOT EXISTS roles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id BIGSERIAL PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,  -- 'Student', 'Professor', 'Admin'
     description TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Role permissions table
 CREATE TABLE IF NOT EXISTS role_permissions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    role_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    role_id BIGINT NOT NULL,
     permission TEXT NOT NULL,  -- 'create_group', 'manage_users', 'post_public', etc.
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
     UNIQUE(role_id, permission)
@@ -26,10 +26,10 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 
 -- User roles (many-to-many)
 CREATE TABLE IF NOT EXISTS user_roles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    role_id INTEGER NOT NULL,
-    assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
     UNIQUE(user_id, role_id)
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 
 -- Add role column to users table (for primary role) if it doesn't exist
 -- This is safe to run multiple times as it will only add the column once
--- SQLite doesn't support IF NOT EXISTS for ALTER TABLE, so we'll skip this
+-- PostgreSQL supports IF NOT EXISTS for ALTER TABLE in newer versions
 -- The users table should already have the role column from user migration
 
 -- =============================================================================
@@ -45,22 +45,22 @@ CREATE TABLE IF NOT EXISTS user_roles (
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS groups (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
-    creator_id INTEGER NOT NULL,  -- Must be Professor
+    creator_id BIGINT NOT NULL,  -- Must be Professor
     privacy TEXT DEFAULT 'private',  -- 'public', 'private', 'invite_only'
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS group_members (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    group_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    group_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
     role TEXT DEFAULT 'member',  -- 'admin', 'moderator', 'member'
-    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(group_id, user_id)
@@ -71,23 +71,23 @@ CREATE TABLE IF NOT EXISTS group_members (
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS organizations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id BIGSERIAL PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
     type TEXT NOT NULL,  -- 'club', 'department', 'society', etc.
     description TEXT,
     email TEXT,
     website TEXT,
     logo_url TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS organization_accounts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    organization_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,  -- Account manager/administrator
+    id BIGSERIAL PRIMARY KEY,
+    organization_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,  -- Account manager/administrator
     role TEXT NOT NULL,  -- 'owner', 'admin', 'editor'
-    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(organization_id, user_id)
@@ -98,12 +98,12 @@ CREATE TABLE IF NOT EXISTS organization_accounts (
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS friendships (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    requester_id INTEGER NOT NULL,
-    addressee_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    requester_id BIGINT NOT NULL,
+    addressee_id BIGINT NOT NULL,
     status TEXT DEFAULT 'pending',  -- 'pending', 'accepted', 'rejected', 'blocked'
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (addressee_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(requester_id, addressee_id),
@@ -119,15 +119,15 @@ CREATE INDEX idx_friendships_addressee ON friendships(addressee_id);
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS posts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    author_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    author_id BIGINT NOT NULL,
     author_type TEXT DEFAULT 'user',  -- 'user', 'organization'
     content TEXT NOT NULL,
     media_urls TEXT,  -- JSON array of media URLs
     visibility TEXT DEFAULT 'friends',  -- 'public', 'friends', 'private', 'group'
-    group_id INTEGER,  -- NULL if not posted to a group
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    group_id BIGINT,  -- NULL if not posted to a group
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
 );
@@ -137,11 +137,11 @@ CREATE INDEX idx_posts_created ON posts(created_at DESC);
 
 -- Post reactions (likes, etc.)
 CREATE TABLE IF NOT EXISTS post_reactions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
     reaction_type TEXT DEFAULT 'like',  -- 'like', 'love', 'insightful', etc.
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(post_id, user_id, reaction_type)
@@ -152,13 +152,13 @@ CREATE TABLE IF NOT EXISTS post_reactions (
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS comments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER NOT NULL,
-    parent_id INTEGER,  -- NULL for top-level comments, references comment.id for replies
-    author_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL,
+    parent_id BIGINT,  -- NULL for top-level comments, references comment.id for replies
+    author_id BIGINT NOT NULL,
     content TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
     FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE,
     FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
@@ -172,11 +172,11 @@ CREATE INDEX idx_comments_parent ON comments(parent_id);
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS conversations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user1_id INTEGER NOT NULL,
-    user2_id INTEGER NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    id BIGSERIAL PRIMARY KEY,
+    user1_id BIGINT NOT NULL,
+    user2_id BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(user1_id, user2_id),
@@ -184,14 +184,14 @@ CREATE TABLE IF NOT EXISTS conversations (
 );
 
 CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    conversation_id INTEGER NOT NULL,
-    sender_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    conversation_id BIGINT NOT NULL,
+    sender_id BIGINT NOT NULL,
     content TEXT NOT NULL,
     media_url TEXT,
-    read_at DATETIME,
-    delivered_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP,
+    delivered_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -204,47 +204,47 @@ CREATE INDEX idx_messages_created ON messages(created_at DESC);
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS user_media (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
     media_type TEXT NOT NULL,  -- 'avatar', 'banner', 'post_image', 'chat_file'
     storage_key TEXT NOT NULL,  -- Object storage key
     file_name TEXT,
     file_size INTEGER,
     mime_type TEXT,
     url TEXT,  -- Signed/public URL
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Add avatar_url and banner_url to users table if they don't exist
--- SQLite doesn't support IF NOT EXISTS for ALTER TABLE
+-- PostgreSQL supports IF NOT EXISTS for ALTER TABLE in newer versions
 -- These columns should already exist from user migration, so we'll skip them
--- ALTER TABLE users ADD COLUMN avatar_url TEXT;
--- ALTER TABLE users ADD COLUMN banner_url TEXT;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_url TEXT;
 
 -- =============================================================================
 -- 9. VOICE / MURMUR INTEGRATION
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS voice_channels (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     channel_type TEXT NOT NULL,  -- 'private', 'group', 'public' (Khave)
-    group_id INTEGER,
-    organization_id INTEGER,
+    group_id BIGINT,
+    organization_id BIGINT,
     murmur_channel_id TEXT,  -- External Murmur channel ID
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
     FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS voice_sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    channel_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    channel_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
     murmur_session_id TEXT,
-    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    left_at DATETIME,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    left_at TIMESTAMP,
     FOREIGN KEY (channel_id) REFERENCES voice_channels(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -253,13 +253,14 @@ CREATE TABLE IF NOT EXISTS voice_sessions (
 -- 10. SEED DATA - Default Roles
 -- =============================================================================
 
-INSERT OR IGNORE INTO roles (name, description) VALUES 
+INSERT INTO roles (name, description) VALUES
 ('Student', 'Default student account with basic permissions'),
 ('Professor', 'Faculty account with group creation and management permissions'),
-('Admin', 'Administrator account with full system permissions');
+('Admin', 'Administrator account with full system permissions')
+ON CONFLICT (name) DO NOTHING;
 
 -- Default permissions for each role
-INSERT OR IGNORE INTO role_permissions (role_id, permission) VALUES
+INSERT INTO role_permissions (role_id, permission) VALUES
 -- Student permissions
 (1, 'create_post'),
 (1, 'comment_post'),
@@ -290,11 +291,12 @@ INSERT OR IGNORE INTO role_permissions (role_id, permission) VALUES
 (3, 'delete_any_comment'),
 (3, 'edit_any_comment'),
 (3, 'delete_any_friendship'),
-(3, 'manage_organizations');
+(3, 'manage_organizations')
+ON CONFLICT (role_id, permission) DO NOTHING;
 
 -- Assign default roles to existing users based on their position
-UPDATE users SET role = 
-    CASE 
+UPDATE users SET role =
+    CASE
         WHEN position = 'Professor' THEN 'Professor'
         WHEN position = 'Student' THEN 'Student'
         ELSE 'Student'
@@ -302,10 +304,11 @@ UPDATE users SET role =
 WHERE role IS NULL OR role = 'Student';
 
 -- Create user_roles entries for existing users
-INSERT OR IGNORE INTO user_roles (user_id, role_id)
+INSERT INTO user_roles (user_id, role_id)
 SELECT u.id, r.id
 FROM users u
-JOIN roles r ON r.name = u.role;
+JOIN roles r ON r.name = u.role
+ON CONFLICT (user_id, role_id) DO NOTHING;
 
 -- =============================================================================
 -- MIGRATION COMPLETE

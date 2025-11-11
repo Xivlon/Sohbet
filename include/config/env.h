@@ -57,5 +57,16 @@ inline std::string get_cors_origin() {
     return std::string(origin);
 }
 
+inline std::string get_database_url() {
+    const char* url = std::getenv("DATABASE_URL");
+    if (!url || std::string(url).empty()) {
+        std::cerr << "ERROR: DATABASE_URL environment variable is required for PostgreSQL connection.\n";
+        std::cerr << "Please set DATABASE_URL to your PostgreSQL connection string.\n";
+        std::cerr << "Example: postgresql://user:password@host:port/database\n";
+        throw std::runtime_error("DATABASE_URL environment variable is required");
+    }
+    return std::string(url);
+}
+
 } // namespace config
 } // namespace sohbet

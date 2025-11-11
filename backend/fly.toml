@@ -42,10 +42,10 @@ primary_region = 'iad'
     port = 8081
     handlers = ["tls"]
 
-# Persistent Storage for Database
-[[mounts]]
-  source = "sohbet_data"
-  destination = "/app/data"
+# Note: Database is now external (Neon PostgreSQL)
+# Set DATABASE_URL and SOHBET_JWT_SECRET as secrets using:
+#   fly secrets set DATABASE_URL="postgresql://..." -a sohbet-uezxqq
+#   fly secrets set SOHBET_JWT_SECRET="your-jwt-secret" -a sohbet-uezxqq
 
 [[vm]]
   memory = '1gb'

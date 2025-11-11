@@ -5,8 +5,8 @@
 -- Study Preferences Table
 -- Stores user preferences for finding compatible study partners
 CREATE TABLE IF NOT EXISTS study_preferences (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
 
     -- Learning preferences
     learning_style TEXT CHECK(learning_style IN ('visual', 'auditory', 'reading_writing', 'kinesthetic', 'mixed')) DEFAULT 'mixed',
@@ -24,12 +24,12 @@ CREATE TABLE IF NOT EXISTS study_preferences (
 
     -- Matching preferences
     preferred_group_size INTEGER CHECK(preferred_group_size BETWEEN 1 AND 10) DEFAULT 2,
-    same_university_only BOOLEAN DEFAULT 1,
-    same_department_only BOOLEAN DEFAULT 0,
-    same_year_only BOOLEAN DEFAULT 0,
+    same_university_only BOOLEAN DEFAULT TRUE,
+    same_department_only BOOLEAN DEFAULT FALSE,
+    same_year_only BOOLEAN DEFAULT FALSE,
 
     -- Metadata
-    is_active BOOLEAN DEFAULT 1,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -42,9 +42,9 @@ CREATE INDEX IF NOT EXISTS idx_study_prefs_active ON study_preferences(is_active
 -- Study Buddy Matches Table
 -- Stores calculated compatibility matches between users
 CREATE TABLE IF NOT EXISTS study_buddy_matches (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    matched_user_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    matched_user_id BIGINT NOT NULL,
 
     -- Compatibility scoring (0-100)
     compatibility_score REAL NOT NULL,
@@ -80,9 +80,9 @@ CREATE INDEX IF NOT EXISTS idx_matches_status ON study_buddy_matches(status);
 -- Study Buddy Connections Table
 -- Tracks confirmed study buddy relationships
 CREATE TABLE IF NOT EXISTS study_buddy_connections (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    buddy_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    buddy_id BIGINT NOT NULL,
 
     -- Connection details
     connected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -91,8 +91,8 @@ CREATE TABLE IF NOT EXISTS study_buddy_connections (
     connection_strength INTEGER DEFAULT 0, -- 0-100, increases with interactions
 
     -- Connection preferences
-    is_favorite BOOLEAN DEFAULT 0,
-    notification_enabled BOOLEAN DEFAULT 1,
+    is_favorite BOOLEAN DEFAULT FALSE,
+    notification_enabled BOOLEAN DEFAULT TRUE,
 
     -- Metadata
     notes TEXT, -- Private notes about this study buddy
@@ -112,8 +112,8 @@ CREATE INDEX IF NOT EXISTS idx_connections_favorite ON study_buddy_connections(i
 -- Study Session Plans Table
 -- Allows study buddies to schedule and track study sessions
 CREATE TABLE IF NOT EXISTS study_session_plans (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    creator_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    creator_id BIGINT NOT NULL,
 
     -- Session details
     title TEXT NOT NULL,
@@ -150,9 +150,9 @@ CREATE INDEX IF NOT EXISTS idx_sessions_scheduled ON study_session_plans(schedul
 -- Study Session Participants Table
 -- Links users to study sessions
 CREATE TABLE IF NOT EXISTS study_session_participants (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    session_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
 
     -- Participation
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -171,27 +171,43 @@ CREATE TABLE IF NOT EXISTS study_session_participants (
 CREATE INDEX IF NOT EXISTS idx_session_parts_session ON study_session_participants(session_id);
 CREATE INDEX IF NOT EXISTS idx_session_parts_user ON study_session_participants(user_id);
 
--- Triggers for updated_at timestamps
-CREATE TRIGGER IF NOT EXISTS update_study_preferences_timestamp
-AFTER UPDATE ON study_preferences
-BEGIN
-    UPDATE study_preferences SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-END;
+-- =============================================================================
+-- PostgreSQL Triggers for updated_at timestamps
+-- =============================================================================
 
-CREATE TRIGGER IF NOT EXISTS update_study_matches_timestamp
-AFTER UPDATE ON study_buddy_matches
+-- Function to update timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
 BEGIN
-    UPDATE study_buddy_matches SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
 END;
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER IF NOT EXISTS update_study_connections_timestamp
-AFTER UPDATE ON study_buddy_connections
-BEGIN
-    UPDATE study_buddy_connections SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-END;
+-- Trigger for study_preferences
+DROP TRIGGER IF EXISTS update_study_preferences_timestamp ON study_preferences;
+CREATE TRIGGER update_study_preferences_timestamp
+    BEFORE UPDATE ON study_preferences
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_study_sessions_timestamp
-AFTER UPDATE ON study_session_plans
-BEGIN
-    UPDATE study_session_plans SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
-END;
+-- Trigger for study_buddy_matches
+DROP TRIGGER IF EXISTS update_study_matches_timestamp ON study_buddy_matches;
+CREATE TRIGGER update_study_matches_timestamp
+    BEFORE UPDATE ON study_buddy_matches
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for study_buddy_connections
+DROP TRIGGER IF EXISTS update_study_connections_timestamp ON study_buddy_connections;
+CREATE TRIGGER update_study_connections_timestamp
+    BEFORE UPDATE ON study_buddy_connections
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for study_session_plans
+DROP TRIGGER IF EXISTS update_study_sessions_timestamp ON study_session_plans;
+CREATE TRIGGER update_study_sessions_timestamp
+    BEFORE UPDATE ON study_session_plans
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

@@ -106,7 +106,7 @@ private:
     /**
      * Helper to build StudyBuddyConnection from database row
      */
-    StudyBuddyConnection buildFromRow(sqlite3_stmt* stmt);
+    StudyBuddyConnection buildFromRow(db::Statement& stmt);
 };
 
 } // namespace repositories
