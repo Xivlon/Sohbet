@@ -3503,8 +3503,23 @@ HttpResponse AcademicSocialServer::handleCreateVoiceChannel(const HttpRequest& r
     if (!saved_channel.has_value()) {
         return createErrorResponse(500, "Failed to save voice channel to database");
     }
-    
-    return createJsonResponse(201, saved_channel.value().to_json());
+
+    // Construct JSON response with active_users field (always 0 for newly created channel)
+    std::ostringstream oss;
+    oss << "{";
+    oss << "\"id\":" << saved_channel.value().id << ",";
+    oss << "\"name\":\"" << saved_channel.value().name << "\",";
+    oss << "\"channel_type\":\"" << saved_channel.value().channel_type << "\",";
+    oss << "\"active_users\":0,";
+
+    // Convert time_t to ISO 8601 string
+    char time_buf[30];
+    std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ",
+                  std::gmtime(&saved_channel.value().created_at));
+    oss << "\"created_at\":\"" << time_buf << "\"";
+    oss << "}";
+
+    return createJsonResponse(201, oss.str());
 }
 
 HttpResponse AcademicSocialServer::handleGetVoiceChannels(const HttpRequest& request) {
