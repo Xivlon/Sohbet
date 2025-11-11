@@ -97,6 +97,7 @@ private:
     std::unique_ptr<pqxx::work> work_;
     std::string sql_;
     std::vector<std::string> params_;
+    std::vector<bool> is_null_;  // Track which parameters are NULL
     pqxx::result result_;
     size_t current_row_;
     bool executed_;
