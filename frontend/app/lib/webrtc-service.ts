@@ -486,14 +486,15 @@ class WebRTCService {
     const dataArray = new Uint8Array(bufferLength);
 
     const checkAudioLevel = () => {
+      // Schedule next frame and store ID immediately for proper cleanup
+      const animationId = requestAnimationFrame(checkAudioLevel);
+      this.audioAnimationFrames.set(userId, animationId);
+
       // Stop if analyzer removed
       if (!this.audioAnalyzers.has(userId)) {
-        // Cancel the animation frame if it exists
-        const animationId = this.audioAnimationFrames.get(userId);
-        if (animationId !== undefined) {
-          cancelAnimationFrame(animationId);
-          this.audioAnimationFrames.delete(userId);
-        }
+        // Cancel the animation frame we just scheduled
+        cancelAnimationFrame(animationId);
+        this.audioAnimationFrames.delete(userId);
         return;
       }
 
@@ -513,10 +514,6 @@ class WebRTCService {
         participant.isSpeaking = isSpeaking;
         this.notifyParticipantUpdate();
       }
-
-      // Store animation frame ID for proper cleanup
-      const animationId = requestAnimationFrame(checkAudioLevel);
-      this.audioAnimationFrames.set(userId, animationId);
     };
 
     checkAudioLevel();

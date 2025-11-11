@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { Mic, MicOff, PhoneOff, Volume2, VolumeX, Settings, Plus, Video, VideoOff, UserPlus, Radio } from 'lucide-react';
 import { Card, CardContent, CardHeader } from './ui/card';
@@ -54,8 +54,7 @@ function KhaveContent() {
   // Load channels on mount
   useEffect(() => {
     loadChannels();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadChannels]);
 
   // Auto-refresh channels periodically (every 30 seconds)
   useEffect(() => {
@@ -67,8 +66,7 @@ function KhaveContent() {
     }, 30000); // 30 seconds
 
     return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected]);
+  }, [isConnected, loadChannels]);
 
   // Listen for WebSocket events to refresh channel list
   useEffect(() => {
@@ -92,8 +90,7 @@ function KhaveContent() {
       websocketService.off('voice:user-joined', handleUserJoined);
       websocketService.off('voice:user-left', handleUserLeft);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected]);
+  }, [isConnected, loadChannels]);
 
   // Setup WebRTC callbacks
   useEffect(() => {
@@ -159,7 +156,7 @@ function KhaveContent() {
     };
   }, [currentChannel, isConnected]);
 
-  const loadChannels = async (showRefreshingIndicator = false) => {
+  const loadChannels = useCallback(async (showRefreshingIndicator = false) => {
     if (showRefreshingIndicator) {
       setIsRefreshing(true);
     } else {
@@ -181,7 +178,7 @@ function KhaveContent() {
       setLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, []);
 
   const handleRefreshChannels = async () => {
     await loadChannels(true);
@@ -291,7 +288,19 @@ function KhaveContent() {
     webrtcService.setParticipantVolume(userId, volume / 100);
   };
 
-  // Focus management and focus trap for create channel dialog
+  // Keyboard navigation for participant list
+  const handleParticipantKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    participant: VoiceParticipant
+  ) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      // Could add actions like opening participant options
+      console.log('Participant selected:', participant.username);
+    }
+  };
+
+  // Focus management for modals
   useEffect(() => {
     if (showCreateChannel && createChannelDialogRef.current) {
       // Focus the input when dialog opens
@@ -587,25 +596,21 @@ function KhaveContent() {
                     muted
                     playsInline
                     className="w-full rounded-lg border"
-                    aria-label={`Video preview for ${user?.username || 'local user'}`}
-                    role="img"
                   />
                   <p className="text-xs text-muted-foreground text-center mt-1">Video</p>
                 </div>
               )}
 
               {/* Participants */}
-              <div
-                className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6"
-                role="list"
+              <ul
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 list-none"
                 aria-label="Voice channel participants"
               >
                 {/* Show current user */}
                 {user && (
-                  <div
+                  <li
                     className="flex items-center gap-3 p-3 border rounded-lg bg-primary/10"
                     role="listitem"
-                    tabIndex={0}
                     aria-label={`You: ${user.username}, ${isMuted ? 'muted' : 'unmuted'}`}
                   >
                     <div className="relative">
@@ -627,18 +632,15 @@ function KhaveContent() {
                       <div className="font-medium text-sm truncate">{user.username}</div>
                       <div className="text-xs text-muted-foreground">{user.university}</div>
                     </div>
-                  </div>
+                  </li>
                 )}
 
                 {/* Show other participants */}
                 {participants.filter(p => p.userId !== user?.id).map((participant) => (
-                  <div
+                  <li
                     key={participant.userId}
-                    className="flex flex-col gap-2 p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
-                    role="listitem"
-                    tabIndex={0}
+                    className="flex flex-col gap-2 p-3 border rounded-lg"
                     aria-label={`${participant.username}, ${participant.isMuted ? 'muted' : 'unmuted'}, ${participant.isSpeaking ? 'speaking' : 'not speaking'}`}
-                    onKeyDown={(e) => handleParticipantKeyDown(e, participant)}
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative">
@@ -674,15 +676,15 @@ function KhaveContent() {
                         {Math.round(webrtcService.getParticipantVolume(participant.userId) * 100)}%
                       </span>
                     </div>
-                  </div>
+                  </li>
                 ))}
 
                 {participants.length === 0 && !user && (
-                  <div className="col-span-2 text-center text-muted-foreground py-4">
+                  <li className="col-span-2 text-center text-muted-foreground py-4">
                     {t('participants')}
-                  </div>
+                  </li>
                 )}
-              </div>
+              </ul>
 
               {/* Controls */}
               <div className="flex flex-col gap-4 p-4 bg-muted rounded-lg" role="group" aria-label="Voice channel controls">
