@@ -553,8 +553,6 @@ function KhaveContent() {
                     muted
                     playsInline
                     className="w-full rounded-lg border"
-                    aria-label={`Video preview for ${user?.username || 'local user'}`}
-                    role="img"
                   />
                   <p className="text-xs text-muted-foreground text-center mt-1">Video</p>
                 </div>
