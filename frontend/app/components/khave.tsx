@@ -483,8 +483,11 @@ function KhaveContent() {
                       onClick={() => {
                         navigator.clipboard.writeText(
                           `${window.location.origin}/khave?room=${currentChannel.id}`
-                        );
-                        setAnnouncement('Invitation link copied to clipboard');
+                        ).then(() => {
+                          setAnnouncement('Invitation link copied to clipboard');
+                        }).catch(() => {
+                          setAnnouncement('Failed to copy invitation link. Please try again.');
+                        });
                       }}
                       aria-label="Copy invitation link to clipboard"
                     >
