@@ -124,8 +124,10 @@ bool Statement::bindInt(int index, int value) {
     // Resize params vector if needed
     if (static_cast<size_t>(index) > params_.size()) {
         params_.resize(index);
+        is_null_.resize(index, false);
     }
     params_[index - 1] = std::to_string(value);
+    is_null_[index - 1] = false;
     return true;
 }
 
@@ -133,8 +135,10 @@ bool Statement::bindDouble(int index, double value) {
     if (!work_) return false;
     if (static_cast<size_t>(index) > params_.size()) {
         params_.resize(index);
+        is_null_.resize(index, false);
     }
     params_[index - 1] = std::to_string(value);
+    is_null_[index - 1] = false;
     return true;
 }
 
@@ -142,8 +146,10 @@ bool Statement::bindText(int index, const std::string& value) {
     if (!work_) return false;
     if (static_cast<size_t>(index) > params_.size()) {
         params_.resize(index);
+        is_null_.resize(index, false);
     }
     params_[index - 1] = value;
+    is_null_[index - 1] = false;
     return true;
 }
 
@@ -151,9 +157,11 @@ bool Statement::bindNull(int index) {
     if (!work_) return false;
     if (static_cast<size_t>(index) > params_.size()) {
         params_.resize(index);
+        is_null_.resize(index, false);
     }
-    // Use empty string to represent NULL, will be handled in exec_params
+    // Mark this parameter as NULL
     params_[index - 1] = "";
+    is_null_[index - 1] = true;
     return true;
 }
 
@@ -171,8 +179,18 @@ int Statement::step() {
                 pos += std::to_string(param_num - 1).length() + 1;
             }
 
+            // Build parameter list with proper NULL handling
+            pqxx::params pq_params;
+            for (size_t i = 0; i < params_.size(); ++i) {
+                if (i < is_null_.size() && is_null_[i]) {
+                    pq_params.append(nullptr);
+                } else {
+                    pq_params.append(params_[i]);
+                }
+            }
+
             // Execute with parameters
-            result_ = work_->exec_params(pg_sql, pqxx::prepare::make_dynamic_params(params_));
+            result_ = work_->exec_params(pg_sql, pq_params);
 
             // Check if this was an INSERT and try to get the last inserted ID
             if (pg_sql.find("INSERT") != std::string::npos ||
@@ -213,6 +231,8 @@ bool Statement::reset() {
     current_row_ = 0;
     executed_ = false;
     done_ = false;
+    params_.clear();
+    is_null_.clear();
     return true;
 }
 
