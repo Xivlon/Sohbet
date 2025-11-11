@@ -74,7 +74,7 @@ private:
     /**
      * Helper to build StudyPreferences from database row
      */
-    StudyPreferences buildFromRow(sqlite3_stmt* stmt);
+    StudyPreferences buildFromRow(db::Statement& stmt);
 };
 
 } // namespace repositories

@@ -168,7 +168,7 @@ bool AcademicSocialServer::initialize() {
 
 bool AcademicSocialServer::start() {
     std::cout << "Academic Social Server starting on port " << port_ << std::endl;
-    std::cout << "Database: " << db_path_ << std::endl;
+    std::cout << "Database: PostgreSQL (connection configured)" << std::endl;
     std::cout << "Version: 0.3.0-academic" << std::endl;
     
     if (!initializeSocket()) {

@@ -94,7 +94,7 @@ std::optional<StudyPreferences> StudyPreferencesRepository::findByUserId(int use
     stmt.bindInt(1, userId);
 
     if (stmt.step() == SQLITE_ROW) {
-        return buildFromRow(stmt.getStatement());
+        return buildFromRow(stmt);
     }
 
     return std::nullopt;
@@ -116,7 +116,7 @@ std::vector<StudyPreferences> StudyPreferencesRepository::findAllActive() {
     if (!stmt.isValid()) return result;
 
     while (stmt.step() == SQLITE_ROW) {
-        result.push_back(buildFromRow(stmt.getStatement()));
+        result.push_back(buildFromRow(stmt));
     }
 
     return result;
@@ -140,7 +140,7 @@ std::vector<StudyPreferences> StudyPreferencesRepository::findByLearningStyle(Le
     stmt.bindText(1, StudyPreferences::learningStyleToString(learningStyle));
 
     while (stmt.step() == SQLITE_ROW) {
-        result.push_back(buildFromRow(stmt.getStatement()));
+        result.push_back(buildFromRow(stmt));
     }
 
     return result;
@@ -192,27 +192,27 @@ bool StudyPreferencesRepository::deleteByUserId(int userId) {
     return stmt.step() == SQLITE_DONE;
 }
 
-StudyPreferences StudyPreferencesRepository::buildFromRow(sqlite3_stmt* stmt) {
+StudyPreferences StudyPreferencesRepository::buildFromRow(db::Statement& stmt) {
     StudyPreferences prefs;
 
-    prefs.id = sqlite3_column_int(stmt, 0);
-    prefs.user_id = sqlite3_column_int(stmt, 1);
+    prefs.id = stmt.getInt(0);
+    prefs.user_id = stmt.getInt(1);
 
-    const char* learningStyleStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-    prefs.learning_style = learningStyleStr ?
+    std::string learningStyleStr = stmt.getText(2);
+    prefs.learning_style = !learningStyleStr.empty() ?
         StudyPreferences::stringToLearningStyle(learningStyleStr) : LearningStyle::MIXED;
 
-    const char* envStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
-    prefs.study_environment = envStr ?
+    std::string envStr = stmt.getText(3);
+    prefs.study_environment = !envStr.empty() ?
         StudyPreferences::stringToStudyEnvironment(envStr) : StudyEnvironment::FLEXIBLE;
 
-    const char* timeStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
-    prefs.study_time_preference = timeStr ?
+    std::string timeStr = stmt.getText(4);
+    prefs.study_time_preference = !timeStr.empty() ?
         StudyPreferences::stringToStudyTimePreference(timeStr) : StudyTimePreference::FLEXIBLE;
 
     // Parse JSON arrays
-    const char* coursesStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
-    if (coursesStr) {
+    std::string coursesStr = stmt.getText(5);
+    if (!coursesStr.empty()) {
         try {
             json coursesJson = json::parse(coursesStr);
             if (coursesJson.is_array()) {
@@ -223,8 +223,8 @@ StudyPreferences StudyPreferencesRepository::buildFromRow(sqlite3_stmt* stmt) {
         } catch (...) {}
     }
 
-    const char* topicsStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
-    if (topicsStr) {
+    std::string topicsStr = stmt.getText(6);
+    if (!topicsStr.empty()) {
         try {
             json topicsJson = json::parse(topicsStr);
             if (topicsJson.is_array()) {
@@ -235,11 +235,10 @@ StudyPreferences StudyPreferencesRepository::buildFromRow(sqlite3_stmt* stmt) {
         } catch (...) {}
     }
 
-    const char* goalsStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
-    prefs.academic_goals = goalsStr ? goalsStr : "";
+    prefs.academic_goals = stmt.getText(7);
 
-    const char* daysStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
-    if (daysStr) {
+    std::string daysStr = stmt.getText(8);
+    if (!daysStr.empty()) {
         try {
             json daysJson = json::parse(daysStr);
             if (daysJson.is_array()) {
@@ -250,14 +249,14 @@ StudyPreferences StudyPreferencesRepository::buildFromRow(sqlite3_stmt* stmt) {
         } catch (...) {}
     }
 
-    prefs.available_hours_per_week = sqlite3_column_int(stmt, 9);
-    prefs.preferred_group_size = sqlite3_column_int(stmt, 10);
-    prefs.same_university_only = sqlite3_column_int(stmt, 11) == 1;
-    prefs.same_department_only = sqlite3_column_int(stmt, 12) == 1;
-    prefs.same_year_only = sqlite3_column_int(stmt, 13) == 1;
-    prefs.is_active = sqlite3_column_int(stmt, 14) == 1;
-    prefs.created_at = sqlite3_column_int64(stmt, 15);
-    prefs.updated_at = sqlite3_column_int64(stmt, 16);
+    prefs.available_hours_per_week = stmt.getInt(9);
+    prefs.preferred_group_size = stmt.getInt(10);
+    prefs.same_university_only = stmt.getInt(11) == 1;
+    prefs.same_department_only = stmt.getInt(12) == 1;
+    prefs.same_year_only = stmt.getInt(13) == 1;
+    prefs.is_active = stmt.getInt(14) == 1;
+    prefs.created_at = stmt.getInt64(15);
+    prefs.updated_at = stmt.getInt64(16);
 
     return prefs;
 }

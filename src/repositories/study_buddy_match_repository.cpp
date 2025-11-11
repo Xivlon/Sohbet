@@ -27,7 +27,7 @@ std::optional<StudyBuddyMatch> StudyBuddyMatchRepository::findById(int matchId) 
     stmt.bindInt(1, matchId);
 
     if (stmt.step() == SQLITE_ROW) {
-        return buildFromRow(stmt.getStatement());
+        return buildFromRow(stmt);
     }
 
     return std::nullopt;
@@ -112,7 +112,7 @@ std::vector<StudyBuddyMatch> StudyBuddyMatchRepository::findByUserId(
     stmt.bindInt(paramIndex, limit);
 
     while (stmt.step() == SQLITE_ROW) {
-        result.push_back(buildFromRow(stmt.getStatement()));
+        result.push_back(buildFromRow(stmt));
     }
 
     return result;
@@ -156,20 +156,20 @@ bool StudyBuddyMatchRepository::deleteById(int matchId) {
     return stmt.step() == SQLITE_DONE;
 }
 
-StudyBuddyMatch StudyBuddyMatchRepository::buildFromRow(sqlite3_stmt* stmt) {
+StudyBuddyMatch StudyBuddyMatchRepository::buildFromRow(db::Statement& stmt) {
     StudyBuddyMatch match;
 
-    match.id = sqlite3_column_int(stmt, 0);
-    match.user_id = sqlite3_column_int(stmt, 1);
-    match.matched_user_id = sqlite3_column_int(stmt, 2);
-    match.compatibility_score = sqlite3_column_double(stmt, 3);
-    match.course_overlap_score = sqlite3_column_double(stmt, 4);
-    match.schedule_compatibility_score = sqlite3_column_double(stmt, 5);
-    match.learning_style_score = sqlite3_column_double(stmt, 6);
-    match.academic_level_score = sqlite3_column_double(stmt, 7);
+    match.id = stmt.getInt(0);
+    match.user_id = stmt.getInt(1);
+    match.matched_user_id = stmt.getInt(2);
+    match.compatibility_score = stmt.getDouble(3);
+    match.course_overlap_score = stmt.getDouble(4);
+    match.schedule_compatibility_score = stmt.getDouble(5);
+    match.learning_style_score = stmt.getDouble(6);
+    match.academic_level_score = stmt.getDouble(7);
 
-    const char* coursesStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
-    if (coursesStr) {
+    std::string coursesStr = stmt.getText(8);
+    if (!coursesStr.empty()) {
         try {
             json coursesJson = json::parse(coursesStr);
             if (coursesJson.is_array()) {
@@ -180,8 +180,8 @@ StudyBuddyMatch StudyBuddyMatchRepository::buildFromRow(sqlite3_stmt* stmt) {
         } catch (...) {}
     }
 
-    const char* interestsStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
-    if (interestsStr) {
+    std::string interestsStr = stmt.getText(9);
+    if (!interestsStr.empty()) {
         try {
             json interestsJson = json::parse(interestsStr);
             if (interestsJson.is_array()) {
@@ -192,16 +192,15 @@ StudyBuddyMatch StudyBuddyMatchRepository::buildFromRow(sqlite3_stmt* stmt) {
         } catch (...) {}
     }
 
-    const char* reasonStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 10));
-    match.match_reason = reasonStr ? reasonStr : "";
+    match.match_reason = stmt.getText(10);
 
-    const char* statusStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 11));
-    match.status = statusStr ? StudyBuddyMatch::stringToMatchStatus(statusStr) : MatchStatus::SUGGESTED;
+    std::string statusStr = stmt.getText(11);
+    match.status = !statusStr.empty() ? StudyBuddyMatch::stringToMatchStatus(statusStr) : MatchStatus::SUGGESTED;
 
-    match.viewed_at = sqlite3_column_int64(stmt, 12);
-    match.responded_at = sqlite3_column_int64(stmt, 13);
-    match.created_at = sqlite3_column_int64(stmt, 14);
-    match.updated_at = sqlite3_column_int64(stmt, 15);
+    match.viewed_at = stmt.getInt64(12);
+    match.responded_at = stmt.getInt64(13);
+    match.created_at = stmt.getInt64(14);
+    match.updated_at = stmt.getInt64(15);
 
     return match;
 }

@@ -55,7 +55,7 @@ std::vector<StudyBuddyConnection> StudyBuddyConnectionRepository::findByUserId(i
     stmt.bindInt(1, userId);
 
     while (stmt.step() == SQLITE_ROW) {
-        result.push_back(buildFromRow(stmt.getStatement()));
+        result.push_back(buildFromRow(stmt));
     }
 
     return result;
@@ -82,30 +82,29 @@ std::optional<StudyBuddyConnection> StudyBuddyConnectionRepository::findConnecti
     stmt.bindInt(4, userId1);
 
     if (stmt.step() == SQLITE_ROW) {
-        return buildFromRow(stmt.getStatement());
+        return buildFromRow(stmt);
     }
 
     return std::nullopt;
 }
 
-StudyBuddyConnection StudyBuddyConnectionRepository::buildFromRow(sqlite3_stmt* stmt) {
+StudyBuddyConnection StudyBuddyConnectionRepository::buildFromRow(db::Statement& stmt) {
     StudyBuddyConnection conn;
 
-    conn.id = sqlite3_column_int(stmt, 0);
-    conn.user_id = sqlite3_column_int(stmt, 1);
-    conn.buddy_id = sqlite3_column_int(stmt, 2);
-    conn.connected_at = sqlite3_column_int64(stmt, 3);
-    conn.last_study_session = sqlite3_column_int64(stmt, 4);
-    conn.total_study_sessions = sqlite3_column_int(stmt, 5);
-    conn.connection_strength = sqlite3_column_int(stmt, 6);
-    conn.is_favorite = sqlite3_column_int(stmt, 7) == 1;
-    conn.notification_enabled = sqlite3_column_int(stmt, 8) == 1;
+    conn.id = stmt.getInt(0);
+    conn.user_id = stmt.getInt(1);
+    conn.buddy_id = stmt.getInt(2);
+    conn.connected_at = stmt.getInt64(3);
+    conn.last_study_session = stmt.getInt64(4);
+    conn.total_study_sessions = stmt.getInt(5);
+    conn.connection_strength = stmt.getInt(6);
+    conn.is_favorite = stmt.getInt(7) == 1;
+    conn.notification_enabled = stmt.getInt(8) == 1;
 
-    const char* notesStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
-    conn.notes = notesStr ? notesStr : "";
+    conn.notes = stmt.getText(9);
 
-    conn.created_at = sqlite3_column_int64(stmt, 10);
-    conn.updated_at = sqlite3_column_int64(stmt, 11);
+    conn.created_at = stmt.getInt64(10);
+    conn.updated_at = stmt.getInt64(11);
 
     return conn;
 }
