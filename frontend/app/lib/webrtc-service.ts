@@ -56,6 +56,7 @@ class WebRTCService {
   private audioContext: AudioContext | null = null;
   private audioAnalyzers: Map<number, AnalyserNode> = new Map();
   private audioGainNodes: Map<number, GainNode> = new Map(); // For volume control
+  private audioAnimationFrames: Map<number, number> = new Map(); // Store animation frame IDs
   private isMuted: boolean = false;
   private isVideoEnabled: boolean = false;
   private isDeafened: boolean = false;
@@ -269,6 +270,12 @@ class WebRTCService {
       this.localStream = null;
     }
 
+    // Cancel all animation frames
+    this.audioAnimationFrames.forEach((animationId) => {
+      cancelAnimationFrame(animationId);
+    });
+    this.audioAnimationFrames.clear();
+
     // Cleanup audio context
     if (this.audioContext) {
       this.audioContext.close();
@@ -479,7 +486,17 @@ class WebRTCService {
     const dataArray = new Uint8Array(bufferLength);
 
     const checkAudioLevel = () => {
-      if (!this.audioAnalyzers.has(userId)) return; // Stop if analyzer removed
+      // Schedule next frame and store ID immediately for proper cleanup
+      const animationId = requestAnimationFrame(checkAudioLevel);
+      this.audioAnimationFrames.set(userId, animationId);
+
+      // Stop if analyzer removed
+      if (!this.audioAnalyzers.has(userId)) {
+        // Cancel the animation frame we just scheduled
+        cancelAnimationFrame(animationId);
+        this.audioAnimationFrames.delete(userId);
+        return;
+      }
 
       analyzer.getByteFrequencyData(dataArray);
 
@@ -497,8 +514,6 @@ class WebRTCService {
         participant.isSpeaking = isSpeaking;
         this.notifyParticipantUpdate();
       }
-
-      requestAnimationFrame(checkAudioLevel);
     };
 
     checkAudioLevel();
@@ -784,6 +799,13 @@ class WebRTCService {
     if (pc) {
       pc.close();
       this.peerConnections.delete(userId);
+    }
+
+    // Cancel animation frame for this user
+    const animationId = this.audioAnimationFrames.get(userId);
+    if (animationId !== undefined) {
+      cancelAnimationFrame(animationId);
+      this.audioAnimationFrames.delete(userId);
     }
 
     // Clean up audio nodes
