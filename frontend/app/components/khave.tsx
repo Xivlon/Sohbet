@@ -180,30 +180,6 @@ function KhaveContent() {
     };
   }, [currentChannel, isConnected]);
 
-  const loadChannels = useCallback(async (showRefreshingIndicator = false) => {
-    if (showRefreshingIndicator) {
-      setIsRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-
-    try {
-      const response = await voiceService.getChannels('public');
-      if (response.data) {
-        setChannels(response.data.channels || []);
-      } else {
-        setError(response.error || 'Failed to load channels');
-      }
-    } catch (err) {
-      setError('Failed to load channels');
-      console.error('Error loading channels:', err);
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
-    }
-  }, []);
-
   const handleRefreshChannels = async () => {
     await loadChannels(true);
     setAnnouncement('Channel list refreshed');
