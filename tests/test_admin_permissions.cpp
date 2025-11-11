@@ -28,53 +28,55 @@ int main() {
     // Run social features migration
     const std::string migration_sql = R"(
         CREATE TABLE IF NOT EXISTS roles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
             description TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-        
+
         CREATE TABLE IF NOT EXISTS role_permissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             role_id INTEGER NOT NULL,
             permission TEXT NOT NULL,
             FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
             UNIQUE(role_id, permission)
         );
-        
+
         CREATE TABLE IF NOT EXISTS user_roles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             role_id INTEGER NOT NULL,
-            assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
             UNIQUE(user_id, role_id)
         );
-        
+
         CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             author_id INTEGER NOT NULL,
             author_type TEXT DEFAULT 'user',
             content TEXT NOT NULL,
             media_urls TEXT,
             visibility TEXT DEFAULT 'public',
             group_id INTEGER,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
         );
-        
-        INSERT OR IGNORE INTO roles (name, description) VALUES 
+
+        INSERT INTO roles (name, description) VALUES
         ('Student', 'Default student account'),
         ('Professor', 'Faculty account'),
-        ('Admin', 'Administrator account');
-        
-        INSERT OR IGNORE INTO role_permissions (role_id, permission) VALUES
+        ('Admin', 'Administrator account')
+        ON CONFLICT (name) DO NOTHING;
+
+        INSERT INTO role_permissions (role_id, permission) VALUES
         (3, 'delete_any_post'),
         (3, 'edit_any_post'),
         (3, 'delete_any_comment'),
-        (3, 'edit_any_comment');
+        (3, 'edit_any_comment')
+        ON CONFLICT DO NOTHING;
     )";
     
     assert(db->execute(migration_sql));
