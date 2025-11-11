@@ -552,17 +552,14 @@ function KhaveContent() {
               )}
 
               {/* Participants */}
-              <div
-                className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6"
-                role="list"
+              <ul
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 list-none"
                 aria-label="Voice channel participants"
               >
                 {/* Show current user */}
                 {user && (
-                  <div
+                  <li
                     className="flex items-center gap-3 p-3 border rounded-lg bg-primary/10"
-                    role="listitem"
-                    tabIndex={0}
                     aria-label={`You: ${user.username}, ${isMuted ? 'muted' : 'unmuted'}`}
                   >
                     <div className="relative">
@@ -584,18 +581,15 @@ function KhaveContent() {
                       <div className="font-medium text-sm truncate">{user.username}</div>
                       <div className="text-xs text-muted-foreground">{user.university}</div>
                     </div>
-                  </div>
+                  </li>
                 )}
 
                 {/* Show other participants */}
                 {participants.filter(p => p.userId !== user?.id).map((participant) => (
-                  <div
+                  <li
                     key={participant.userId}
-                    className="flex flex-col gap-2 p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
-                    role="listitem"
-                    tabIndex={0}
+                    className="flex flex-col gap-2 p-3 border rounded-lg"
                     aria-label={`${participant.username}, ${participant.isMuted ? 'muted' : 'unmuted'}, ${participant.isSpeaking ? 'speaking' : 'not speaking'}`}
-                    onKeyDown={(e) => handleParticipantKeyDown(e, participant)}
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative">
@@ -631,15 +625,15 @@ function KhaveContent() {
                         {Math.round(webrtcService.getParticipantVolume(participant.userId) * 100)}%
                       </span>
                     </div>
-                  </div>
+                  </li>
                 ))}
 
                 {participants.length === 0 && !user && (
-                  <div className="col-span-2 text-center text-muted-foreground py-4">
+                  <li className="col-span-2 text-center text-muted-foreground py-4">
                     {t('participants')}
-                  </div>
+                  </li>
                 )}
-              </div>
+              </ul>
 
               {/* Controls */}
               <div className="flex flex-col gap-4 p-4 bg-muted rounded-lg" role="group" aria-label="Voice channel controls">
