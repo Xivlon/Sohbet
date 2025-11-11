@@ -11,6 +11,8 @@ import { voiceService, VoiceChannel } from '@/app/lib/voice-service';
 import { webrtcService, VoiceParticipant } from '@/app/lib/webrtc-service';
 import { useAuth } from '../contexts/auth-context';
 import { ErrorBoundary } from './error-boundary';
+import { websocketService } from '@/app/lib/websocket-service';
+import { RefreshCw } from 'lucide-react';
 
 interface Participant {
   id: string;
@@ -46,12 +48,51 @@ function KhaveContent() {
   const createChannelInputRef = useRef<HTMLInputElement>(null);
   const invitePanelRef = useRef<HTMLDivElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Load channels on mount
   useEffect(() => {
     loadChannels();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-refresh channels periodically (every 30 seconds)
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (!isConnected) {
+        // Only auto-refresh if not in a channel
+        loadChannels(true);
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
+
+  // Listen for WebSocket events to refresh channel list
+  useEffect(() => {
+    // Refresh when users join/leave channels (affects active_users count)
+    const handleUserJoined = () => {
+      if (!isConnected) {
+        loadChannels(true);
+      }
+    };
+
+    const handleUserLeft = () => {
+      if (!isConnected) {
+        loadChannels(true);
+      }
+    };
+
+    websocketService.on('voice:user-joined', handleUserJoined);
+    websocketService.on('voice:user-left', handleUserLeft);
+
+    return () => {
+      websocketService.off('voice:user-joined', handleUserJoined);
+      websocketService.off('voice:user-left', handleUserLeft);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
 
   // Setup WebRTC callbacks
   useEffect(() => {
@@ -117,10 +158,14 @@ function KhaveContent() {
     };
   }, [currentChannel, isConnected]);
 
-  const loadChannels = async () => {
-    setLoading(true);
+  const loadChannels = async (showRefreshingIndicator = false) => {
+    if (showRefreshingIndicator) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
-    
+
     try {
       const response = await voiceService.getChannels('public');
       if (response.data) {
@@ -133,7 +178,13 @@ function KhaveContent() {
       console.error('Error loading channels:', err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
+  };
+
+  const handleRefreshChannels = async () => {
+    await loadChannels(true);
+    setAnnouncement('Channel list refreshed');
   };
 
   const createChannel = async () => {
@@ -295,15 +346,27 @@ function KhaveContent() {
               <h2 className="text-primary">Khave - {t('voiceChat')}</h2>
               <p className="text-muted-foreground text-sm">{t('activeRooms')}</p>
             </div>
-            <Button
-              onClick={() => setShowCreateChannel(!showCreateChannel)}
-              size="sm"
-              aria-label={t('createRoom')}
-              aria-expanded={showCreateChannel}
-            >
-              <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
-              {t('createRoom')}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleRefreshChannels}
+                size="sm"
+                variant="outline"
+                disabled={isRefreshing}
+                aria-label="Refresh channel list"
+                title="Refresh channel list"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+              </Button>
+              <Button
+                onClick={() => setShowCreateChannel(!showCreateChannel)}
+                size="sm"
+                aria-label={t('createRoom')}
+                aria-expanded={showCreateChannel}
+              >
+                <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+                {t('createRoom')}
+              </Button>
+            </div>
           </div>
         </div>
 
