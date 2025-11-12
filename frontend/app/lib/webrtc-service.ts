@@ -24,24 +24,15 @@ export interface WebRTCConfig {
 // Default STUN and TURN servers for NAT traversal and relay
 // STUN servers help discover public IP addresses for NAT traversal
 // TURN servers provide relay when direct P2P connection fails
+// Using 2 STUN + 1 TURN to avoid slowing down ICE discovery (WebRTC warns at 5+)
 const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
-  // Google's public STUN servers
+  // Google's public STUN servers (primary and backup)
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
   // Open Relay Project TURN server (free public TURN server)
-  {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
+  // Using TURN over TLS (443) for better firewall traversal
   {
     urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },

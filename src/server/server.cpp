@@ -3177,14 +3177,16 @@ void AcademicSocialServer::handleVoiceLeave(int user_id, const WebSocketMessage&
         return;
     }
 
-    // Get users currently in the channel before removing
-    std::set<int> participants;
+    // Remove user from channel and get remaining participants
+    std::set<int> remaining_participants;
     {
         std::lock_guard<std::mutex> lock(voice_channels_mutex_);
         auto it = voice_channel_participants_.find(channel_id);
         if (it != voice_channel_participants_.end()) {
-            participants = it->second;
             it->second.erase(user_id);
+
+            // Get remaining participants AFTER removal
+            remaining_participants = it->second;
 
             // Clean up empty channels
             if (it->second.empty()) {
@@ -3195,13 +3197,13 @@ void AcademicSocialServer::handleVoiceLeave(int user_id, const WebSocketMessage&
 
     std::cout << "User " << user_id << " left voice channel " << channel_id << std::endl;
 
-    // Notify remaining users about the departure
+    // Notify remaining users (excluding the leaving user) about the departure
     std::ostringstream leave_json;
     leave_json << "{\"channel_id\":" << channel_id
                << ",\"user_id\":" << user_id << "}";
 
     WebSocketMessage leave_msg("voice:user-left", leave_json.str());
-    websocket_server_->sendToUsers(participants, leave_msg);
+    websocket_server_->sendToUsers(remaining_participants, leave_msg);
 }
 
 void AcademicSocialServer::handleVoiceOffer(int user_id, const WebSocketMessage& message) {
