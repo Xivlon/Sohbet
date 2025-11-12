@@ -61,6 +61,7 @@ class WebRTCService {
   private isVideoEnabled: boolean = false;
   private isDeafened: boolean = false;
   private participantVolumes: Map<number, number> = new Map(); // Individual participant volumes (0-1)
+  private pendingIceCandidates: Map<number, RTCIceCandidateInit[]> = new Map(); // Queue ICE candidates until remote description is set
 
   // Callbacks for UI updates
   private onParticipantUpdateCallback: ((participants: VoiceParticipant[]) => void) | null = null;
@@ -145,8 +146,10 @@ class WebRTCService {
           audioLevel: 0,
         });
 
-        // We'll create offers to all existing participants
-        this.createOffer(p.user_id);
+        // Create offers to all existing participants (excluding ourselves)
+        if (p.user_id !== this.currentUserId) {
+          this.createOffer(p.user_id);
+        }
       });
 
       this.notifyParticipantUpdate();
@@ -214,6 +217,12 @@ class WebRTCService {
    * Join a voice channel
    */
   async joinChannel(channelId: number, userId: number, audioOnly: boolean = true): Promise<void> {
+    // If already in a channel, leave it first to prevent resource leaks
+    if (this.currentChannelId !== null) {
+      console.log('Already in a channel, leaving before joining new one');
+      this.leaveChannel();
+    }
+
     this.currentChannelId = channelId;
     this.currentUserId = userId;
     this.isVideoEnabled = false;
@@ -282,6 +291,9 @@ class WebRTCService {
       this.audioContext = null;
     }
     this.audioAnalyzers.clear();
+
+    // Clear pending ICE candidates
+    this.pendingIceCandidates.clear();
 
     // Clear state
     this.participants.clear();
@@ -463,6 +475,13 @@ class WebRTCService {
   private setupAudioAnalyzer() {
     if (!this.localStream) return;
 
+    // Close existing audio context if it exists to prevent resource leak
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      this.audioContext.close().catch(err =>
+        console.error('Error closing old audio context:', err)
+      );
+    }
+
     this.audioContext = new AudioContext();
     const source = this.audioContext.createMediaStreamSource(this.localStream);
     const analyzer = this.audioContext.createAnalyser();
@@ -528,9 +547,13 @@ class WebRTCService {
     const pc = this.createPeerConnection(targetUserId);
 
     try {
-      // Add local tracks to peer connection
+      // Add local tracks to peer connection only if not already added
       this.localStream.getTracks().forEach(track => {
-        pc.addTrack(track, this.localStream!);
+        // Check if this track is already added to a sender
+        const existingSender = pc.getSenders().find(sender => sender.track === track);
+        if (!existingSender) {
+          pc.addTrack(track, this.localStream!);
+        }
       });
 
       // Create and send offer
@@ -564,13 +587,36 @@ class WebRTCService {
     const pc = this.createPeerConnection(from_user_id);
 
     try {
-      // Add local tracks
+      // Handle offer collision (both sides send offers simultaneously)
+      // Use polite/impolite pattern: lower user ID is "polite" and rolls back
+      const isPolite = (this.currentUserId ?? 0) < from_user_id;
+      const offerCollision = pc.signalingState !== 'stable';
+
+      if (offerCollision && !isPolite) {
+        console.log(`Ignoring offer from user ${from_user_id} due to glare (we are impolite)`);
+        return;
+      }
+
+      // If we have a collision and we're polite, rollback our offer
+      if (offerCollision && isPolite) {
+        console.log(`Rolling back our offer due to collision with user ${from_user_id}`);
+        await pc.setLocalDescription({ type: 'rollback' });
+      }
+
+      // Add local tracks only if not already added
       this.localStream.getTracks().forEach(track => {
-        pc.addTrack(track, this.localStream!);
+        // Check if this track is already added to a sender
+        const existingSender = pc.getSenders().find(sender => sender.track === track);
+        if (!existingSender) {
+          pc.addTrack(track, this.localStream!);
+        }
       });
 
       // Set remote description
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+      // Process any queued ICE candidates now that remote description is set
+      await this.processQueuedIceCandidates(from_user_id, pc);
 
       // Create and send answer
       const answer = await pc.createAnswer();
@@ -607,6 +653,9 @@ class WebRTCService {
     try {
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
       console.log('Set remote description from answer');
+
+      // Process any queued ICE candidates now that remote description is set
+      await this.processQueuedIceCandidates(from_user_id, pc);
     } catch (error) {
       console.error('Error handling answer:', error);
     }
@@ -626,6 +675,17 @@ class WebRTCService {
 
     try {
       if (candidate) {
+        // Check if remote description is set
+        if (!pc.remoteDescription) {
+          // Queue the candidate until remote description is set
+          if (!this.pendingIceCandidates.has(from_user_id)) {
+            this.pendingIceCandidates.set(from_user_id, []);
+          }
+          this.pendingIceCandidates.get(from_user_id)!.push(candidate);
+          console.log(`Queued ICE candidate from user ${from_user_id} (waiting for remote description)`);
+          return;
+        }
+
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
         console.log(`Added ICE candidate from user ${from_user_id}`);
       }
@@ -633,6 +693,27 @@ class WebRTCService {
       console.error(`Error adding ICE candidate from user ${from_user_id}:`, error);
       // Don't close connection on ICE candidate failure - connection might still work
       // Just log the error and let ICE gathering continue
+    }
+  }
+
+  /**
+   * Process queued ICE candidates after remote description is set
+   */
+  private async processQueuedIceCandidates(userId: number, pc: RTCPeerConnection) {
+    const queuedCandidates = this.pendingIceCandidates.get(userId);
+    if (queuedCandidates && queuedCandidates.length > 0) {
+      console.log(`Processing ${queuedCandidates.length} queued ICE candidates for user ${userId}`);
+
+      for (const candidate of queuedCandidates) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (error) {
+          console.error(`Error adding queued ICE candidate for user ${userId}:`, error);
+        }
+      }
+
+      // Clear the queue
+      this.pendingIceCandidates.delete(userId);
     }
   }
 
@@ -719,6 +800,38 @@ class WebRTCService {
       console.log(`ICE gathering state with user ${userId}:`, pc.iceGatheringState);
     };
 
+    // Handle negotiation needed (when tracks are added/removed dynamically)
+    pc.onnegotiationneeded = async () => {
+      try {
+        console.log(`Negotiation needed with user ${userId}, creating new offer`);
+
+        // Only create offer if we're in a stable state or have local description
+        if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer') {
+          console.log(`Skipping negotiation - signaling state is ${pc.signalingState}`);
+          return;
+        }
+
+        // Create and send new offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        if (this.currentChannelId) {
+          websocketService.send('voice:offer', {
+            channel_id: this.currentChannelId,
+            target_user_id: userId,
+            from_user_id: this.currentUserId,
+            offer: {
+              type: offer.type,
+              sdp: offer.sdp,
+            },
+          });
+          console.log(`Sent renegotiation offer to user ${userId}`);
+        }
+      } catch (error) {
+        console.error(`Error during negotiation with user ${userId}:`, error);
+      }
+    };
+
     this.peerConnections.set(userId, pc);
     return pc;
   }
@@ -727,7 +840,22 @@ class WebRTCService {
    * Setup audio analyzer for remote stream
    */
   private setupRemoteAudioAnalyzer(userId: number, stream: MediaStream) {
-    if (!this.audioContext) {
+    // Clean up existing analyzer and gain node for this user to prevent duplicates
+    const existingGainNode = this.audioGainNodes.get(userId);
+    if (existingGainNode) {
+      existingGainNode.disconnect();
+      this.audioGainNodes.delete(userId);
+      console.log(`Cleaned up existing audio nodes for user ${userId}`);
+    }
+
+    // Cancel existing animation frame for this user
+    const existingAnimationId = this.audioAnimationFrames.get(userId);
+    if (existingAnimationId !== undefined) {
+      cancelAnimationFrame(existingAnimationId);
+      this.audioAnimationFrames.delete(userId);
+    }
+
+    if (!this.audioContext || this.audioContext.state === 'closed') {
       this.audioContext = new AudioContext();
     }
 
@@ -817,6 +945,9 @@ class WebRTCService {
 
     this.audioAnalyzers.delete(userId);
     this.participantVolumes.delete(userId);
+
+    // Clean up queued ICE candidates
+    this.pendingIceCandidates.delete(userId);
   }
 
   /**
