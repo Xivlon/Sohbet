@@ -58,6 +58,9 @@ std::optional<VoiceChannel> VoiceChannelRepository::create(VoiceChannel& channel
             channel.created_at = std::time(nullptr);
         }
 
+        // Call step() again to reach SQLITE_DONE and commit the transaction
+        stmt.step();
+
         return channel;
     }
 
