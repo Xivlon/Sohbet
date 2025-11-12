@@ -24,17 +24,34 @@ export interface WebRTCConfig {
 // Default STUN and TURN servers for NAT traversal and relay
 // STUN servers help discover public IP addresses for NAT traversal
 // TURN servers provide relay when direct P2P connection fails
-// Using 2 STUN + 1 TURN to avoid slowing down ICE discovery (WebRTC warns at 5+)
+// Using multiple reliable STUN/TURN servers for better connectivity
 const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   // Google's public STUN servers (primary and backup)
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  // Open Relay Project TURN server (free public TURN server)
-  // Using TURN over TLS (443) for better firewall traversal
+  // Additional reliable STUN servers
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun.stunprotocol.org:3478' },
+  // Twilio's free TURN server (limited but reliable)
   {
-    urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
+    urls: [
+      'turn:global.turn.twilio.com:3478?transport=udp',
+      'turn:global.turn.twilio.com:3478?transport=tcp',
+      'turn:global.turn.twilio.com:443?transport=tcp'
+    ],
+    username: 'f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d',
+    credential: 'w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw=',
+  },
+  // Metered TURN servers (more reliable than OpenRelay)
+  {
+    urls: [
+      'turn:a.relay.metered.ca:80',
+      'turn:a.relay.metered.ca:80?transport=tcp',
+      'turn:a.relay.metered.ca:443',
+      'turn:a.relay.metered.ca:443?transport=tcp'
+    ],
+    username: 'e244935f05c942d47a93c5b4',
+    credential: 'RYzUexu5W/Tb0gSy',
   },
 ];
 
@@ -53,6 +70,8 @@ class WebRTCService {
   private isDeafened: boolean = false;
   private participantVolumes: Map<number, number> = new Map(); // Individual participant volumes (0-1)
   private pendingIceCandidates: Map<number, RTCIceCandidateInit[]> = new Map(); // Queue ICE candidates until remote description is set
+  private iceRestartAttempts: Map<number, number> = new Map(); // Track ICE restart attempts per peer
+  private connectionFailureTimeouts: Map<number, NodeJS.Timeout> = new Map(); // Track connection failure timeouts
 
   // Callbacks for UI updates
   private onParticipantUpdateCallback: ((participants: VoiceParticipant[]) => void) | null = null;
@@ -92,7 +111,17 @@ class WebRTCService {
 
       // Initiate WebRTC connection if this is not us
       if (user_id !== this.currentUserId) {
-        this.createOffer(user_id);
+        // Use polite/impolite pattern: if we're "impolite" (higher user ID),
+        // add a small delay to reduce chance of offer collision
+        const isPolite = (this.currentUserId ?? 0) < user_id;
+        const delay = isPolite ? 0 : 100; // Impolite side waits 100ms
+
+        setTimeout(() => {
+          // Only create offer if still in channel and user is still a participant
+          if (this.currentChannelId === channel_id && this.participants.has(user_id)) {
+            this.createOffer(user_id);
+          }
+        }, delay);
       }
 
       this.notifyParticipantUpdate();
@@ -126,7 +155,7 @@ class WebRTCService {
         : message.payload as any;
       const { participants } = payload;
 
-      participants.forEach((p: any) => {
+      participants.forEach((p: any, index: number) => {
         this.participants.set(p.user_id, {
           userId: p.user_id,
           username: p.username,
@@ -139,7 +168,18 @@ class WebRTCService {
 
         // Create offers to all existing participants (excluding ourselves)
         if (p.user_id !== this.currentUserId) {
-          this.createOffer(p.user_id);
+          // Use polite/impolite pattern with staggered delays for multiple participants
+          const isPolite = (this.currentUserId ?? 0) < p.user_id;
+          // Add extra delay based on index to stagger multiple offers
+          const baseDelay = isPolite ? 0 : 100;
+          const delay = baseDelay + (index * 50); // Stagger by 50ms per participant
+
+          setTimeout(() => {
+            // Only create offer if still in channel and user is still a participant
+            if (this.currentChannelId !== null && this.participants.has(p.user_id)) {
+              this.createOffer(p.user_id);
+            }
+          }, delay);
         }
       });
 
@@ -285,6 +325,15 @@ class WebRTCService {
 
     // Clear pending ICE candidates
     this.pendingIceCandidates.clear();
+
+    // Clear ICE restart tracking
+    this.iceRestartAttempts.clear();
+
+    // Clear all connection failure timeouts
+    this.connectionFailureTimeouts.forEach((timeout) => {
+      clearTimeout(timeout);
+    });
+    this.connectionFailureTimeouts.clear();
 
     // Clear state
     this.participants.clear();
@@ -538,6 +587,19 @@ class WebRTCService {
     const pc = this.createPeerConnection(targetUserId);
 
     try {
+      // Check signaling state before creating offer
+      // Only create offer if we're in a stable state or if we need to renegotiate
+      if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer') {
+        console.log(`Skipping offer creation for user ${targetUserId} - signaling state is ${pc.signalingState}`);
+        return;
+      }
+
+      // If we already have a local offer pending, don't create another one
+      if (pc.signalingState === 'have-local-offer') {
+        console.log(`Already have pending offer for user ${targetUserId}, skipping`);
+        return;
+      }
+
       // Add local tracks to peer connection only if not already added
       this.localStream.getTracks().forEach(track => {
         // Check if this track is already added to a sender
@@ -583,15 +645,22 @@ class WebRTCService {
       const isPolite = (this.currentUserId ?? 0) < from_user_id;
       const offerCollision = pc.signalingState !== 'stable';
 
-      if (offerCollision && !isPolite) {
-        console.log(`Ignoring offer from user ${from_user_id} due to glare (we are impolite)`);
-        return;
-      }
+      console.log(`Handling offer from user ${from_user_id}, signaling state: ${pc.signalingState}, isPolite: ${isPolite}, collision: ${offerCollision}`);
 
-      // If we have a collision and we're polite, rollback our offer
-      if (offerCollision && isPolite) {
-        console.log(`Rolling back our offer due to collision with user ${from_user_id}`);
-        await pc.setLocalDescription({ type: 'rollback' });
+      if (offerCollision) {
+        if (!isPolite) {
+          // Impolite side: ignore the incoming offer and keep our own
+          console.log(`Ignoring offer from user ${from_user_id} due to glare (we are impolite, keeping our offer)`);
+          return;
+        } else {
+          // Polite side: rollback our offer and accept the incoming one
+          console.log(`Rolling back our offer due to collision with user ${from_user_id} (we are polite)`);
+
+          // Only rollback if we're in have-local-offer state
+          if (pc.signalingState === 'have-local-offer') {
+            await pc.setLocalDescription({ type: 'rollback' });
+          }
+        }
       }
 
       // Add local tracks only if not already added
@@ -605,6 +674,7 @@ class WebRTCService {
 
       // Set remote description
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      console.log(`Set remote description from offer (user ${from_user_id})`);
 
       // Process any queued ICE candidates now that remote description is set
       await this.processQueuedIceCandidates(from_user_id, pc);
@@ -626,6 +696,9 @@ class WebRTCService {
       });
     } catch (error) {
       console.error('Error handling offer:', error);
+      // If we fail to handle the offer, try to recover by closing and recreating the peer connection
+      console.log(`Attempting to recover from offer handling error with user ${from_user_id}`);
+      this.closePeerConnection(from_user_id);
     }
   }
 
@@ -776,13 +849,63 @@ class WebRTCService {
       console.log(`ICE connection state with user ${userId}:`, pc.iceConnectionState);
 
       if (pc.iceConnectionState === 'failed') {
-        console.error(`ICE connection failed with user ${userId}. Attempting ICE restart...`);
-        // Attempt to restart ICE
-        this.restartIce(userId);
+        console.error(`ICE connection failed with user ${userId}. Attempting recovery...`);
+
+        // Check restart attempts
+        const restartAttempts = this.iceRestartAttempts.get(userId) || 0;
+        const MAX_RESTART_ATTEMPTS = 3;
+
+        if (restartAttempts < MAX_RESTART_ATTEMPTS) {
+          // Attempt to restart ICE
+          this.iceRestartAttempts.set(userId, restartAttempts + 1);
+          console.log(`ICE restart attempt ${restartAttempts + 1}/${MAX_RESTART_ATTEMPTS} for user ${userId}`);
+          this.restartIce(userId);
+        } else {
+          // Max attempts reached, close and recreate the connection
+          console.error(`Max ICE restart attempts reached for user ${userId}. Closing connection.`);
+          this.closePeerConnection(userId);
+
+          // Try to re-establish connection after a delay (only if we're still in the channel)
+          if (this.currentChannelId !== null) {
+            setTimeout(() => {
+              if (this.currentChannelId !== null && this.participants.has(userId)) {
+                console.log(`Attempting to re-establish connection with user ${userId}`);
+                this.iceRestartAttempts.delete(userId); // Reset restart attempts
+                this.createOffer(userId);
+              }
+            }, 2000);
+          }
+        }
       } else if (pc.iceConnectionState === 'disconnected') {
-        console.warn(`ICE connection disconnected with user ${userId}. May reconnect automatically.`);
+        console.warn(`ICE connection disconnected with user ${userId}. Waiting for automatic reconnection...`);
+
+        // Clear any existing timeout
+        const existingTimeout = this.connectionFailureTimeouts.get(userId);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+        }
+
+        // Set a timeout to try ICE restart if it doesn't reconnect automatically
+        const timeout = setTimeout(() => {
+          if (pc.iceConnectionState === 'disconnected') {
+            console.log(`ICE still disconnected after timeout, attempting restart for user ${userId}`);
+            this.restartIce(userId);
+          }
+        }, 5000); // Wait 5 seconds before attempting restart
+
+        this.connectionFailureTimeouts.set(userId, timeout);
       } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         console.log(`ICE connection established with user ${userId}`);
+
+        // Reset restart attempts on successful connection
+        this.iceRestartAttempts.delete(userId);
+
+        // Clear any pending failure timeouts
+        const existingTimeout = this.connectionFailureTimeouts.get(userId);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+          this.connectionFailureTimeouts.delete(userId);
+        }
       }
     };
 
@@ -939,6 +1062,16 @@ class WebRTCService {
 
     // Clean up queued ICE candidates
     this.pendingIceCandidates.delete(userId);
+
+    // Clean up ICE restart tracking
+    this.iceRestartAttempts.delete(userId);
+
+    // Clean up connection failure timeouts
+    const timeout = this.connectionFailureTimeouts.get(userId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.connectionFailureTimeouts.delete(userId);
+    }
   }
 
   /**
