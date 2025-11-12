@@ -528,9 +528,13 @@ class WebRTCService {
     const pc = this.createPeerConnection(targetUserId);
 
     try {
-      // Add local tracks to peer connection
+      // Add local tracks to peer connection only if not already added
       this.localStream.getTracks().forEach(track => {
-        pc.addTrack(track, this.localStream!);
+        // Check if this track is already added to a sender
+        const existingSender = pc.getSenders().find(sender => sender.track === track);
+        if (!existingSender) {
+          pc.addTrack(track, this.localStream!);
+        }
       });
 
       // Create and send offer
@@ -564,9 +568,13 @@ class WebRTCService {
     const pc = this.createPeerConnection(from_user_id);
 
     try {
-      // Add local tracks
+      // Add local tracks only if not already added
       this.localStream.getTracks().forEach(track => {
-        pc.addTrack(track, this.localStream!);
+        // Check if this track is already added to a sender
+        const existingSender = pc.getSenders().find(sender => sender.track === track);
+        if (!existingSender) {
+          pc.addTrack(track, this.localStream!);
+        }
       });
 
       // Set remote description
