@@ -252,6 +252,7 @@ int VoiceChannelRepository::createSession(int channel_id, int user_id, const std
     const std::string sql = R"(
         INSERT INTO voice_sessions (channel_id, user_id, murmur_session_id)
         VALUES (?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -259,15 +260,19 @@ int VoiceChannelRepository::createSession(int channel_id, int user_id, const std
 
     stmt.bindInt(1, channel_id);
     stmt.bindInt(2, user_id);
-    
+
     if (!murmur_session_id.empty()) {
         stmt.bindText(3, murmur_session_id);
     } else {
         stmt.bindNull(3);
     }
 
-    if (stmt.step() == SQLITE_DONE) {
-        return static_cast<int>(database_->lastInsertRowId());
+    int result = stmt.step();
+    if (result == SQLITE_ROW) {
+        int session_id = stmt.getInt(0);
+        // Call step() again to commit the transaction
+        stmt.step();
+        return session_id;
     }
 
     return 0;
@@ -372,7 +377,7 @@ std::vector<int> VoiceChannelRepository::findEmptyInactiveChannels(int inactivit
             GROUP BY channel_id
         ) vs ON vc.id = vs.channel_id
         WHERE vs.last_activity IS NOT NULL
-        AND vs.last_activity < datetime('now', '-' || ? || ' minutes')
+        AND vs.last_activity < (NOW() - INTERVAL '1 minute' * ?)
         AND NOT EXISTS (
             SELECT 1 FROM voice_sessions
             WHERE channel_id = vc.id AND left_at IS NULL

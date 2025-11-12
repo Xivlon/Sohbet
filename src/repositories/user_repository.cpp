@@ -48,6 +48,7 @@ std::optional<User> UserRepository::create(User& user, const std::string& passwo
                           university, department, enrollment_year, warnings,
                           primary_language, additional_languages)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -78,8 +79,10 @@ std::optional<User> UserRepository::create(User& user, const std::string& passwo
     stmt.bindText(12, additional_langs);
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        user.setId(static_cast<int>(database_->lastInsertRowId()));
+    if (result == SQLITE_ROW) {
+        user.setId(stmt.getInt(0));
+        // Call step() again to commit the transaction
+        stmt.step();
         return user;
     }
 

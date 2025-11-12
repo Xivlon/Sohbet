@@ -12,26 +12,28 @@ std::optional<Message> MessageRepository::createMessage(int conversation_id, int
                                                         const std::string& content,
                                                         const std::string& media_url) {
     std::string query = "INSERT INTO messages (conversation_id, sender_id, content, media_url) "
-                       "VALUES (?, ?, ?, ?)";
-    
+                       "VALUES (?, ?, ?, ?) RETURNING id";
+
     db::Statement stmt(*database_, query);
     if (!stmt.isValid()) {
         std::cerr << "Failed to prepare create message query" << std::endl;
         return std::nullopt;
     }
-    
+
     stmt.bindInt(1, conversation_id);
     stmt.bindInt(2, sender_id);
     stmt.bindText(3, content);
-    
+
     if (media_url.empty()) {
         stmt.bindNull(4);
     } else {
         stmt.bindText(4, media_url);
     }
-    
-    if (stmt.step() == SQLITE_DONE) {
-        int message_id = database_->lastInsertRowId();
+
+    if (stmt.step() == SQLITE_ROW) {
+        int message_id = stmt.getInt(0);
+        // Call step() again to commit the transaction
+        stmt.step();
         return getById(message_id);
     }
     

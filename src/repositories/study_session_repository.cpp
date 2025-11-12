@@ -18,7 +18,7 @@ std::optional<StudySession> StudySessionRepository::createSession(
     std::string query = "INSERT INTO study_sessions (group_id, title, description, location, "
                        "voice_channel_id, start_time, end_time, created_by, max_participants, "
                        "is_recurring, recurrence_pattern) "
-                       "VALUES (?, ?, ?, ?, ?, datetime(?, 'unixepoch'), datetime(?, 'unixepoch'), ?, ?, ?, ?)";
+                       "VALUES (?, ?, ?, ?, ?, datetime(?, 'unixepoch'), datetime(?, 'unixepoch'), ?, ?, ?, ?) RETURNING id";
 
     db::Statement stmt(*database_, query);
     if (!stmt.isValid()) {
@@ -39,8 +39,10 @@ std::optional<StudySession> StudySessionRepository::createSession(
     stmt.bindInt(10, is_recurring ? 1 : 0);
     stmt.bindText(11, recurrence_pattern);
 
-    if (stmt.step() == SQLITE_DONE) {
-        int session_id = database_->lastInsertRowId();
+    if (stmt.step() == SQLITE_ROW) {
+        int session_id = stmt.getInt(0);
+        // Call step() again to commit the transaction
+        stmt.step();
         return getById(session_id);
     }
 

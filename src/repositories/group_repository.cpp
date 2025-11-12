@@ -13,6 +13,7 @@ std::optional<Group> GroupRepository::create(Group& group) {
     const std::string sql = R"(
         INSERT INTO groups (name, description, creator_id, privacy)
         VALUES (?, ?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -28,13 +29,16 @@ std::optional<Group> GroupRepository::create(Group& group) {
     stmt.bindText(4, group.getPrivacy());
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        int group_id = static_cast<int>(database_->lastInsertRowId());
+    if (result == SQLITE_ROW) {
+        int group_id = stmt.getInt(0);
         group.setId(group_id);
-        
+
+        // Call step() again to commit the transaction
+        stmt.step();
+
         // Automatically add creator as admin member
         addMember(group_id, group.getCreatorId(), "admin");
-        
+
         return group;
     }
 

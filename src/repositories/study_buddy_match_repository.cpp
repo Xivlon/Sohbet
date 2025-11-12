@@ -52,6 +52,7 @@ std::optional<StudyBuddyMatch> StudyBuddyMatchRepository::create(const StudyBudd
             schedule_compatibility_score, learning_style_score, academic_level_score,
             common_courses, common_interests, match_reason, status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -69,9 +70,11 @@ std::optional<StudyBuddyMatch> StudyBuddyMatchRepository::create(const StudyBudd
     stmt.bindText(10, match.match_reason);
     stmt.bindText(11, StudyBuddyMatch::matchStatusToString(match.status));
 
-    if (stmt.step() == SQLITE_DONE) {
+    if (stmt.step() == SQLITE_ROW) {
         StudyBuddyMatch created = match;
-        created.id = static_cast<int>(database_->lastInsertRowId());
+        created.id = stmt.getInt(0);
+        // Call step() again to commit the transaction
+        stmt.step();
         return created;
     }
 

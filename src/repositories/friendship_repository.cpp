@@ -13,6 +13,7 @@ std::optional<Friendship> FriendshipRepository::create(Friendship& friendship) {
     const std::string sql = R"(
         INSERT INTO friendships (requester_id, addressee_id, status)
         VALUES (?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -23,8 +24,10 @@ std::optional<Friendship> FriendshipRepository::create(Friendship& friendship) {
     stmt.bindText(3, friendship.getStatus());
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        friendship.setId(static_cast<int>(database_->lastInsertRowId()));
+    if (result == SQLITE_ROW) {
+        friendship.setId(stmt.getInt(0));
+        // Call step() again to commit the transaction
+        stmt.step();
         return friendship;
     }
 

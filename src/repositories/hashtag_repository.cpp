@@ -14,6 +14,7 @@ std::optional<Hashtag> HashtagRepository::create(Hashtag& hashtag) {
     const std::string sql = R"(
         INSERT INTO hashtags (tag, usage_count)
         VALUES (?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -23,8 +24,10 @@ std::optional<Hashtag> HashtagRepository::create(Hashtag& hashtag) {
     stmt.bindInt(2, hashtag.getUsageCount());
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        hashtag.setId(static_cast<int>(database_->lastInsertRowId()));
+    if (result == SQLITE_ROW) {
+        hashtag.setId(stmt.getInt(0));
+        // Call step() again to commit the transaction
+        stmt.step();
         return hashtag;
     }
 
