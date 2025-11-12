@@ -43,9 +43,9 @@ std::optional<Message> MessageRepository::createMessage(int conversation_id, int
 
 std::optional<Message> MessageRepository::getById(int id) {
     std::string query = "SELECT id, conversation_id, sender_id, content, media_url, "
-                       "strftime('%s', read_at) as read_at, "
-                       "strftime('%s', delivered_at) as delivered_at, "
-                       "strftime('%s', created_at) as created_at "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at, "
+                       "EXTRACT(EPOCH FROM delivered_at)::bigint as delivered_at, "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at "
                        "FROM messages WHERE id = ?";
     
     db::Statement stmt(*database_, query);
@@ -89,9 +89,9 @@ std::vector<Message> MessageRepository::getConversationMessages(int conversation
     std::vector<Message> messages;
     
     std::string query = "SELECT id, conversation_id, sender_id, content, media_url, "
-                       "strftime('%s', read_at) as read_at, "
-                       "strftime('%s', delivered_at) as delivered_at, "
-                       "strftime('%s', created_at) as created_at "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at, "
+                       "EXTRACT(EPOCH FROM delivered_at)::bigint as delivered_at, "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at "
                        "FROM messages "
                        "WHERE conversation_id = ? "
                        "ORDER BY created_at DESC "

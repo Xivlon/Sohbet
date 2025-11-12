@@ -18,7 +18,7 @@ std::optional<StudySession> StudySessionRepository::createSession(
     std::string query = "INSERT INTO study_sessions (group_id, title, description, location, "
                        "voice_channel_id, start_time, end_time, created_by, max_participants, "
                        "is_recurring, recurrence_pattern) "
-                       "VALUES (?, ?, ?, ?, ?, datetime(?, 'unixepoch'), datetime(?, 'unixepoch'), ?, ?, ?, ?) RETURNING id";
+                       "VALUES (?, ?, ?, ?, ?, to_timestamp(?), to_timestamp(?), ?, ?, ?, ?) RETURNING id";
 
     db::Statement stmt(*database_, query);
     if (!stmt.isValid()) {
@@ -51,11 +51,11 @@ std::optional<StudySession> StudySessionRepository::createSession(
 
 std::optional<StudySession> StudySessionRepository::getById(int id) {
     std::string query = "SELECT id, group_id, title, description, location, voice_channel_id, "
-                       "strftime('%s', start_time) as start_time, "
-                       "strftime('%s', end_time) as end_time, "
+                       "EXTRACT(EPOCH FROM start_time)::bigint as start_time, "
+                       "EXTRACT(EPOCH FROM end_time)::bigint as end_time, "
                        "created_by, max_participants, is_recurring, recurrence_pattern, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', updated_at) as updated_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM updated_at)::bigint as updated_at "
                        "FROM study_sessions WHERE id = ?";
 
     db::Statement stmt(*database_, query);
@@ -98,11 +98,11 @@ std::vector<StudySession> StudySessionRepository::getGroupSessions(int group_id)
     std::vector<StudySession> sessions;
 
     std::string query = "SELECT id, group_id, title, description, location, voice_channel_id, "
-                       "strftime('%s', start_time) as start_time, "
-                       "strftime('%s', end_time) as end_time, "
+                       "EXTRACT(EPOCH FROM start_time)::bigint as start_time, "
+                       "EXTRACT(EPOCH FROM end_time)::bigint as end_time, "
                        "created_by, max_participants, is_recurring, recurrence_pattern, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', updated_at) as updated_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM updated_at)::bigint as updated_at "
                        "FROM study_sessions "
                        "WHERE group_id = ? "
                        "ORDER BY start_time ASC";
@@ -147,13 +147,13 @@ std::vector<StudySession> StudySessionRepository::getUpcomingSessions(int group_
     std::vector<StudySession> sessions;
 
     std::string query = "SELECT id, group_id, title, description, location, voice_channel_id, "
-                       "strftime('%s', start_time) as start_time, "
-                       "strftime('%s', end_time) as end_time, "
+                       "EXTRACT(EPOCH FROM start_time)::bigint as start_time, "
+                       "EXTRACT(EPOCH FROM end_time)::bigint as end_time, "
                        "created_by, max_participants, is_recurring, recurrence_pattern, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', updated_at) as updated_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM updated_at)::bigint as updated_at "
                        "FROM study_sessions "
-                       "WHERE group_id = ? AND start_time >= datetime('now') "
+                       "WHERE group_id = ? AND start_time >= CURRENT_TIMESTAMP "
                        "ORDER BY start_time ASC "
                        "LIMIT ?";
 
@@ -199,14 +199,14 @@ std::vector<StudySession> StudySessionRepository::getUserSessions(int user_id) {
 
     std::string query = "SELECT s.id, s.group_id, s.title, s.description, s.location, "
                        "s.voice_channel_id, "
-                       "strftime('%s', s.start_time) as start_time, "
-                       "strftime('%s', s.end_time) as end_time, "
+                       "EXTRACT(EPOCH FROM s.start_time)::bigint as start_time, "
+                       "EXTRACT(EPOCH FROM s.end_time)::bigint as end_time, "
                        "s.created_by, s.max_participants, s.is_recurring, s.recurrence_pattern, "
-                       "strftime('%s', s.created_at) as created_at, "
-                       "strftime('%s', s.updated_at) as updated_at "
+                       "EXTRACT(EPOCH FROM s.created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM s.updated_at)::bigint as updated_at "
                        "FROM study_sessions s "
                        "INNER JOIN session_participants sp ON s.id = sp.session_id "
-                       "WHERE sp.user_id = ? AND s.start_time >= datetime('now') "
+                       "WHERE sp.user_id = ? AND s.start_time >= CURRENT_TIMESTAMP "
                        "ORDER BY s.start_time ASC";
 
     db::Statement stmt(*database_, query);
@@ -249,7 +249,7 @@ bool StudySessionRepository::updateSession(int session_id, const std::string& ti
                                            const std::string& description, const std::string& location,
                                            std::time_t start_time, std::time_t end_time) {
     std::string query = "UPDATE study_sessions SET title = ?, description = ?, location = ?, "
-                       "start_time = datetime(?, 'unixepoch'), end_time = datetime(?, 'unixepoch'), "
+                       "start_time = to_timestamp(?), end_time = to_timestamp(?), "
                        "updated_at = CURRENT_TIMESTAMP WHERE id = ?";
 
     db::Statement stmt(*database_, query);

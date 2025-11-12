@@ -57,8 +57,8 @@ std::optional<Notification> NotificationRepository::getById(int id) {
     std::string query = "SELECT id, user_id, type, title, message, "
                        "related_user_id, related_post_id, related_comment_id, "
                        "related_group_id, related_session_id, action_url, is_read, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', read_at) as read_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at "
                        "FROM notifications WHERE id = ?";
 
     db::Statement stmt(*database_, query);
@@ -106,8 +106,8 @@ std::vector<Notification> NotificationRepository::getUserNotifications(int user_
     std::string query = "SELECT id, user_id, type, title, message, "
                        "related_user_id, related_post_id, related_comment_id, "
                        "related_group_id, related_session_id, action_url, is_read, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', read_at) as read_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at "
                        "FROM notifications "
                        "WHERE user_id = ? "
                        "ORDER BY created_at DESC "
@@ -161,8 +161,8 @@ std::vector<Notification> NotificationRepository::getUnreadNotifications(int use
     std::string query = "SELECT id, user_id, type, title, message, "
                        "related_user_id, related_post_id, related_comment_id, "
                        "related_group_id, related_session_id, action_url, is_read, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', read_at) as read_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at "
                        "FROM notifications "
                        "WHERE user_id = ? AND is_read = 0 "
                        "ORDER BY created_at DESC "
