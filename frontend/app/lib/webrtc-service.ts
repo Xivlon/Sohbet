@@ -61,6 +61,7 @@ class WebRTCService {
   private isVideoEnabled: boolean = false;
   private isDeafened: boolean = false;
   private participantVolumes: Map<number, number> = new Map(); // Individual participant volumes (0-1)
+  private pendingIceCandidates: Map<number, RTCIceCandidateInit[]> = new Map(); // Queue ICE candidates until remote description is set
 
   // Callbacks for UI updates
   private onParticipantUpdateCallback: ((participants: VoiceParticipant[]) => void) | null = null;
@@ -145,8 +146,10 @@ class WebRTCService {
           audioLevel: 0,
         });
 
-        // We'll create offers to all existing participants
-        this.createOffer(p.user_id);
+        // Create offers to all existing participants (excluding ourselves)
+        if (p.user_id !== this.currentUserId) {
+          this.createOffer(p.user_id);
+        }
       });
 
       this.notifyParticipantUpdate();
@@ -214,6 +217,12 @@ class WebRTCService {
    * Join a voice channel
    */
   async joinChannel(channelId: number, userId: number, audioOnly: boolean = true): Promise<void> {
+    // If already in a channel, leave it first to prevent resource leaks
+    if (this.currentChannelId !== null) {
+      console.log('Already in a channel, leaving before joining new one');
+      this.leaveChannel();
+    }
+
     this.currentChannelId = channelId;
     this.currentUserId = userId;
     this.isVideoEnabled = false;
@@ -282,6 +291,9 @@ class WebRTCService {
       this.audioContext = null;
     }
     this.audioAnalyzers.clear();
+
+    // Clear pending ICE candidates
+    this.pendingIceCandidates.clear();
 
     // Clear state
     this.participants.clear();
@@ -580,6 +592,9 @@ class WebRTCService {
       // Set remote description
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
+      // Process any queued ICE candidates now that remote description is set
+      await this.processQueuedIceCandidates(from_user_id, pc);
+
       // Create and send answer
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -615,6 +630,9 @@ class WebRTCService {
     try {
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
       console.log('Set remote description from answer');
+
+      // Process any queued ICE candidates now that remote description is set
+      await this.processQueuedIceCandidates(from_user_id, pc);
     } catch (error) {
       console.error('Error handling answer:', error);
     }
@@ -634,6 +652,17 @@ class WebRTCService {
 
     try {
       if (candidate) {
+        // Check if remote description is set
+        if (!pc.remoteDescription) {
+          // Queue the candidate until remote description is set
+          if (!this.pendingIceCandidates.has(from_user_id)) {
+            this.pendingIceCandidates.set(from_user_id, []);
+          }
+          this.pendingIceCandidates.get(from_user_id)!.push(candidate);
+          console.log(`Queued ICE candidate from user ${from_user_id} (waiting for remote description)`);
+          return;
+        }
+
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
         console.log(`Added ICE candidate from user ${from_user_id}`);
       }
@@ -641,6 +670,27 @@ class WebRTCService {
       console.error(`Error adding ICE candidate from user ${from_user_id}:`, error);
       // Don't close connection on ICE candidate failure - connection might still work
       // Just log the error and let ICE gathering continue
+    }
+  }
+
+  /**
+   * Process queued ICE candidates after remote description is set
+   */
+  private async processQueuedIceCandidates(userId: number, pc: RTCPeerConnection) {
+    const queuedCandidates = this.pendingIceCandidates.get(userId);
+    if (queuedCandidates && queuedCandidates.length > 0) {
+      console.log(`Processing ${queuedCandidates.length} queued ICE candidates for user ${userId}`);
+
+      for (const candidate of queuedCandidates) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (error) {
+          console.error(`Error adding queued ICE candidate for user ${userId}:`, error);
+        }
+      }
+
+      // Clear the queue
+      this.pendingIceCandidates.delete(userId);
     }
   }
 
@@ -825,6 +875,9 @@ class WebRTCService {
 
     this.audioAnalyzers.delete(userId);
     this.participantVolumes.delete(userId);
+
+    // Clean up queued ICE candidates
+    this.pendingIceCandidates.delete(userId);
   }
 
   /**
