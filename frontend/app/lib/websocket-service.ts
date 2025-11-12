@@ -129,30 +129,32 @@ class WebSocketService {
           try {
             const rawData = event.data;
 
-            // Try to parse as JSON
-            const message: WebSocketMessage = JSON.parse(rawData);
-            this.handleMessage(message);
-          } catch (error) {
-            // Enhanced error logging to help diagnose the issue
-            console.error('Failed to parse WebSocket message:', error);
-
-            // Log the problematic data for debugging
-            const rawData = event.data;
-            console.error('Raw WebSocket data:', rawData);
-            console.error('Data length:', rawData.length);
-            console.error('Data type:', typeof rawData);
-
-            // Try to handle multiple concatenated JSON objects
-            // This can happen if the server sends data incorrectly
-            try {
-              const messages = this.parseMultipleMessages(rawData);
-              if (messages.length > 0) {
-                console.warn(`Recovered ${messages.length} messages from corrupted data`);
-                messages.forEach(msg => this.handleMessage(msg));
-              }
-            } catch (recoveryError) {
-              console.error('Failed to recover messages:', recoveryError);
+            // Handle Blob data by converting to text first
+            if (rawData instanceof Blob) {
+              rawData.text().then((text: string) => {
+                this.processWebSocketData(text);
+              }).catch((err: unknown) => {
+                console.error('Failed to convert Blob to text:', err);
+              });
+              return;
             }
+
+            // Handle ArrayBuffer data
+            if (rawData instanceof ArrayBuffer) {
+              const text = new TextDecoder().decode(rawData);
+              this.processWebSocketData(text);
+              return;
+            }
+
+            // Handle string data (most common case)
+            if (typeof rawData === 'string') {
+              this.processWebSocketData(rawData);
+              return;
+            }
+
+            console.error('Unknown WebSocket data type:', typeof rawData);
+          } catch (error) {
+            console.error('Error in WebSocket onmessage:', error);
           }
         };
 
@@ -319,6 +321,56 @@ class WebSocketService {
   }
 
   /**
+   * Process WebSocket data with robust error handling
+   * Handles single messages, multiple concatenated messages, and malformed data
+   */
+  private processWebSocketData(rawData: string): void {
+    if (!rawData || rawData.trim().length === 0) {
+      return;
+    }
+
+    // First, try to parse as a single message (most common case)
+    try {
+      const message: WebSocketMessage = JSON.parse(rawData);
+      this.handleMessage(message);
+      return;
+    } catch (error) {
+      // If single parse fails, try to handle multiple messages or recover from errors
+      // Check if this is the specific "unexpected character after JSON" error
+      if (error instanceof SyntaxError && error.message.includes('after JSON data')) {
+        // This indicates multiple concatenated messages
+        try {
+          const messages = this.parseMultipleMessages(rawData);
+          if (messages.length > 0) {
+            console.log(`Parsed ${messages.length} concatenated WebSocket messages`);
+            messages.forEach(msg => this.handleMessage(msg));
+            return;
+          }
+        } catch (recoveryError) {
+          console.error('Failed to parse concatenated messages:', recoveryError);
+        }
+      }
+
+      // If we still can't parse, log detailed error information
+      console.error('Failed to parse WebSocket message:', error);
+      console.error('Raw data (first 500 chars):', rawData.substring(0, 500));
+      console.error('Data length:', rawData.length);
+
+      // Try one more aggressive recovery attempt
+      try {
+        const messages = this.parseMultipleMessages(rawData);
+        if (messages.length > 0) {
+          console.warn(`Recovered ${messages.length} messages through aggressive parsing`);
+          messages.forEach(msg => this.handleMessage(msg));
+          return;
+        }
+      } catch (finalError) {
+        console.error('All parsing attempts failed');
+      }
+    }
+  }
+
+  /**
    * Attempt to parse multiple concatenated JSON messages
    * This handles the case where the server incorrectly sends multiple JSON objects
    * in a single WebSocket frame (e.g., "}{" concatenation issue)
@@ -331,32 +383,71 @@ class WebSocketService {
     let remaining = rawData.trim();
     let braceCount = 0;
     let startIndex = 0;
+    let inString = false;
+    let escapeNext = false;
 
     for (let i = 0; i < remaining.length; i++) {
-      if (remaining[i] === '{') {
-        if (braceCount === 0) {
-          startIndex = i;
-        }
-        braceCount++;
-      } else if (remaining[i] === '}') {
-        braceCount--;
+      const char = remaining[i];
 
-        // Found a complete JSON object
-        if (braceCount === 0) {
-          const jsonStr = remaining.substring(startIndex, i + 1);
-          try {
-            const parsed = JSON.parse(jsonStr);
+      // Handle string escaping to avoid counting braces inside strings
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
 
-            // Validate that it looks like a WebSocket message
-            if (parsed && typeof parsed === 'object' && 'type' in parsed && 'payload' in parsed) {
-              messages.push(parsed as WebSocketMessage);
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      // Only count braces outside of strings
+      if (!inString) {
+        if (char === '{') {
+          if (braceCount === 0) {
+            startIndex = i;
+          }
+          braceCount++;
+        } else if (char === '}') {
+          braceCount--;
+
+          // Found a complete JSON object
+          if (braceCount === 0) {
+            const jsonStr = remaining.substring(startIndex, i + 1);
+            try {
+              const parsed = JSON.parse(jsonStr);
+
+              // Validate that it looks like a WebSocket message
+              if (parsed && typeof parsed === 'object' && 'type' in parsed && 'payload' in parsed) {
+                messages.push(parsed as WebSocketMessage);
+              } else {
+                console.warn('Parsed object does not match WebSocketMessage format');
+              }
+            } catch (e) {
+              // Skip invalid JSON fragments
+              const preview = jsonStr.length > 100 ? jsonStr.substring(0, 100) + '...' : jsonStr;
+              console.warn('Skipping invalid JSON fragment:', preview);
             }
-          } catch (e) {
-            // Skip invalid JSON fragments
-            console.warn('Skipping invalid JSON fragment:', jsonStr.substring(0, 100));
+
+            // Reset for potential next message
+            startIndex = i + 1;
+          } else if (braceCount < 0) {
+            // More closing braces than opening - reset
+            console.warn('Brace mismatch detected, resetting parser');
+            braceCount = 0;
+            startIndex = i + 1;
           }
         }
       }
+    }
+
+    // Check if we have unclosed braces (malformed JSON)
+    if (braceCount > 0) {
+      console.warn(`Unclosed braces detected: ${braceCount} unmatched opening braces`);
     }
 
     return messages;
