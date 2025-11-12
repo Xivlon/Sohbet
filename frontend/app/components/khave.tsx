@@ -50,6 +50,7 @@ function KhaveContent() {
   const invitePanelRef = useRef<HTMLDivElement>(null);
   const settingsPanelRef = useRef<HTMLDivElement>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState('');
 
   const loadChannels = useCallback(async (showRefreshingIndicator = false) => {
     if (showRefreshingIndicator) {
@@ -80,37 +81,40 @@ function KhaveContent() {
     loadChannels();
   }, [loadChannels]);
 
-  // Auto-refresh channels periodically (every 30 seconds)
+  // Auto-refresh channels periodically (reduced to every 60 seconds to minimize load)
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (!isConnected) {
         // Only auto-refresh if not in a channel
         loadChannels(true);
       }
-    }, 30000); // 30 seconds
+    }, 60000); // 60 seconds (reduced from 30)
 
     return () => clearInterval(intervalId);
   }, [isConnected, loadChannels]);
 
-  // Listen for WebSocket events to refresh channel list
+  // Listen for WebSocket events to refresh channel list with debouncing
   useEffect(() => {
-    // Refresh when users join/leave channels (affects active_users count)
-    const handleUserJoined = () => {
-      if (!isConnected) {
-        loadChannels(true);
-      }
+    let debounceTimer: NodeJS.Timeout | null = null;
+
+    // Debounced refresh to avoid excessive API calls when multiple users join/leave rapidly
+    const debouncedRefresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        if (!isConnected) {
+          loadChannels(true);
+        }
+      }, 2000); // Wait 2 seconds after last event before refreshing
     };
 
-    const handleUserLeft = () => {
-      if (!isConnected) {
-        loadChannels(true);
-      }
-    };
+    const handleUserJoined = () => debouncedRefresh();
+    const handleUserLeft = () => debouncedRefresh();
 
     websocketService.on('voice:user-joined', handleUserJoined);
     websocketService.on('voice:user-left', handleUserLeft);
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       websocketService.off('voice:user-joined', handleUserJoined);
       websocketService.off('voice:user-left', handleUserLeft);
     };
@@ -172,13 +176,23 @@ function KhaveContent() {
         // Clean up WebRTC
         webrtcService.leaveChannel();
 
-        // Clean up the session on backend
+        // Clean up the session on backend (ignore 404 errors - session already cleaned up)
         voiceService.leaveChannel(currentChannel.id).catch(err => {
-          console.error('Error leaving channel on unmount:', err);
+          // Only log if it's not a 404 (session not found is expected on cleanup)
+          if (err.status !== 404) {
+            console.error('Error leaving channel on unmount:', err);
+          }
         });
       }
     };
   }, [currentChannel, isConnected]);
+
+  // Set invite URL on client side only to avoid SSR hydration mismatch
+  useEffect(() => {
+    if (currentChannel && typeof window !== 'undefined') {
+      setInviteUrl(`${window.location.origin}/khave?room=${currentChannel.id}`);
+    }
+  }, [currentChannel]);
 
   const handleRefreshChannels = async () => {
     await loadChannels(true);
@@ -244,7 +258,9 @@ function KhaveContent() {
 
       // Then leave via REST API
       const response = await voiceService.leaveChannel(currentChannel.id);
-      if (response.status === 200) {
+      // Accept both 200 (success) and 404 (no session found) as successful leave
+      // 404 just means the session was already cleaned up, which is fine
+      if (response.status === 200 || response.status === 404) {
         setCurrentChannel(null);
         setIsConnected(false);
         setIsMuted(false);
@@ -255,8 +271,14 @@ function KhaveContent() {
         setError(response.error || 'Failed to leave channel');
       }
     } catch (err) {
-      setError('Failed to leave channel');
+      // Still update local state even if API call fails
+      setCurrentChannel(null);
+      setIsConnected(false);
+      setIsMuted(false);
+      setIsVideoEnabled(false);
+      setParticipants([]);
       console.error('Error leaving channel:', err);
+      loadChannels(); // Reload to get updated user counts
     }
   };
 
@@ -525,7 +547,7 @@ function KhaveContent() {
                     <input
                       type="text"
                       readOnly
-                      value={`${window.location.origin}/khave?room=${currentChannel.id}`}
+                      value={inviteUrl}
                       className="flex-1 p-2 text-sm border rounded bg-background"
                       aria-label="Invitation link"
                       onFocus={(e) => e.target.select()}
@@ -533,13 +555,13 @@ function KhaveContent() {
                     <Button
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(
-                          `${window.location.origin}/khave?room=${currentChannel.id}`
-                        ).then(() => {
-                          setAnnouncement('Invitation link copied to clipboard');
-                        }).catch(() => {
-                          setAnnouncement('Failed to copy invitation link. Please try again.');
-                        });
+                        if (inviteUrl) {
+                          navigator.clipboard.writeText(inviteUrl).then(() => {
+                            setAnnouncement('Invitation link copied to clipboard');
+                          }).catch(() => {
+                            setAnnouncement('Failed to copy invitation link. Please try again.');
+                          });
+                        }
                       }}
                       aria-label="Copy invitation link to clipboard"
                     >
