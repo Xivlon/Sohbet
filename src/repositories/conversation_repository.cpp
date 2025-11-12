@@ -27,8 +27,8 @@ std::optional<Conversation> ConversationRepository::findOrCreateConversation(int
 
 std::optional<Conversation> ConversationRepository::findConversation(int user1_id, int user2_id) {
     std::string query = "SELECT id, user1_id, user2_id, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', last_message_at) as last_message_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM last_message_at)::bigint as last_message_at "
                        "FROM conversations "
                        "WHERE user1_id = ? AND user2_id = ?";
     
@@ -81,8 +81,8 @@ Conversation ConversationRepository::createConversation(int user1_id, int user2_
 
 std::optional<Conversation> ConversationRepository::getById(int id) {
     std::string query = "SELECT id, user1_id, user2_id, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', last_message_at) as last_message_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM last_message_at)::bigint as last_message_at "
                        "FROM conversations WHERE id = ?";
     
     db::Statement stmt(*database_, query);
@@ -109,8 +109,8 @@ std::vector<Conversation> ConversationRepository::getUserConversations(int user_
     std::vector<Conversation> conversations;
     
     std::string query = "SELECT id, user1_id, user2_id, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', last_message_at) as last_message_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM last_message_at)::bigint as last_message_at "
                        "FROM conversations "
                        "WHERE user1_id = ? OR user2_id = ? "
                        "ORDER BY last_message_at DESC";

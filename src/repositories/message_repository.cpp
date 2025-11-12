@@ -12,26 +12,28 @@ std::optional<Message> MessageRepository::createMessage(int conversation_id, int
                                                         const std::string& content,
                                                         const std::string& media_url) {
     std::string query = "INSERT INTO messages (conversation_id, sender_id, content, media_url) "
-                       "VALUES (?, ?, ?, ?)";
-    
+                       "VALUES (?, ?, ?, ?) RETURNING id";
+
     db::Statement stmt(*database_, query);
     if (!stmt.isValid()) {
         std::cerr << "Failed to prepare create message query" << std::endl;
         return std::nullopt;
     }
-    
+
     stmt.bindInt(1, conversation_id);
     stmt.bindInt(2, sender_id);
     stmt.bindText(3, content);
-    
+
     if (media_url.empty()) {
         stmt.bindNull(4);
     } else {
         stmt.bindText(4, media_url);
     }
-    
-    if (stmt.step() == SQLITE_DONE) {
-        int message_id = database_->lastInsertRowId();
+
+    if (stmt.step() == SQLITE_ROW) {
+        int message_id = stmt.getInt(0);
+        // Call step() again to commit the transaction
+        stmt.step();
         return getById(message_id);
     }
     
@@ -41,9 +43,9 @@ std::optional<Message> MessageRepository::createMessage(int conversation_id, int
 
 std::optional<Message> MessageRepository::getById(int id) {
     std::string query = "SELECT id, conversation_id, sender_id, content, media_url, "
-                       "strftime('%s', read_at) as read_at, "
-                       "strftime('%s', delivered_at) as delivered_at, "
-                       "strftime('%s', created_at) as created_at "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at, "
+                       "EXTRACT(EPOCH FROM delivered_at)::bigint as delivered_at, "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at "
                        "FROM messages WHERE id = ?";
     
     db::Statement stmt(*database_, query);
@@ -87,9 +89,9 @@ std::vector<Message> MessageRepository::getConversationMessages(int conversation
     std::vector<Message> messages;
     
     std::string query = "SELECT id, conversation_id, sender_id, content, media_url, "
-                       "strftime('%s', read_at) as read_at, "
-                       "strftime('%s', delivered_at) as delivered_at, "
-                       "strftime('%s', created_at) as created_at "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at, "
+                       "EXTRACT(EPOCH FROM delivered_at)::bigint as delivered_at, "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at "
                        "FROM messages "
                        "WHERE conversation_id = ? "
                        "ORDER BY created_at DESC "

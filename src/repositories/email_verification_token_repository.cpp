@@ -14,29 +14,31 @@ std::optional<EmailVerificationToken> EmailVerificationTokenRepository::createTo
     std::string token = EmailVerificationToken::generateToken();
     std::time_t expires_at = EmailVerificationToken::getDefaultExpiration();
     
-    const std::string sql = "INSERT INTO email_verification_tokens (user_id, token, expires_at) VALUES (?, ?, ?)";
-    
+    const std::string sql = "INSERT INTO email_verification_tokens (user_id, token, expires_at) VALUES (?, ?, ?) RETURNING id";
+
     db::Statement stmt(*database_, sql);
     if (!stmt.isValid()) {
         std::cerr << "Failed to prepare statement for creating verification token" << std::endl;
         return std::nullopt;
     }
-    
+
     stmt.bindInt(1, user_id);
     stmt.bindText(2, token);
     stmt.bindInt(3, static_cast<int>(expires_at));
-    
+
     int result = stmt.step();
-    
-    if (result != SQLITE_DONE) {
+
+    if (result != SQLITE_ROW) {
         std::cerr << "Failed to insert verification token" << std::endl;
         return std::nullopt;
     }
-    
+
     // Create and return the token object
     EmailVerificationToken verification_token(user_id, token, expires_at);
-    verification_token.setId(static_cast<int>(database_->lastInsertRowId()));
-    
+    verification_token.setId(stmt.getInt(0));
+    // Call step() again to commit the transaction
+    stmt.step();
+
     return verification_token;
 }
 

@@ -13,6 +13,7 @@ std::optional<Announcement> AnnouncementRepository::create(Announcement& announc
     const std::string sql = R"(
         INSERT INTO group_announcements (group_id, author_id, title, content, is_pinned)
         VALUES (?, ?, ?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -25,8 +26,10 @@ std::optional<Announcement> AnnouncementRepository::create(Announcement& announc
     stmt.bindInt(5, announcement.isPinned() ? 1 : 0);
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        announcement.setId(static_cast<int>(database_->lastInsertRowId()));
+    if (result == SQLITE_ROW) {
+        announcement.setId(stmt.getInt(0));
+        // Call step() again to commit the transaction
+        stmt.step();
         return announcement;
     }
 

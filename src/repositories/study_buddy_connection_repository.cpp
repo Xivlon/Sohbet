@@ -14,6 +14,7 @@ std::optional<StudyBuddyConnection> StudyBuddyConnectionRepository::create(const
             user_id, buddy_id, total_study_sessions, connection_strength,
             is_favorite, notification_enabled, notes
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -27,9 +28,11 @@ std::optional<StudyBuddyConnection> StudyBuddyConnectionRepository::create(const
     stmt.bindInt(6, connection.notification_enabled ? 1 : 0);
     stmt.bindText(7, connection.notes);
 
-    if (stmt.step() == SQLITE_DONE) {
+    if (stmt.step() == SQLITE_ROW) {
         StudyBuddyConnection created = connection;
-        created.id = static_cast<int>(database_->lastInsertRowId());
+        created.id = stmt.getInt(0);
+        // Call step() again to commit the transaction
+        stmt.step();
         return created;
     }
 

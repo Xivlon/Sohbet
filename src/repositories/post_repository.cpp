@@ -13,6 +13,7 @@ std::optional<Post> PostRepository::create(Post& post) {
     const std::string sql = R"(
         INSERT INTO posts (author_id, author_type, content, media_urls, visibility, group_id)
         VALUES (?, ?, ?, ?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -21,15 +22,15 @@ std::optional<Post> PostRepository::create(Post& post) {
     stmt.bindInt(1, post.getAuthorId());
     stmt.bindText(2, post.getAuthorType());
     stmt.bindText(3, post.getContent());
-    
+
     if (post.getMediaUrls().has_value()) {
         stmt.bindText(4, post.getMediaUrls().value());
     } else {
         stmt.bindNull(4);
     }
-    
+
     stmt.bindText(5, post.getVisibility());
-    
+
     if (post.getGroupId().has_value()) {
         stmt.bindInt(6, post.getGroupId().value());
     } else {
@@ -37,8 +38,10 @@ std::optional<Post> PostRepository::create(Post& post) {
     }
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        post.setId(static_cast<int>(database_->lastInsertRowId()));
+    if (result == SQLITE_ROW) {
+        post.setId(stmt.getInt(0));
+        // Call step() again to commit the transaction
+        stmt.step();
         return post;
     }
 

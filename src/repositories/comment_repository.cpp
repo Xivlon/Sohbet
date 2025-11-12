@@ -13,25 +13,28 @@ std::optional<Comment> CommentRepository::create(Comment& comment) {
     const std::string sql = R"(
         INSERT INTO comments (post_id, parent_id, author_id, content)
         VALUES (?, ?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
     if (!stmt.isValid()) return std::nullopt;
 
     stmt.bindInt(1, comment.getPostId());
-    
+
     if (comment.getParentId().has_value()) {
         stmt.bindInt(2, comment.getParentId().value());
     } else {
         stmt.bindNull(2);
     }
-    
+
     stmt.bindInt(3, comment.getAuthorId());
     stmt.bindText(4, comment.getContent());
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        comment.setId(static_cast<int>(database_->lastInsertRowId()));
+    if (result == SQLITE_ROW) {
+        comment.setId(stmt.getInt(0));
+        // Call step() again to commit the transaction
+        stmt.step();
         return comment;
     }
 

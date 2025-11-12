@@ -43,8 +43,8 @@ std::optional<UserPresence> UserPresenceRepository::updatePresence(
 
 std::optional<UserPresence> UserPresenceRepository::getByUserId(int user_id) {
     std::string query = "SELECT id, user_id, status, custom_status, "
-                       "strftime('%s', last_seen) as last_seen, "
-                       "strftime('%s', updated_at) as updated_at "
+                       "EXTRACT(EPOCH FROM last_seen)::bigint as last_seen, "
+                       "EXTRACT(EPOCH FROM updated_at)::bigint as updated_at "
                        "FROM user_presence WHERE user_id = ?";
 
     db::Statement stmt(*database_, query);
@@ -87,8 +87,8 @@ std::vector<UserPresence> UserPresenceRepository::getByUserIds(const std::vector
     }
 
     std::string query = "SELECT id, user_id, status, custom_status, "
-                       "strftime('%s', last_seen) as last_seen, "
-                       "strftime('%s', updated_at) as updated_at "
+                       "EXTRACT(EPOCH FROM last_seen)::bigint as last_seen, "
+                       "EXTRACT(EPOCH FROM updated_at)::bigint as updated_at "
                        "FROM user_presence WHERE user_id IN (" + placeholders + ")";
 
     db::Statement stmt(*database_, query);
@@ -123,8 +123,8 @@ std::vector<UserPresence> UserPresenceRepository::getOnlineUsers() {
     std::vector<UserPresence> presences;
 
     std::string query = "SELECT id, user_id, status, custom_status, "
-                       "strftime('%s', last_seen) as last_seen, "
-                       "strftime('%s', updated_at) as updated_at "
+                       "EXTRACT(EPOCH FROM last_seen)::bigint as last_seen, "
+                       "EXTRACT(EPOCH FROM updated_at)::bigint as updated_at "
                        "FROM user_presence "
                        "WHERE status IN ('online', 'away', 'busy') "
                        "ORDER BY updated_at DESC";

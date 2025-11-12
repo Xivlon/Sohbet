@@ -10,9 +10,10 @@ std::optional<Media> MediaRepository::create(Media& media) {
     if (!database_ || !database_->isOpen()) return std::nullopt;
 
     const std::string sql = R"(
-        INSERT INTO user_media (user_id, media_type, storage_key, file_name, 
+        INSERT INTO user_media (user_id, media_type, storage_key, file_name,
                                file_size, mime_type, url)
         VALUES (?, ?, ?, ?, ?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -27,8 +28,10 @@ std::optional<Media> MediaRepository::create(Media& media) {
     stmt.bindText(7, media.getUrl().value_or(""));
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        media.setId(static_cast<int>(database_->lastInsertRowId()));
+    if (result == SQLITE_ROW) {
+        media.setId(stmt.getInt(0));
+        // Call step() again to commit the transaction
+        stmt.step();
         return media;
     }
 

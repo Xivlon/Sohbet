@@ -17,7 +17,7 @@ std::optional<Notification> NotificationRepository::createNotification(
     std::string query = "INSERT INTO notifications (user_id, type, title, message, "
                        "related_user_id, related_post_id, related_comment_id, "
                        "related_group_id, related_session_id, action_url) "
-                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
 
     db::Statement stmt(*database_, query);
     if (!stmt.isValid()) {
@@ -42,8 +42,10 @@ std::optional<Notification> NotificationRepository::createNotification(
         stmt.bindText(10, action_url);
     }
 
-    if (stmt.step() == SQLITE_DONE) {
-        int notification_id = database_->lastInsertRowId();
+    if (stmt.step() == SQLITE_ROW) {
+        int notification_id = stmt.getInt(0);
+        // Call step() again to commit the transaction
+        stmt.step();
         return getById(notification_id);
     }
 
@@ -55,8 +57,8 @@ std::optional<Notification> NotificationRepository::getById(int id) {
     std::string query = "SELECT id, user_id, type, title, message, "
                        "related_user_id, related_post_id, related_comment_id, "
                        "related_group_id, related_session_id, action_url, is_read, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', read_at) as read_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at "
                        "FROM notifications WHERE id = ?";
 
     db::Statement stmt(*database_, query);
@@ -104,8 +106,8 @@ std::vector<Notification> NotificationRepository::getUserNotifications(int user_
     std::string query = "SELECT id, user_id, type, title, message, "
                        "related_user_id, related_post_id, related_comment_id, "
                        "related_group_id, related_session_id, action_url, is_read, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', read_at) as read_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at "
                        "FROM notifications "
                        "WHERE user_id = ? "
                        "ORDER BY created_at DESC "
@@ -159,8 +161,8 @@ std::vector<Notification> NotificationRepository::getUnreadNotifications(int use
     std::string query = "SELECT id, user_id, type, title, message, "
                        "related_user_id, related_post_id, related_comment_id, "
                        "related_group_id, related_session_id, action_url, is_read, "
-                       "strftime('%s', created_at) as created_at, "
-                       "strftime('%s', read_at) as read_at "
+                       "EXTRACT(EPOCH FROM created_at)::bigint as created_at, "
+                       "EXTRACT(EPOCH FROM read_at)::bigint as read_at "
                        "FROM notifications "
                        "WHERE user_id = ? AND is_read = 0 "
                        "ORDER BY created_at DESC "

@@ -13,6 +13,7 @@ std::optional<Organization> OrganizationRepository::create(Organization& org) {
     const std::string sql = R"(
         INSERT INTO organizations (name, type, description, email, website, logo_url)
         VALUES (?, ?, ?, ?, ?, ?)
+        RETURNING id
     )";
 
     db::Statement stmt(*database_, sql);
@@ -42,8 +43,10 @@ std::optional<Organization> OrganizationRepository::create(Organization& org) {
     }
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        org.setId(static_cast<int>(database_->lastInsertRowId()));
+    if (result == SQLITE_ROW) {
+        org.setId(stmt.getInt(0));
+        // Call step() again to commit the transaction
+        stmt.step();
         return org;
     }
 
