@@ -2217,15 +2217,34 @@ HttpResponse AcademicSocialServer::handleGetGroups(const HttpRequest& request) {
     } else {
         groups = group_repository_->findAll();
     }
-    
+
     std::ostringstream oss;
-    oss << "[";
+    oss << "{\"groups\":[";
     for (size_t i = 0; i < groups.size(); ++i) {
         if (i > 0) oss << ",";
-        oss << groups[i].toJson();
+
+        // Get the base JSON and remove the closing brace
+        std::string base_json = groups[i].toJson();
+        base_json.pop_back(); // Remove '}'
+
+        oss << base_json;
+
+        // Add user_role and member_count fields
+        if (groups[i].getId().has_value()) {
+            int group_id = groups[i].getId().value();
+            std::string user_role = group_repository_->getMemberRole(group_id, user_id);
+            int member_count = group_repository_->getMemberCount(group_id);
+
+            if (!user_role.empty()) {
+                oss << ",\"user_role\":\"" << user_role << "\"";
+            }
+            oss << ",\"member_count\":" << member_count;
+        }
+
+        oss << "}";
     }
-    oss << "]";
-    
+    oss << "],\"total\":" << groups.size() << "}";
+
     return createJsonResponse(200, oss.str());
 }
 
