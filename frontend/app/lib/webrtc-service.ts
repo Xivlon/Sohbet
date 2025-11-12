@@ -24,15 +24,23 @@ export interface WebRTCConfig {
 // Default STUN and TURN servers for NAT traversal and relay
 // STUN servers help discover public IP addresses for NAT traversal
 // TURN servers provide relay when direct P2P connection fails
-// Using 2 STUN + 1 TURN to avoid slowing down ICE discovery (WebRTC warns at 5+)
+// Using multiple TURN servers as fallbacks for reliability
 const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   // Google's public STUN servers (primary and backup)
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  // Open Relay Project TURN server (free public TURN server)
-  // Using TURN over TLS (443) for better firewall traversal
+
+  // Primary TURN: Twilio's STUN server (more reliable than free TURN)
+  { urls: 'stun:global.stun.twilio.com:3478' },
+
+  // Fallback: OpenRelay TURN servers (free but may be unreliable)
   {
     urls: 'turn:openrelay.metered.ca:443',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },
@@ -53,6 +61,8 @@ class WebRTCService {
   private isDeafened: boolean = false;
   private participantVolumes: Map<number, number> = new Map(); // Individual participant volumes (0-1)
   private pendingIceCandidates: Map<number, RTCIceCandidateInit[]> = new Map(); // Queue ICE candidates until remote description is set
+  private iceRestartAttempts: Map<number, number> = new Map(); // Track ICE restart attempts per user
+  private readonly MAX_ICE_RESTART_ATTEMPTS = 3; // Maximum ICE restart attempts before giving up
 
   // Callbacks for UI updates
   private onParticipantUpdateCallback: ((participants: VoiceParticipant[]) => void) | null = null;
@@ -719,6 +729,12 @@ class WebRTCService {
 
     const pc = new RTCPeerConnection({
       iceServers: this.config.iceServers,
+      // Use relay as fallback to force TURN usage if direct connection fails
+      iceTransportPolicy: 'all', // Try all: host, srflx, relay
+      // Bundle all media on single transport for better NAT traversal
+      bundlePolicy: 'max-bundle',
+      // Use unified plan for better browser compatibility
+      sdpSemantics: 'unified-plan' as RTCSdpSemantics,
     });
 
     // Handle ICE candidates
@@ -759,8 +775,12 @@ class WebRTCService {
     pc.onconnectionstatechange = () => {
       console.log(`Connection state with user ${userId}:`, pc.connectionState);
 
-      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-        console.error(`Connection failed or closed with user ${userId}`);
+      if (pc.connectionState === 'failed') {
+        console.error(`Connection failed with user ${userId} - will attempt recovery via ICE restart`);
+        // Don't immediately close - ICE restart handler will attempt recovery
+        this.updateConnectionQuality();
+      } else if (pc.connectionState === 'closed') {
+        console.error(`Connection closed with user ${userId}`);
         this.closePeerConnection(userId);
         this.updateConnectionQuality();
       } else if (pc.connectionState === 'connected') {
@@ -783,6 +803,8 @@ class WebRTCService {
         console.warn(`ICE connection disconnected with user ${userId}. May reconnect automatically.`);
       } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         console.log(`ICE connection established with user ${userId}`);
+        // Reset restart attempts counter on successful connection
+        this.iceRestartAttempts.delete(userId);
       }
     };
 
@@ -889,8 +911,20 @@ class WebRTCService {
     const pc = this.peerConnections.get(userId);
     if (!pc || !this.currentChannelId) return;
 
+    // Check retry limit
+    const attempts = this.iceRestartAttempts.get(userId) || 0;
+    if (attempts >= this.MAX_ICE_RESTART_ATTEMPTS) {
+      console.error(`Max ICE restart attempts (${this.MAX_ICE_RESTART_ATTEMPTS}) reached for user ${userId}. Giving up.`);
+      console.error(`This likely means TURN server is unavailable or both users are behind strict NAT/firewall.`);
+      console.error(`Consider setting up a dedicated TURN server for production use.`);
+      // Close the failed connection
+      this.closePeerConnection(userId);
+      return;
+    }
+
     try {
-      console.log(`Restarting ICE connection with user ${userId}`);
+      console.log(`Restarting ICE connection with user ${userId} (attempt ${attempts + 1}/${this.MAX_ICE_RESTART_ATTEMPTS})`);
+      this.iceRestartAttempts.set(userId, attempts + 1);
 
       // Create new offer with iceRestart flag
       const offer = await pc.createOffer({ iceRestart: true });
@@ -939,6 +973,9 @@ class WebRTCService {
 
     // Clean up queued ICE candidates
     this.pendingIceCandidates.delete(userId);
+
+    // Clean up ICE restart attempts counter
+    this.iceRestartAttempts.delete(userId);
   }
 
   /**
