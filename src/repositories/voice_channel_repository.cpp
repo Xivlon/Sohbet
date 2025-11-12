@@ -15,6 +15,7 @@ std::optional<VoiceChannel> VoiceChannelRepository::create(VoiceChannel& channel
     const std::string sql = R"(
         INSERT INTO voice_channels (name, channel_type, group_id, organization_id, murmur_channel_id)
         VALUES (?, ?, ?, ?, ?)
+        RETURNING id, created_at
     )";
 
     db::Statement stmt(*database_, sql);
@@ -22,19 +23,19 @@ std::optional<VoiceChannel> VoiceChannelRepository::create(VoiceChannel& channel
 
     stmt.bindText(1, channel.name);
     stmt.bindText(2, channel.channel_type);
-
+    
     if (channel.group_id > 0) {
         stmt.bindInt(3, channel.group_id);
     } else {
         stmt.bindNull(3);
     }
-
+    
     if (channel.organization_id > 0) {
         stmt.bindInt(4, channel.organization_id);
     } else {
         stmt.bindNull(4);
     }
-
+    
     if (!channel.murmur_channel_id.empty()) {
         stmt.bindText(5, channel.murmur_channel_id);
     } else {
@@ -42,12 +43,20 @@ std::optional<VoiceChannel> VoiceChannelRepository::create(VoiceChannel& channel
     }
 
     int result = stmt.step();
-    if (result == SQLITE_DONE) {
-        // Get the ID of the newly inserted row
-        channel.id = static_cast<int>(database_->lastInsertRowId());
+    if (result == SQLITE_ROW) {
+        // PostgreSQL returns the inserted row with RETURNING clause
+        channel.id = stmt.getInt(0);
 
-        // Set created_at to current time
-        channel.created_at = std::time(nullptr);
+        // Parse created_at timestamp
+        std::string created_at_str = stmt.getText(1);
+        std::tm tm = {};
+        std::istringstream ss(created_at_str);
+        ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+        if (!ss.fail()) {
+            channel.created_at = std::mktime(&tm);
+        } else {
+            channel.created_at = std::time(nullptr);
+        }
 
         return channel;
     }
