@@ -108,25 +108,22 @@ export function GroupList({ currentUserId, onGroupSelect, onLeave }: GroupListPr
       const response = await apiClient.getGroups(50, 0)
       if (response.data) {
         const apiGroups = response.data.groups || []
-        // Combine API groups with mock groups, preferring API groups
-        const combinedGroups = apiGroups.length > 0 ? apiGroups : mockGroups
-        setAllGroups(combinedGroups)
+        setAllGroups(apiGroups)
 
         // Filter my groups (where user is a member)
-        const myGroupsList = combinedGroups.filter((g: Group) => g.user_role)
+        const myGroupsList = apiGroups.filter((g: Group) => g.user_role)
         setMyGroups(myGroupsList)
       } else {
-        // Use mock groups if API fails
-        setAllGroups(mockGroups)
-        const myGroupsList = mockGroups.filter((g: Group) => g.user_role)
-        setMyGroups(myGroupsList)
+        console.error('API response missing data:', response)
+        setError('Failed to load groups')
+        setAllGroups([])
+        setMyGroups([])
       }
     } catch (err) {
-      // Use mock groups on error
-      console.log('Using mock groups due to API error:', err)
-      setAllGroups(mockGroups)
-      const myGroupsList = mockGroups.filter((g: Group) => g.user_role)
-      setMyGroups(myGroupsList)
+      console.error('Error fetching groups:', err)
+      setError('Failed to load groups. Please try again.')
+      setAllGroups([])
+      setMyGroups([])
     } finally {
       setLoading(false)
     }
@@ -197,6 +194,14 @@ export function GroupList({ currentUserId, onGroupSelect, onLeave }: GroupListPr
             {tCommon('back')} {tSidebar('home')}
           </Button>
         </div>
+      )}
+
+      {error && (
+        <Card className="border-red-500 bg-red-50 dark:bg-red-950">
+          <CardContent className="p-4">
+            <p className="text-red-700 dark:text-red-300">{error}</p>
+          </CardContent>
+        </Card>
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
