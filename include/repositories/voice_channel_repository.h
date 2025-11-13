@@ -81,6 +81,13 @@ public:
     int getActiveUserCount(int channel_id);
 
     /**
+     * @brief Get list of active user IDs in a channel
+     * @param channel_id Voice channel ID
+     * @return Vector of user IDs who have active sessions in the channel
+     */
+    std::vector<int> getActiveUsers(int channel_id);
+
+    /**
      * @brief Get user's active session in a channel
      * @param user_id User ID
      * @param channel_id Voice channel ID

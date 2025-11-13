@@ -275,6 +275,28 @@ int VoiceChannelRepository::getActiveUserCount(int channel_id) {
     return 0;
 }
 
+std::vector<int> VoiceChannelRepository::getActiveUsers(int channel_id) {
+    std::vector<int> user_ids;
+    if (!database_ || !database_->isOpen()) return user_ids;
+
+    const std::string sql = R"(
+        SELECT user_id FROM voice_sessions
+        WHERE channel_id = ? AND left_at IS NULL
+        ORDER BY joined_at ASC
+    )";
+
+    db::Statement stmt(*database_, sql);
+    if (!stmt.isValid()) return user_ids;
+
+    stmt.bindInt(1, channel_id);
+
+    while (stmt.step() == SQLITE_ROW) {
+        user_ids.push_back(stmt.getInt(0));
+    }
+
+    return user_ids;
+}
+
 int VoiceChannelRepository::getUserActiveSession(int user_id, int channel_id) {
     if (!database_ || !database_->isOpen()) return 0;
 
