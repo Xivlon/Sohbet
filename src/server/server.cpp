@@ -96,6 +96,7 @@ bool AcademicSocialServer::initialize() {
 
     // Initialize voice service
     VoiceConfig voice_config;
+    voice_config.load_from_env();
     voice_config.enabled = true;
     voice_service_ = std::make_shared<VoiceServiceStub>(voice_config);
     
