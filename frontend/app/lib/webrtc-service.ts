@@ -24,10 +24,17 @@ export interface WebRTCConfig {
 // Default STUN and TURN servers for NAT traversal and relay
 // STUN servers help discover public IP addresses for NAT traversal
 // TURN servers provide relay when direct P2P connection fails
+// Using multiple TURN servers as fallbacks for reliability
 // Optimized to use 4 servers (under the 5-server warning threshold)
 const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   // Google's public STUN server (primary)
   { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+
+  // Primary TURN: Twilio's STUN server (more reliable than free TURN)
+  { urls: 'stun:global.stun.twilio.com:3478' },
+
+  // Fallback: OpenRelay TURN servers (free but may be unreliable)
   // Cloudflare STUN server (reliable backup)
   { urls: 'stun:stun.cloudflare.com:3478' },
   // Twilio TURN server (reliable, multiple transports)
@@ -51,6 +58,11 @@ const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
     username: 'e244935f05c942d47a93c5b4',
     credential: 'RYzUexu5W/Tb0gSy',
   },
+  {
+    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 class WebRTCService {
@@ -68,8 +80,9 @@ class WebRTCService {
   private isDeafened: boolean = false;
   private participantVolumes: Map<number, number> = new Map(); // Individual participant volumes (0-1)
   private pendingIceCandidates: Map<number, RTCIceCandidateInit[]> = new Map(); // Queue ICE candidates until remote description is set
-  private iceRestartAttempts: Map<number, number> = new Map(); // Track ICE restart attempts per peer
+  private iceRestartAttempts: Map<number, number> = new Map(); // Track ICE restart attempts per user
   private connectionFailureTimeouts: Map<number, NodeJS.Timeout> = new Map(); // Track connection failure timeouts
+  private readonly MAX_ICE_RESTART_ATTEMPTS = 3; // Maximum ICE restart attempts before giving up
 
   // Callbacks for UI updates
   private onParticipantUpdateCallback: ((participants: VoiceParticipant[]) => void) | null = null;
@@ -790,10 +803,12 @@ class WebRTCService {
 
     const pc = new RTCPeerConnection({
       iceServers: this.config.iceServers,
-      // Try all connection types (STUN, TURN, and direct) for best compatibility
-      iceTransportPolicy: 'all',
-      // Bundle all media on a single transport for better NAT traversal
+      // Use relay as fallback to force TURN usage if direct connection fails
+      iceTransportPolicy: 'all', // Try all: host, srflx, relay
+      // Bundle all media on single transport for better NAT traversal
       bundlePolicy: 'max-bundle',
+      // Use unified plan for better browser compatibility
+      sdpSemantics: 'unified-plan' as RTCSdpSemantics,
     });
 
     // Handle ICE candidates
@@ -834,8 +849,12 @@ class WebRTCService {
     pc.onconnectionstatechange = () => {
       console.log(`Connection state with user ${userId}:`, pc.connectionState);
 
-      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-        console.error(`Connection failed or closed with user ${userId}`);
+      if (pc.connectionState === 'failed') {
+        console.error(`Connection failed with user ${userId} - will attempt recovery via ICE restart`);
+        // Don't immediately close - ICE restart handler will attempt recovery
+        this.updateConnectionQuality();
+      } else if (pc.connectionState === 'closed') {
+        console.error(`Connection closed with user ${userId}`);
         this.closePeerConnection(userId);
         this.updateConnectionQuality();
       } else if (pc.connectionState === 'connected') {
@@ -898,6 +917,8 @@ class WebRTCService {
         this.connectionFailureTimeouts.set(userId, timeout);
       } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         console.log(`ICE connection established with user ${userId}`);
+        // Reset restart attempts counter on successful connection
+        this.iceRestartAttempts.delete(userId);
 
         // Reset restart attempts on successful connection
         this.iceRestartAttempts.delete(userId);
@@ -1014,8 +1035,20 @@ class WebRTCService {
     const pc = this.peerConnections.get(userId);
     if (!pc || !this.currentChannelId) return;
 
+    // Check retry limit
+    const attempts = this.iceRestartAttempts.get(userId) || 0;
+    if (attempts >= this.MAX_ICE_RESTART_ATTEMPTS) {
+      console.error(`Max ICE restart attempts (${this.MAX_ICE_RESTART_ATTEMPTS}) reached for user ${userId}. Giving up.`);
+      console.error(`This likely means TURN server is unavailable or both users are behind strict NAT/firewall.`);
+      console.error(`Consider setting up a dedicated TURN server for production use.`);
+      // Close the failed connection
+      this.closePeerConnection(userId);
+      return;
+    }
+
     try {
-      console.log(`Restarting ICE connection with user ${userId}`);
+      console.log(`Restarting ICE connection with user ${userId} (attempt ${attempts + 1}/${this.MAX_ICE_RESTART_ATTEMPTS})`);
+      this.iceRestartAttempts.set(userId, attempts + 1);
 
       // Create new offer with iceRestart flag
       const offer = await pc.createOffer({ iceRestart: true });
@@ -1065,6 +1098,8 @@ class WebRTCService {
     // Clean up queued ICE candidates
     this.pendingIceCandidates.delete(userId);
 
+    // Clean up ICE restart attempts counter
+    this.iceRestartAttempts.delete(userId);
     // Clean up ICE restart tracking
     this.iceRestartAttempts.delete(userId);
 
