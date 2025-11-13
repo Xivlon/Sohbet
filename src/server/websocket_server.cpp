@@ -161,16 +161,18 @@ bool WebSocketServer::initializeSocket() {
 }
 
 bool WebSocketServer::start() {
-    std::cout << "Starting WebSocket server on port " << port_ << std::endl;
-    
+    std::cout << "[WebSocket] Starting WebSocket server on port " << port_ << std::endl;
+
     if (!initializeSocket()) {
+        std::cerr << "[WebSocket] ❌ Failed to initialize socket" << std::endl;
         return false;
     }
-    
+
     running_ = true;
     accept_thread_ = std::thread(&WebSocketServer::acceptConnections, this);
-    
-    std::cout << "🔌 WebSocket server listening on ws://0.0.0.0:" << port_ << std::endl;
+
+    std::cout << "[WebSocket] 🔌 Server listening on ws://0.0.0.0:" << port_ << std::endl;
+    std::cout << "[WebSocket] ✓ WebSocket server started successfully" << std::endl;
     return true;
 }
 
@@ -207,15 +209,22 @@ void WebSocketServer::acceptConnections() {
     while (running_) {
         struct sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
-        
+
         int client_socket = accept(server_socket_, (struct sockaddr*)&client_addr, &client_len);
         if (client_socket < 0) {
             if (running_) {
-                std::cerr << "Failed to accept WebSocket connection" << std::endl;
+                std::cerr << "[WebSocket] Failed to accept connection: " << strerror(errno) << std::endl;
             }
             continue;
         }
-        
+
+        // Log incoming connection attempt
+        char client_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+        int client_port = ntohs(client_addr.sin_port);
+        std::cout << "[WebSocket] Incoming connection from " << client_ip << ":" << client_port
+                  << " (socket=" << client_socket << ")" << std::endl;
+
         // Handle client in a new thread
         std::thread client_thread(&WebSocketServer::handleClient, this, client_socket);
         client_thread.detach();
@@ -224,21 +233,27 @@ void WebSocketServer::acceptConnections() {
 
 void WebSocketServer::handleClient(int client_socket) {
     std::string request;
-    
+
     // Perform WebSocket handshake
+    std::cout << "[WebSocket] Performing handshake for socket=" << client_socket << std::endl;
     if (!performWebSocketHandshake(client_socket, request)) {
-        std::cerr << "WebSocket handshake failed" << std::endl;
+        std::cerr << "[WebSocket] ❌ Handshake failed for socket=" << client_socket << std::endl;
         close(client_socket);
         return;
     }
-    
+    std::cout << "[WebSocket] ✓ Handshake successful for socket=" << client_socket << std::endl;
+
     // Authenticate the connection
+    std::cout << "[WebSocket] Authenticating connection for socket=" << client_socket << std::endl;
     int user_id = authenticateConnection(request);
     if (user_id <= 0) {
-        std::cerr << "WebSocket authentication failed" << std::endl;
+        std::cerr << "[WebSocket] ❌ Authentication failed for socket=" << client_socket
+                  << " (invalid or missing token)" << std::endl;
         close(client_socket);
         return;
     }
+    std::cout << "[WebSocket] ✓ Authentication successful for socket=" << client_socket
+              << ", user_id=" << user_id << std::endl;
     
     // Create connection object
     auto connection = std::make_shared<WebSocketConnection>(client_socket, user_id);
@@ -249,29 +264,41 @@ void WebSocketServer::handleClient(int client_socket) {
         connections_[client_socket] = connection;
         user_sockets_[user_id].insert(client_socket);
     }
-    
-    std::cout << "WebSocket client connected: user_id=" << user_id 
-              << ", socket=" << client_socket << std::endl;
-    
+
+    std::cout << "[WebSocket] 🔌 Client connected: user_id=" << user_id
+              << ", socket=" << client_socket
+              << ", total_connections=" << connections_.size() << std::endl;
+
     // Send online status notification
     WebSocketMessage online_msg("user:online", "{\"user_id\":" + std::to_string(user_id) + "}");
     broadcast(online_msg);
     
     // Read messages from client
     char buffer[4096];
+    size_t message_count = 0;
     while (running_) {
         ssize_t bytes_read = recv(client_socket, buffer, sizeof(buffer), 0);
         if (bytes_read <= 0) {
+            if (bytes_read < 0) {
+                std::cerr << "[WebSocket] Read error for user_id=" << user_id
+                          << ", socket=" << client_socket << ": " << strerror(errno) << std::endl;
+            }
             break; // Connection closed or error
         }
-        
+
         try {
             std::string frame(buffer, bytes_read);
             std::string decoded = decodeFrame(frame);
-            
+
             if (!decoded.empty()) {
                 WebSocketMessage message = parseMessage(decoded);
-                
+                message_count++;
+
+                std::cout << "[WebSocket] 📨 Message received: user_id=" << user_id
+                          << ", type=" << message.type
+                          << ", socket=" << client_socket
+                          << ", msg_count=" << message_count << std::endl;
+
                 // Find handler for this message type
                 MessageHandler handler;
                 {
@@ -281,20 +308,28 @@ void WebSocketServer::handleClient(int client_socket) {
                         handler = it->second;
                     }
                 }
-                
+
                 // Call handler if found
                 if (handler) {
                     handler(user_id, message);
+                } else {
+                    std::cerr << "[WebSocket] ⚠️  No handler for message type: " << message.type << std::endl;
                 }
             }
         } catch (const std::exception& e) {
-            std::cerr << "Error processing WebSocket message: " << e.what() << std::endl;
+            std::cerr << "[WebSocket] ❌ Error processing message for user_id=" << user_id
+                      << ", socket=" << client_socket << ": " << e.what() << std::endl;
         }
     }
     
     // Remove connection
     removeConnection(client_socket);
     close(client_socket);
+
+    std::cout << "[WebSocket] 🔌 Client disconnected: user_id=" << user_id
+              << ", socket=" << client_socket
+              << ", messages_processed=" << message_count
+              << ", remaining_connections=" << connections_.size() << std::endl;
 
     // Send offline status notification
     WebSocketMessage offline_msg("user:offline", "{\"user_id\":" + std::to_string(user_id) + "}");
@@ -307,8 +342,6 @@ void WebSocketServer::handleClient(int client_socket) {
             disconnect_handler_(user_id);
         }
     }
-
-    std::cout << "WebSocket client disconnected: user_id=" << user_id << std::endl;
 }
 
 bool WebSocketServer::performWebSocketHandshake(int client_socket, std::string& request) {

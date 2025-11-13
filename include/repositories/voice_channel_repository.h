@@ -52,14 +52,6 @@ public:
     std::vector<VoiceChannel> findByType(const std::string& channel_type, int limit = 50, int offset = 0);
 
     /**
-     * @brief Update a voice channel's murmur_channel_id
-     * @param id Voice channel ID
-     * @param murmur_channel_id Murmur server channel ID
-     * @return true if updated successfully
-     */
-    bool updateMurmurChannelId(int id, const std::string& murmur_channel_id);
-
-    /**
      * @brief Delete a voice channel
      * @param id Voice channel ID
      * @return true if deleted successfully
@@ -70,10 +62,9 @@ public:
      * @brief Record a voice session (user joining a channel)
      * @param channel_id Voice channel ID
      * @param user_id User ID
-     * @param murmur_session_id Murmur session ID (optional)
      * @return Session ID if created successfully, or 0 on failure
      */
-    int createSession(int channel_id, int user_id, const std::string& murmur_session_id = "");
+    int createSession(int channel_id, int user_id);
 
     /**
      * @brief End a voice session (user leaving a channel)

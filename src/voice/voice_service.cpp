@@ -11,14 +11,13 @@ std::string VoiceConnectionToken::to_json() const {
     std::ostringstream oss;
     oss << "{";
     oss << "\"connection_token\":\"" << token << "\",";
-    oss << "\"murmur_host\":\"" << murmur_host << "\",";
-    oss << "\"murmur_port\":" << murmur_port << ",";
-    
+    oss << "\"channel_id\":" << channel_id << ",";
+
     // Convert time_t to ISO 8601 string
     char time_buf[30];
     std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", std::gmtime(&expires_at));
     oss << "\"expires_at\":\"" << time_buf << "\"";
-    
+
     oss << "}";
     return oss.str();
 }
@@ -47,9 +46,8 @@ VoiceChannel VoiceServiceStub::create_channel(const std::string& name,
     channel.channel_type = channel_type;
     channel.group_id = group_id;
     channel.organization_id = organization_id;
-    channel.murmur_channel_id = ""; // Not connected to real Murmur server
     channel.created_at = std::time(nullptr);
-    
+
     channels_.push_back(channel);
     return channel;
 }
@@ -83,23 +81,22 @@ VoiceChannel VoiceServiceStub::get_channel(int channel_id) {
 
 VoiceConnectionToken VoiceServiceStub::generate_connection_token(int user_id, int channel_id) {
     VoiceConnectionToken token;
-    
+
     // Generate a simple token (in production, use proper JWT or secure token generation)
     std::stringstream ss;
-    ss << "stub_token_u" << user_id << "_c" << channel_id << "_t" << std::time(nullptr);
-    
+    ss << "webrtc_token_u" << user_id << "_c" << channel_id << "_t" << std::time(nullptr);
+
     // Simple hash using std::hash (good enough for stub implementation)
     std::hash<std::string> hasher;
     size_t hash_value = hasher(ss.str());
-    
+
     std::stringstream token_ss;
     token_ss << std::hex << hash_value;
     token.token = token_ss.str();
-    
-    token.murmur_host = config_.murmur_host;
-    token.murmur_port = config_.murmur_port;
+
+    token.channel_id = channel_id;
     token.expires_at = std::time(nullptr) + config_.token_expiry_seconds;
-    
+
     return token;
 }
 
