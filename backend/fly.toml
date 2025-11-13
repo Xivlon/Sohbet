@@ -4,6 +4,7 @@ app = 'sohbet-uezxqq'
 primary_region = 'iad'
 
 [build]
+  dockerfile = "../Dockerfile"
 
 # HTTP API Service (port 8080)
 [[services]]
@@ -34,13 +35,24 @@ primary_region = 'iad'
   internal_port = 8081
   protocol = "tcp"
   processes = ["app"]
-  auto_stop_machines = "stop"
+  auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
 
   [[services.ports]]
     port = 8081
-    handlers = ["tls"]
+    handlers = ["tls", "http"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 800
+
+  [services.tcp_checks]
+    interval = "15s"
+    timeout = "10s"
+    grace_period = "10s"
+    restart_limit = 0
 
 # Note: Database is now external (Neon PostgreSQL)
 # Set DATABASE_URL and SOHBET_JWT_SECRET as secrets using:

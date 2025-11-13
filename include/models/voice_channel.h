@@ -8,8 +8,9 @@ namespace sohbet {
 
 /**
  * @brief Represents a voice channel in the system
- * 
- * Voice channels are virtual rooms where users can connect for voice/video communication.
+ *
+ * Voice channels are virtual rooms where users can connect for voice/video communication
+ * using WebRTC peer-to-peer connections.
  * They can be private, group-based, or public (Khave).
  */
 class VoiceChannel {
@@ -19,7 +20,6 @@ public:
     std::string channel_type;  // 'private', 'group', 'public' (Khave)
     int group_id;
     int organization_id;
-    std::string murmur_channel_id;  // External Murmur channel ID
     std::time_t created_at;
 
     VoiceChannel();
