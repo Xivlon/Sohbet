@@ -211,11 +211,10 @@ bool VoiceChannelRepository::deleteById(int id) {
     return stmt.step() == SQLITE_DONE;
 }
 
-int VoiceChannelRepository::createSession(int channel_id, int user_id, const std::string& murmur_session_id) {
+int VoiceChannelRepository::createSession(int channel_id, int user_id) {
     if (!database_ || !database_->isOpen()) return 0;
 
-    // Note: murmur_session_id parameter kept for backward compatibility but not used
-    // WebRTC sessions don't need server-side session IDs
+    // WebRTC sessions use peer-to-peer connections and don't require server-side session tracking
     const std::string sql = R"(
         INSERT INTO voice_sessions (channel_id, user_id)
         VALUES (?, ?)

@@ -62,10 +62,9 @@ public:
      * @brief Record a voice session (user joining a channel)
      * @param channel_id Voice channel ID
      * @param user_id User ID
-     * @param murmur_session_id Deprecated - kept for backward compatibility, not used
      * @return Session ID if created successfully, or 0 on failure
      */
-    int createSession(int channel_id, int user_id, const std::string& murmur_session_id = "");
+    int createSession(int channel_id, int user_id);
 
     /**
      * @brief End a voice session (user leaving a channel)
