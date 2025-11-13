@@ -81,6 +81,7 @@ class WebRTCService {
   private participantVolumes: Map<number, number> = new Map(); // Individual participant volumes (0-1)
   private pendingIceCandidates: Map<number, RTCIceCandidateInit[]> = new Map(); // Queue ICE candidates until remote description is set
   private iceRestartAttempts: Map<number, number> = new Map(); // Track ICE restart attempts per user
+  private connectionFailureTimeouts: Map<number, NodeJS.Timeout> = new Map(); // Track connection failure timeouts
   private readonly MAX_ICE_RESTART_ATTEMPTS = 3; // Maximum ICE restart attempts before giving up
 
   // Callbacks for UI updates
@@ -802,12 +803,10 @@ class WebRTCService {
 
     const pc = new RTCPeerConnection({
       iceServers: this.config.iceServers,
-      // Use relay as fallback to force TURN usage if direct connection fails
-      iceTransportPolicy: 'all', // Try all: host, srflx, relay
+      // Try all connection types (STUN, TURN, and direct) for best compatibility
+      iceTransportPolicy: 'all',
       // Bundle all media on single transport for better NAT traversal
       bundlePolicy: 'max-bundle',
-      // Use unified plan for better browser compatibility
-      sdpSemantics: 'unified-plan' as RTCSdpSemantics,
     });
 
     // Handle ICE candidates
