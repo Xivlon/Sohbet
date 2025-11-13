@@ -24,15 +24,13 @@ export interface WebRTCConfig {
 // Default STUN and TURN servers for NAT traversal and relay
 // STUN servers help discover public IP addresses for NAT traversal
 // TURN servers provide relay when direct P2P connection fails
-// Using multiple reliable STUN/TURN servers for better connectivity
+// Optimized to use 4 servers (under the 5-server warning threshold)
 const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
-  // Google's public STUN servers (primary and backup)
+  // Google's public STUN server (primary)
   { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  // Additional reliable STUN servers
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun.stunprotocol.org:3478' },
-  // Twilio's free TURN server (limited but reliable)
+  // Cloudflare STUN server (reliable backup)
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  // Twilio TURN server (reliable, multiple transports)
   {
     urls: [
       'turn:global.turn.twilio.com:3478?transport=udp',
@@ -42,7 +40,7 @@ const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
     username: 'f4b4035eaa76f4a55de5f4351567653ee4ff6fa97b50b6b334fcc1be9c27212d',
     credential: 'w1uxM55V9yVoqyVFjt+mxDBV0F87AUCemaYVQGxsPLw=',
   },
-  // Metered TURN servers (more reliable than OpenRelay)
+  // Metered TURN server (backup, multiple transports)
   {
     urls: [
       'turn:a.relay.metered.ca:80',
@@ -792,6 +790,12 @@ class WebRTCService {
 
     const pc = new RTCPeerConnection({
       iceServers: this.config.iceServers,
+      // Try all connection types (STUN, TURN, and direct) for best compatibility
+      iceTransportPolicy: 'all',
+      // Bundle all media on a single transport for better NAT traversal
+      bundlePolicy: 'max-bundle',
+      // Use modern WebRTC standard (required by modern browsers)
+      sdpSemantics: 'unified-plan',
     });
 
     // Handle ICE candidates
