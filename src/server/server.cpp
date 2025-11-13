@@ -3102,14 +3102,31 @@ void AcademicSocialServer::handleVoiceJoin(int user_id, const WebSocketMessage& 
     }
     auto user = user_opt.value();
 
-    // Add user to voice channel participants
+    // Sync in-memory participants with database to handle server restarts and reconnections
+    // Get all active users from the database for this channel
+    std::vector<int> active_users_in_db = voice_channel_repository_->getActiveUsers(channel_id);
+
+    // Add user to voice channel participants and sync with database
+    int synced_users = 0;
     {
         std::lock_guard<std::mutex> lock(voice_channels_mutex_);
+
+        // Ensure all users with active database sessions are in the in-memory map
+        for (int db_user_id : active_users_in_db) {
+            auto result = voice_channel_participants_[channel_id].insert(db_user_id);
+            if (result.second) {
+                synced_users++;
+                std::cout << "Synced user " << db_user_id << " from database to channel " << channel_id << std::endl;
+            }
+        }
+
+        // Add the newly joining user
         voice_channel_participants_[channel_id].insert(user_id);
     }
 
     std::cout << "User " << user.getUsername() << " (id=" << user_id
-              << ") joined voice channel " << channel_id << std::endl;
+              << ") joined voice channel " << channel_id
+              << " (synced " << synced_users << " existing users from database)" << std::endl;
 
     // Notify all users in the channel about the new participant
     std::set<int> participants;
