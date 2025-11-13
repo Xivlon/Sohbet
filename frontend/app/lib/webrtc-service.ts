@@ -81,6 +81,7 @@ class WebRTCService {
   private participantVolumes: Map<number, number> = new Map(); // Individual participant volumes (0-1)
   private pendingIceCandidates: Map<number, RTCIceCandidateInit[]> = new Map(); // Queue ICE candidates until remote description is set
   private iceRestartAttempts: Map<number, number> = new Map(); // Track ICE restart attempts per user
+  private connectionFailureTimeouts: Map<number, NodeJS.Timeout> = new Map(); // Track connection failure timeouts
   private readonly MAX_ICE_RESTART_ATTEMPTS = 3; // Maximum ICE restart attempts before giving up
 
   // Callbacks for UI updates
