@@ -166,6 +166,8 @@ class WebRTCService {
         : message.payload as any;
       const { participants } = payload;
 
+      console.log('[WebRTC] Received participants list:', participants.length, 'participants');
+
       participants.forEach((p: any, index: number) => {
         this.participants.set(p.user_id, {
           userId: p.user_id,
@@ -182,12 +184,16 @@ class WebRTCService {
           // Use polite/impolite pattern with staggered delays for multiple participants
           const isPolite = (this.currentUserId ?? 0) < p.user_id;
           // Add extra delay based on index to stagger multiple offers
-          const baseDelay = isPolite ? 0 : 100;
-          const delay = baseDelay + (index * 50); // Stagger by 50ms per participant
+          // Increased delays to reduce collision probability
+          const baseDelay = isPolite ? 200 : 500;
+          const delay = baseDelay + (index * 150); // Stagger by 150ms per participant
+
+          console.log(`[WebRTC] Scheduling offer to user ${p.user_id} in ${delay}ms (polite=${isPolite})`);
 
           setTimeout(() => {
             // Only create offer if still in channel and user is still a participant
             if (this.currentChannelId !== null && this.participants.has(p.user_id)) {
+              console.log(`[WebRTC] Creating offer to user ${p.user_id}`);
               this.createOffer(p.user_id);
             }
           }, delay);
@@ -812,12 +818,15 @@ class WebRTCService {
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate && this.currentChannelId) {
+        console.log(`[WebRTC ICE] Sending ICE candidate to user ${userId}:`, event.candidate.candidate.substring(0, 50) + '...');
         websocketService.send('voice:ice-candidate', {
           channel_id: this.currentChannelId,
           target_user_id: userId,
           from_user_id: this.currentUserId,
           candidate: event.candidate.toJSON(),
         });
+      } else if (!event.candidate) {
+        console.log(`[WebRTC ICE] ICE gathering complete for user ${userId}`);
       }
     };
 
@@ -865,10 +874,10 @@ class WebRTCService {
 
     // Handle ICE connection state changes for better debugging
     pc.oniceconnectionstatechange = () => {
-      console.log(`ICE connection state with user ${userId}:`, pc.iceConnectionState);
+      console.log(`[WebRTC ICE] Connection state with user ${userId}:`, pc.iceConnectionState);
 
       if (pc.iceConnectionState === 'failed') {
-        console.error(`ICE connection failed with user ${userId}. Attempting recovery...`);
+        console.error(`[WebRTC ICE] ❌ Connection failed with user ${userId}. Attempting recovery...`);
 
         // Check restart attempts
         const restartAttempts = this.iceRestartAttempts.get(userId) || 0;
@@ -877,26 +886,27 @@ class WebRTCService {
         if (restartAttempts < MAX_RESTART_ATTEMPTS) {
           // Attempt to restart ICE
           this.iceRestartAttempts.set(userId, restartAttempts + 1);
-          console.log(`ICE restart attempt ${restartAttempts + 1}/${MAX_RESTART_ATTEMPTS} for user ${userId}`);
+          console.log(`[WebRTC ICE] Restart attempt ${restartAttempts + 1}/${MAX_RESTART_ATTEMPTS} for user ${userId}`);
           this.restartIce(userId);
         } else {
           // Max attempts reached, close and recreate the connection
-          console.error(`Max ICE restart attempts reached for user ${userId}. Closing connection.`);
+          console.error(`[WebRTC ICE] ❌ Max restart attempts reached for user ${userId}. Closing connection.`);
           this.closePeerConnection(userId);
 
           // Try to re-establish connection after a delay (only if we're still in the channel)
           if (this.currentChannelId !== null) {
+            console.log(`[WebRTC ICE] Will attempt to re-establish connection with user ${userId} in 3 seconds...`);
             setTimeout(() => {
               if (this.currentChannelId !== null && this.participants.has(userId)) {
-                console.log(`Attempting to re-establish connection with user ${userId}`);
+                console.log(`[WebRTC ICE] Re-establishing connection with user ${userId}`);
                 this.iceRestartAttempts.delete(userId); // Reset restart attempts
                 this.createOffer(userId);
               }
-            }, 2000);
+            }, 3000);
           }
         }
       } else if (pc.iceConnectionState === 'disconnected') {
-        console.warn(`ICE connection disconnected with user ${userId}. Waiting for automatic reconnection...`);
+        console.warn(`[WebRTC ICE] ⚠️  Connection disconnected with user ${userId}. Waiting for automatic reconnection...`);
 
         // Clear any existing timeout
         const existingTimeout = this.connectionFailureTimeouts.get(userId);
@@ -907,18 +917,15 @@ class WebRTCService {
         // Set a timeout to try ICE restart if it doesn't reconnect automatically
         const timeout = setTimeout(() => {
           if (pc.iceConnectionState === 'disconnected') {
-            console.log(`ICE still disconnected after timeout, attempting restart for user ${userId}`);
+            console.log(`[WebRTC ICE] Still disconnected after timeout, attempting restart for user ${userId}`);
             this.restartIce(userId);
           }
         }, 5000); // Wait 5 seconds before attempting restart
 
         this.connectionFailureTimeouts.set(userId, timeout);
       } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-        console.log(`ICE connection established with user ${userId}`);
+        console.log(`[WebRTC ICE] ✓ Connection established with user ${userId}`);
         // Reset restart attempts counter on successful connection
-        this.iceRestartAttempts.delete(userId);
-
-        // Reset restart attempts on successful connection
         this.iceRestartAttempts.delete(userId);
 
         // Clear any pending failure timeouts
@@ -978,9 +985,13 @@ class WebRTCService {
     // Clean up existing analyzer and gain node for this user to prevent duplicates
     const existingGainNode = this.audioGainNodes.get(userId);
     if (existingGainNode) {
-      existingGainNode.disconnect();
+      try {
+        existingGainNode.disconnect();
+      } catch (err) {
+        // Ignore errors if already disconnected
+      }
       this.audioGainNodes.delete(userId);
-      console.log(`Cleaned up existing audio nodes for user ${userId}`);
+      console.log(`[WebRTC Audio] Cleaned up existing audio nodes for user ${userId}`);
     }
 
     // Cancel existing animation frame for this user
@@ -990,40 +1001,71 @@ class WebRTCService {
       this.audioAnimationFrames.delete(userId);
     }
 
+    // Create or resume audio context
     if (!this.audioContext || this.audioContext.state === 'closed') {
+      console.log('[WebRTC Audio] Creating new AudioContext');
       this.audioContext = new AudioContext();
     }
 
     // Resume audio context if suspended (required by some browsers)
     if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume().catch(err =>
-        console.error('Failed to resume audio context:', err)
-      );
+      console.log('[WebRTC Audio] Resuming suspended AudioContext');
+      this.audioContext.resume().then(() => {
+        console.log('[WebRTC Audio] AudioContext resumed successfully');
+      }).catch(err => {
+        console.error('[WebRTC Audio] Failed to resume audio context:', err);
+      });
     }
 
-    const source = this.audioContext.createMediaStreamSource(stream);
-    const analyzer = this.audioContext.createAnalyser();
-    analyzer.fftSize = 256;
+    try {
+      const source = this.audioContext.createMediaStreamSource(stream);
+      const analyzer = this.audioContext.createAnalyser();
+      analyzer.fftSize = 256;
 
-    // Create gain node for volume control
-    const gainNode = this.audioContext.createGain();
+      // Create gain node for volume control
+      const gainNode = this.audioContext.createGain();
 
-    // Apply stored volume or default to 1.0
-    const storedVolume = this.participantVolumes.get(userId) ?? 1.0;
-    gainNode.gain.value = storedVolume;
+      // Apply stored volume or default to 1.0
+      const storedVolume = this.participantVolumes.get(userId) ?? 1.0;
+      gainNode.gain.value = storedVolume;
 
-    // CRITICAL FIX: Connect audio pipeline properly
-    // source → analyzer (for speaker detection)
-    // source → gainNode → destination (for audio output with volume control)
-    source.connect(analyzer);
-    source.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
+      // CRITICAL FIX: Connect audio pipeline properly
+      // source → analyzer (for speaker detection)
+      // source → gainNode → destination (for audio output with volume control)
+      source.connect(analyzer);
+      source.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
 
-    this.audioAnalyzers.set(userId, analyzer);
-    this.audioGainNodes.set(userId, gainNode);
-    this.monitorAudioLevel(userId, analyzer);
+      this.audioAnalyzers.set(userId, analyzer);
+      this.audioGainNodes.set(userId, gainNode);
+      this.monitorAudioLevel(userId, analyzer);
 
-    console.log(`Setup audio for user ${userId} with volume ${storedVolume}`);
+      console.log(`[WebRTC Audio] ✓ Setup audio for user ${userId} with volume ${storedVolume}, AudioContext state: ${this.audioContext.state}`);
+    } catch (error) {
+      console.error(`[WebRTC Audio] ❌ Failed to setup audio for user ${userId}:`, error);
+      // Try to create a fallback audio element for playback
+      this.setupFallbackAudio(userId, stream);
+    }
+  }
+
+  /**
+   * Fallback audio setup using HTML5 Audio element (for browsers with Web Audio API issues)
+   */
+  private setupFallbackAudio(userId: number, stream: MediaStream) {
+    console.log(`[WebRTC Audio] Using fallback audio element for user ${userId}`);
+
+    // Create an audio element and attach the stream
+    const audio = new Audio();
+    audio.srcObject = stream;
+    audio.autoplay = true;
+    audio.volume = this.participantVolumes.get(userId) ?? 1.0;
+
+    // Play the audio
+    audio.play().then(() => {
+      console.log(`[WebRTC Audio] ✓ Fallback audio playing for user ${userId}`);
+    }).catch(err => {
+      console.error(`[WebRTC Audio] ❌ Fallback audio play failed for user ${userId}:`, err);
+    });
   }
 
   /**
