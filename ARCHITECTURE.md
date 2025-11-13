@@ -213,22 +213,19 @@ private parseMultipleMessages(rawData: string): WebSocketMessage[]
 
 ---
 
-## 3. MUMBLE/MURMUR SERVER INTEGRATION
+## 3. VOICE CHANNEL INTEGRATION
 
 ### Status
-**NOT YET INTEGRATED** - Using stub implementation for development/testing
+**WEBRTC-BASED** - Using WebRTC for peer-to-peer voice/video communication
 
 ### Configuration Files
 
 #### Voice Config Header
-**File**: `/home/user/Sohbet/include/voice/voice_config.h` (42 lines)
+**File**: `/home/user/Sohbet/include/voice/voice_config.h`
 
 ```cpp
 struct VoiceConfig {
     bool enabled;                      // Enable/disable voice
-    std::string murmur_host;           // Murmur server hostname
-    int murmur_port;                   // Murmur port (default: 64738)
-    std::string murmur_admin_password; // Admin password
     int token_expiry_seconds;          // Token validity period
     int max_users_per_channel;         // Users per channel limit
     bool enable_recording;             // Recording capability
@@ -236,16 +233,11 @@ struct VoiceConfig {
 ```
 
 #### Voice Config Implementation
-**File**: `/home/user/Sohbet/src/voice/voice_config.cpp` (97 lines)
+**File**: `/home/user/Sohbet/src/voice/voice_config.cpp`
 
 ```cpp
 Environment Variables Used:
 - SOHBET_VOICE_ENABLED: true/1 to enable voice
-- SOHBET_MURMUR_HOST: Murmur server hostname
-  * Auto-detects Fly.io: {FLY_APP_NAME}.fly.dev
-  * Fallback: PUBLIC_HOSTNAME environment variable
-- SOHBET_MURMUR_PORT: Murmur server port (default: 64738)
-- SOHBET_MURMUR_ADMIN_PASSWORD: Admin authentication
 - SOHBET_VOICE_TOKEN_EXPIRY: Token expiry in seconds (default: 300)
 - SOHBET_VOICE_MAX_USERS: Max users per channel (default: 25)
 - SOHBET_VOICE_ENABLE_RECORDING: Enable recording (default: false)
@@ -260,10 +252,9 @@ Environment Variables Used:
 // Token structure for voice connections
 struct VoiceConnectionToken {
     std::string token;
-    std::string murmur_host;
-    int murmur_port;
+    int channel_id;
     std::time_t expires_at;
-    
+
     std::string to_json() const;
 };
 
@@ -292,30 +283,23 @@ class VoiceServiceStub : public VoiceService {
 **File**: `/home/user/Sohbet/include/models/voice_channel.h`
 
 ```cpp
-struct VoiceChannel {
+class VoiceChannel {
+public:
     int id;
     std::string name;
     std::string channel_type;  // 'private', 'group', 'public'
     int group_id;
     int organization_id;
-    std::string murmur_channel_id;
     std::time_t created_at;
 };
 ```
 
 ### Current Implementation Status
-- **Stub Service**: VoiceServiceStub used instead of real Murmur integration
-- **In-Memory Storage**: Channels stored in memory during runtime
+- **WebRTC Service**: Uses peer-to-peer WebRTC for voice/video communication
+- **Stub Service**: VoiceServiceStub provides in-memory channel management
 - **Token Generation**: Simple hash-based token (non-cryptographic)
-- **No Real Murmur Connection**: Awaiting full Murmur integration
-
-### Integration Directory
-**Path**: `/home/user/Sohbet/backend/murmur_server_integration/`
-
-Contains placeholder files for future Murmur integration:
-- `/server` - Server connection code
-- `/voice` - Voice-specific handlers
-- Other directories for database and utility functions
+- **WebSocket Signaling**: WebSocket server handles signaling (offers, answers, ICE candidates)
+- **Database Persistence**: Voice channels stored in PostgreSQL via VoiceChannelRepository
 
 ---
 
@@ -757,9 +741,6 @@ EMAIL_VERIFICATION_URL=http://localhost:3000/verify-email
 **Voice Service**
 ```
 SOHBET_VOICE_ENABLED=false              (true to enable)
-SOHBET_MURMUR_HOST=<server-hostname>    (auto-detects Fly.io)
-SOHBET_MURMUR_PORT=64738                (default)
-SOHBET_MURMUR_ADMIN_PASSWORD=<password>
 SOHBET_VOICE_TOKEN_EXPIRY=300           (seconds)
 SOHBET_VOICE_MAX_USERS=25               (per channel)
 SOHBET_VOICE_ENABLE_RECORDING=false
@@ -885,9 +866,8 @@ WebSocketServer creates and manages WebSocketConnection instances
 - **Backend**: C++17 with PostgreSQL
 - **Frontend**: Next.js 16 with React 19
 - **Real-time**: WebSocket (ports 8080/8081)
-- **P2P Voice**: WebRTC with fallback STUN/TURN servers
+- **P2P Voice/Video**: WebRTC with fallback STUN/TURN servers
 - **Deployment**: Fly.io with Neon PostgreSQL
 - **Scalability**: Auto-scaling, health checks, external database
-- **Future**: Murmur server integration for voice (currently stubbed)
 
-The architecture is well-designed with clear separation of concerns, using repositories for data access, services for business logic, and proper error handling throughout.
+The architecture is well-designed with clear separation of concerns, using repositories for data access, services for business logic, WebRTC for peer-to-peer communication, and proper error handling throughout.
