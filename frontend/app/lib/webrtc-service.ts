@@ -794,8 +794,6 @@ class WebRTCService {
       iceTransportPolicy: 'all',
       // Bundle all media on a single transport for better NAT traversal
       bundlePolicy: 'max-bundle',
-      // Use modern WebRTC standard (required by modern browsers)
-      sdpSemantics: 'unified-plan',
     });
 
     // Handle ICE candidates
