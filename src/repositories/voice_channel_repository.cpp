@@ -13,8 +13,8 @@ std::optional<VoiceChannel> VoiceChannelRepository::create(VoiceChannel& channel
     if (!database_ || !database_->isOpen()) return std::nullopt;
 
     const std::string sql = R"(
-        INSERT INTO voice_channels (name, channel_type, group_id, organization_id, murmur_channel_id)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO voice_channels (name, channel_type, group_id, organization_id)
+        VALUES (?, ?, ?, ?)
         RETURNING id, created_at
     )";
 
@@ -23,23 +23,17 @@ std::optional<VoiceChannel> VoiceChannelRepository::create(VoiceChannel& channel
 
     stmt.bindText(1, channel.name);
     stmt.bindText(2, channel.channel_type);
-    
+
     if (channel.group_id > 0) {
         stmt.bindInt(3, channel.group_id);
     } else {
         stmt.bindNull(3);
     }
-    
+
     if (channel.organization_id > 0) {
         stmt.bindInt(4, channel.organization_id);
     } else {
         stmt.bindNull(4);
-    }
-    
-    if (!channel.murmur_channel_id.empty()) {
-        stmt.bindText(5, channel.murmur_channel_id);
-    } else {
-        stmt.bindNull(5);
     }
 
     int result = stmt.step();
@@ -71,7 +65,7 @@ std::optional<VoiceChannel> VoiceChannelRepository::findById(int id) {
     if (!database_ || !database_->isOpen()) return std::nullopt;
 
     const std::string sql = R"(
-        SELECT id, name, channel_type, group_id, organization_id, murmur_channel_id, created_at
+        SELECT id, name, channel_type, group_id, organization_id, created_at
         FROM voice_channels WHERE id = ?
     )";
 
@@ -85,21 +79,17 @@ std::optional<VoiceChannel> VoiceChannelRepository::findById(int id) {
         channel.id = stmt.getInt(0);
         channel.name = stmt.getText(1);
         channel.channel_type = stmt.getText(2);
-        
+
         if (!stmt.isNull(3)) {
             channel.group_id = stmt.getInt(3);
         }
-        
+
         if (!stmt.isNull(4)) {
             channel.organization_id = stmt.getInt(4);
         }
-        
-        if (!stmt.isNull(5)) {
-            channel.murmur_channel_id = stmt.getText(5);
-        }
-        
+
         // Parse created_at timestamp
-        std::string created_at_str = stmt.getText(6);
+        std::string created_at_str = stmt.getText(5);
         std::tm tm = {};
         std::istringstream ss(created_at_str);
         ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
@@ -118,7 +108,7 @@ std::vector<VoiceChannel> VoiceChannelRepository::findAll(int limit, int offset)
     if (!database_ || !database_->isOpen()) return channels;
 
     const std::string sql = R"(
-        SELECT id, name, channel_type, group_id, organization_id, murmur_channel_id, created_at
+        SELECT id, name, channel_type, group_id, organization_id, created_at
         FROM voice_channels
         ORDER BY created_at DESC
         LIMIT ? OFFSET ?
@@ -135,21 +125,17 @@ std::vector<VoiceChannel> VoiceChannelRepository::findAll(int limit, int offset)
         channel.id = stmt.getInt(0);
         channel.name = stmt.getText(1);
         channel.channel_type = stmt.getText(2);
-        
+
         if (!stmt.isNull(3)) {
             channel.group_id = stmt.getInt(3);
         }
-        
+
         if (!stmt.isNull(4)) {
             channel.organization_id = stmt.getInt(4);
         }
-        
-        if (!stmt.isNull(5)) {
-            channel.murmur_channel_id = stmt.getText(5);
-        }
-        
+
         // Parse created_at timestamp
-        std::string created_at_str = stmt.getText(6);
+        std::string created_at_str = stmt.getText(5);
         std::tm tm = {};
         std::istringstream ss(created_at_str);
         ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
@@ -168,7 +154,7 @@ std::vector<VoiceChannel> VoiceChannelRepository::findByType(const std::string& 
     if (!database_ || !database_->isOpen()) return channels;
 
     const std::string sql = R"(
-        SELECT id, name, channel_type, group_id, organization_id, murmur_channel_id, created_at
+        SELECT id, name, channel_type, group_id, organization_id, created_at
         FROM voice_channels
         WHERE channel_type = ?
         ORDER BY created_at DESC
@@ -187,21 +173,17 @@ std::vector<VoiceChannel> VoiceChannelRepository::findByType(const std::string& 
         channel.id = stmt.getInt(0);
         channel.name = stmt.getText(1);
         channel.channel_type = stmt.getText(2);
-        
+
         if (!stmt.isNull(3)) {
             channel.group_id = stmt.getInt(3);
         }
-        
+
         if (!stmt.isNull(4)) {
             channel.organization_id = stmt.getInt(4);
         }
-        
-        if (!stmt.isNull(5)) {
-            channel.murmur_channel_id = stmt.getText(5);
-        }
-        
+
         // Parse created_at timestamp
-        std::string created_at_str = stmt.getText(6);
+        std::string created_at_str = stmt.getText(5);
         std::tm tm = {};
         std::istringstream ss(created_at_str);
         ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
@@ -215,23 +197,6 @@ std::vector<VoiceChannel> VoiceChannelRepository::findByType(const std::string& 
     return channels;
 }
 
-bool VoiceChannelRepository::updateMurmurChannelId(int id, const std::string& murmur_channel_id) {
-    if (!database_ || !database_->isOpen()) return false;
-
-    const std::string sql = R"(
-        UPDATE voice_channels
-        SET murmur_channel_id = ?
-        WHERE id = ?
-    )";
-
-    db::Statement stmt(*database_, sql);
-    if (!stmt.isValid()) return false;
-
-    stmt.bindText(1, murmur_channel_id);
-    stmt.bindInt(2, id);
-
-    return stmt.step() == SQLITE_DONE;
-}
 
 bool VoiceChannelRepository::deleteById(int id) {
     if (!database_ || !database_->isOpen()) return false;
@@ -249,9 +214,11 @@ bool VoiceChannelRepository::deleteById(int id) {
 int VoiceChannelRepository::createSession(int channel_id, int user_id, const std::string& murmur_session_id) {
     if (!database_ || !database_->isOpen()) return 0;
 
+    // Note: murmur_session_id parameter kept for backward compatibility but not used
+    // WebRTC sessions don't need server-side session IDs
     const std::string sql = R"(
-        INSERT INTO voice_sessions (channel_id, user_id, murmur_session_id)
-        VALUES (?, ?, ?)
+        INSERT INTO voice_sessions (channel_id, user_id)
+        VALUES (?, ?)
         RETURNING id
     )";
 
@@ -260,12 +227,6 @@ int VoiceChannelRepository::createSession(int channel_id, int user_id, const std
 
     stmt.bindInt(1, channel_id);
     stmt.bindInt(2, user_id);
-
-    if (!murmur_session_id.empty()) {
-        stmt.bindText(3, murmur_session_id);
-    } else {
-        stmt.bindNull(3);
-    }
 
     int result = stmt.step();
     if (result == SQLITE_ROW) {
