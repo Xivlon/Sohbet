@@ -40,7 +40,12 @@ primary_region = 'iad'
 
   [[services.ports]]
     port = 8081
-    handlers = ["tls"]
+    handlers = ["tls", "http"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 800
 
 # Note: Database is now external (Neon PostgreSQL)
 # Set DATABASE_URL and SOHBET_JWT_SECRET as secrets using:

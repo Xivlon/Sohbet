@@ -11,24 +11,23 @@ namespace sohbet {
 
 /**
  * @brief Connection token for joining a voice channel
+ * WebRTC uses peer-to-peer connections, so no server host/port needed
  */
 struct VoiceConnectionToken {
     std::string token;
-    std::string murmur_host;
-    int murmur_port;
     std::time_t expires_at;
-    
+    int channel_id;
+
     std::string to_json() const;
 };
 
 /**
  * @brief Interface for voice service operations
- * 
+ *
  * This class provides an abstraction layer for managing voice channels
- * and integrating with external voice servers like Murmur.
- * 
- * The interface is designed to be extensible for future implementations
- * (e.g., WebRTC, different voice servers).
+ * using WebRTC for peer-to-peer voice communication.
+ *
+ * The interface is designed to be extensible for future implementations.
  */
 class VoiceService {
 protected:
@@ -102,10 +101,10 @@ public:
 };
 
 /**
- * @brief Stub implementation of VoiceService for testing without Murmur
- * 
- * This implementation stores channels in memory and generates dummy tokens.
- * It's useful for development and testing when a real Murmur server is not available.
+ * @brief In-memory implementation of VoiceService for WebRTC
+ *
+ * This implementation stores channels in memory and generates connection tokens.
+ * WebRTC connections are peer-to-peer, so no external server is required.
  */
 class VoiceServiceStub : public VoiceService {
 private:
