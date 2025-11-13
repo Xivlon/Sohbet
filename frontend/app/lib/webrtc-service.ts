@@ -803,12 +803,10 @@ class WebRTCService {
 
     const pc = new RTCPeerConnection({
       iceServers: this.config.iceServers,
-      // Use relay as fallback to force TURN usage if direct connection fails
-      iceTransportPolicy: 'all', // Try all: host, srflx, relay
+      // Try all connection types (STUN, TURN, and direct) for best compatibility
+      iceTransportPolicy: 'all',
       // Bundle all media on single transport for better NAT traversal
       bundlePolicy: 'max-bundle',
-      // Use unified plan for better browser compatibility
-      sdpSemantics: 'unified-plan' as RTCSdpSemantics,
     });
 
     // Handle ICE candidates
