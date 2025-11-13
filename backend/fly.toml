@@ -4,6 +4,7 @@ app = 'sohbet-uezxqq'
 primary_region = 'iad'
 
 [build]
+  dockerfile = "../Dockerfile"
 
 # HTTP API Service (port 8080)
 [[services]]
