@@ -3135,6 +3135,12 @@ void AcademicSocialServer::handleVoiceJoin(int user_id, const WebSocketMessage& 
         auto it = voice_channel_participants_.find(channel_id);
         if (it != voice_channel_participants_.end()) {
             participants = it->second;
+            std::cout << "Room " << channel_id << " now has " << participants.size()
+                      << " user(s): ";
+            for (int p : participants) {
+                std::cout << p << " ";
+            }
+            std::cout << std::endl;
         }
     }
 
@@ -3214,6 +3220,12 @@ void AcademicSocialServer::handleVoiceLeave(int user_id, const WebSocketMessage&
     }
 
     std::cout << "User " << user_id << " left voice channel " << channel_id << std::endl;
+    std::cout << "Room " << channel_id << " now has " << remaining_participants.size()
+              << " user(s): ";
+    for (int p : remaining_participants) {
+        std::cout << p << " ";
+    }
+    std::cout << std::endl;
 
     // Notify remaining users (excluding the leaving user) about the departure
     std::ostringstream leave_json;
@@ -3254,12 +3266,16 @@ void AcademicSocialServer::handleVoiceOffer(int user_id, const WebSocketMessage&
         if (it == voice_channel_participants_.end() ||
             it->second.find(user_id) == it->second.end() ||
             it->second.find(target_user_id) == it->second.end()) {
-            std::cerr << "Users not in same voice channel" << std::endl;
+            std::cerr << "Cannot forward offer: Users not in same voice channel" << std::endl;
+            std::cerr << "   Sender: " << user_id << ", Target: " << target_user_id
+                      << ", Channel: " << channel_id << std::endl;
             return;
         }
     }
 
     // Forward the offer to the target user, including sender info
+    std::cout << "Forwarding voice:offer from user " << user_id << " to user "
+              << target_user_id << " in channel " << channel_id << std::endl;
     WebSocketMessage offer_msg("voice:offer", payload);
     websocket_server_->sendToUser(target_user_id, offer_msg);
 }
@@ -3294,18 +3310,21 @@ void AcademicSocialServer::handleVoiceAnswer(int user_id, const WebSocketMessage
         if (it == voice_channel_participants_.end() ||
             it->second.find(user_id) == it->second.end() ||
             it->second.find(target_user_id) == it->second.end()) {
-            std::cerr << "Users not in same voice channel" << std::endl;
+            std::cerr << "Cannot forward answer: Users not in same voice channel" << std::endl;
+            std::cerr << "   Sender: " << user_id << ", Target: " << target_user_id
+                      << ", Channel: " << channel_id << std::endl;
             return;
         }
     }
 
     // Forward the answer to the target user
+    std::cout << "Forwarding voice:answer from user " << user_id << " to user "
+              << target_user_id << " in channel " << channel_id << std::endl;
     WebSocketMessage answer_msg("voice:answer", payload);
     websocket_server_->sendToUser(target_user_id, answer_msg);
 }
 
 void AcademicSocialServer::handleVoiceIceCandidate(int user_id, const WebSocketMessage& message) {
-    (void)user_id; // Unused - we just forward the ICE candidate
     std::string payload = message.payload;
 
     // Extract target_user_id and channel_id
@@ -3329,6 +3348,8 @@ void AcademicSocialServer::handleVoiceIceCandidate(int user_id, const WebSocketM
     }
 
     // Forward ICE candidate to target user
+    std::cout << "Forwarding ICE candidate from user " << user_id << " to user "
+              << target_user_id << " in channel " << channel_id << std::endl;
     WebSocketMessage ice_msg("voice:ice-candidate", payload);
     websocket_server_->sendToUser(target_user_id, ice_msg);
 }
