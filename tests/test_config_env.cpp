@@ -39,11 +39,12 @@ int main() {
     assert(custom_http_port == 9090);
     std::cout << "✓ Custom HTTP port: " << custom_http_port << std::endl;
     
-    // Test default WebSocket port
+    // Test default WebSocket port (should match HTTP port)
     unsetenv("WS_PORT");
+    unsetenv("PORT");
     int default_ws_port = sohbet::config::get_websocket_port();
-    assert(default_ws_port == 8081);
-    std::cout << "✓ Default WebSocket port: " << default_ws_port << std::endl;
+    assert(default_ws_port == 8080);
+    std::cout << "✓ Default WebSocket port (same as HTTP): " << default_ws_port << std::endl;
     
     // Test custom WebSocket port
     setenv("WS_PORT", "9091", 1);

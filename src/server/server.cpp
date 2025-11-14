@@ -102,6 +102,9 @@ bool AcademicSocialServer::initialize() {
     
     // Initialize WebSocket server with configurable port
     int ws_port = config::get_websocket_port();
+    std::cout << "[CONFIG] HTTP Port: " << port_ << std::endl;
+    std::cout << "[CONFIG] WebSocket Port: " << ws_port << std::endl;
+    std::cout << "[CONFIG] Port Configuration: " << (port_ == ws_port ? "SHARED (Recommended)" : "SEPARATE") << std::endl;
     websocket_server_ = std::make_shared<WebSocketServer>(ws_port);
     setupWebSocketHandlers();
 
