@@ -10,16 +10,16 @@ Sohbet is a **Turkish-centered academic social media platform** designed to help
 
 ### Key Features for Users
 
-- 🎓 **Academic Profiles** - Connect with students from your university and department
-- 🔒 **Secure & Private** - Your data is protected with industry-standard encryption
-- 👥 **Friend System** - Send and accept friend requests to build your academic network
-- 📝 **Social Posts** - Share thoughts and academic content with friends or publicly
-- 💬 **Real-Time Chat** - Instant messaging with friends using WebSocket technology
-- 📚 **Study Groups** - Professors can create groups for collaborative learning
+- [ACADEMIC] **Academic Profiles** - Connect with students from your university and department
+- [SECURE] **Secure & Private** - Your data is protected with industry-standard encryption
+- [USERS] **Friend System** - Send and accept friend requests to build your academic network
+- [DOCUMENT] **Social Posts** - Share thoughts and academic content with friends or publicly
+- [CHAT] **Real-Time Chat** - Instant messaging with friends using WebSocket technology
+- [LIBRARY] **Study Groups** - Professors can create groups for collaborative learning
 - 🏛️ **Organizations** - Join clubs, societies, and academic organizations
 - 🎙️ **Voice Channels** - Create and join voice discussion channels (Khave)
-- 🌐 **Multilingual** - Built with Turkish and international students in mind
-- 📱 **Modern Interface** - Clean, responsive design that works on all devices
+- [GLOBAL] **Multilingual** - Built with Turkish and international students in mind
+- [MOBILE] **Modern Interface** - Clean, responsive design that works on all devices
 
 ### For Developers
 
@@ -85,7 +85,7 @@ For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the 
 
 **Vercel (Frontend Only)**:
 - **[VERCEL_404_FIX.md](VERCEL_404_FIX.md)** - 🚨 **FIX 404 ERROR NOW** - 2-minute fix for deployment issues
-- **[VERCEL_README.md](VERCEL_README.md)** - ⚠️ **START HERE** - Critical configuration required
+- **[VERCEL_README.md](VERCEL_README.md)** - [WARNING] **START HERE** - Critical configuration required
 - **[VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)** - Detailed deployment guide with troubleshooting
 
 **Full Stack Deployment**:
@@ -96,7 +96,7 @@ For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the 
 - **WebSocket configuration** - Critical for real-time features (see [WEBSOCKET_HANDSHAKE_FIX.md](docs/WEBSOCKET_HANDSHAKE_FIX.md))
 - Troubleshooting common deployment issues
 
-**⚠️ Important Notes**:
+**[WARNING] Important Notes**:
 - **Vercel deployments**: Must set Root Directory to `frontend` in project settings (see VERCEL_README.md)
 - **Fly.io deployments**: WebSocket connections require special configuration in `fly.toml`
 
@@ -132,14 +132,14 @@ For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the 
 - **Typing Indicators**: See when someone is typing in a conversation
 - **Online Presence**: Know who's currently online
 - **Message History**: Access full conversation history with pagination
-- **Voice Channels**: Create and join voice discussion rooms (API ready, UI in progress)
+- **Voice & Video Channels**: Create and join voice/video discussion rooms (Khave) using WebRTC
 
 #### Security & Privacy
-- ✅ **Strong Password Protection**: Passwords are hashed with bcrypt (12 computational rounds)
-- ✅ **Secure Sessions**: JWT token authentication keeps you logged in safely
-- ✅ **Data Protection**: Your sensitive information never appears in API responses
-- ✅ **Input Validation**: All data is checked to prevent malicious inputs
-- ✅ **Role-Based Access Control**: Permissions system for Students, Professors, and Admins
+- [COMPLETE] **Strong Password Protection**: Passwords are hashed with bcrypt (12 computational rounds)
+- [COMPLETE] **Secure Sessions**: JWT token authentication keeps you logged in safely
+- [COMPLETE] **Data Protection**: Your sensitive information never appears in API responses
+- [COMPLETE] **Input Validation**: All data is checked to prevent malicious inputs
+- [COMPLETE] **Role-Based Access Control**: Permissions system for Students, Professors, and Admins
 
 ### Technical Features (For Developers)
 
@@ -160,7 +160,9 @@ For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the 
 - **WebSocket server for real-time communication (port 8081)**
 - **Real-time chat message delivery**
 - **Typing indicators and online presence tracking**
-- **Voice channel management API**
+- **Voice channel management API with WebRTC signaling**
+- **WebRTC peer-to-peer audio/video streaming**
+- **ICE server configuration for NAT traversal**
 - **Role-based permission system**
 - **Media upload and storage service**
 
@@ -595,33 +597,33 @@ Sohbet is built with a clean separation of concerns:
 
 **Security Implementation**: The backend uses industry-standard bcrypt (via libbcrypt) for secure password hashing and JWT (HS256) for stateless authentication. All security tests pass and verify no password leakage in API responses.
 
-## Test Coverage ✅
+## Test Coverage [COMPLETE]
 
 Comprehensive unit and integration tests ensure authentication security and correctness.
 
 ### Authentication Tests (`tests/test_authentication.cpp`)
 
 **User Registration**
-- ✅ Successful registration returns user data with ID
-- ✅ Password hashes are never exposed in API responses
-- ✅ User data properly serialized without sensitive fields
+- [COMPLETE] Successful registration returns user data with ID
+- [COMPLETE] Password hashes are never exposed in API responses
+- [COMPLETE] User data properly serialized without sensitive fields
 
 **User Login**
-- ✅ Successful login with valid credentials returns JWT token and user data
-- ✅ Failed login with wrong password returns 401 error
-- ✅ Failed login with non-existent user returns 401 error
-- ✅ Error responses never contain tokens
+- [COMPLETE] Successful login with valid credentials returns JWT token and user data
+- [COMPLETE] Failed login with wrong password returns 401 error
+- [COMPLETE] Failed login with non-existent user returns 401 error
+- [COMPLETE] Error responses never contain tokens
 
 **JWT Token Management**
-- ✅ Token generation creates valid JWT with correct structure
-- ✅ Token verification decodes and validates payload (username, user_id)
-- ✅ Invalid tokens are properly rejected
-- ✅ Token expiration is set and enforced
+- [COMPLETE] Token generation creates valid JWT with correct structure
+- [COMPLETE] Token verification decodes and validates payload (username, user_id)
+- [COMPLETE] Invalid tokens are properly rejected
+- [COMPLETE] Token expiration is set and enforced
 
 **Demo User**
-- ✅ Demo user auto-created on server initialization
-- ✅ Login with demo credentials (demo_student / demo123) succeeds
-- ✅ Login with wrong demo password fails with 401
+- [COMPLETE] Demo user auto-created on server initialization
+- [COMPLETE] Login with demo credentials (demo_student / demo123) succeeds
+- [COMPLETE] Login with wrong demo password fails with 401
 
 ### Other Test Suites
 - **BcryptTest**: Password hashing, verification, and legacy compatibility
@@ -695,13 +697,13 @@ The project uses these external libraries:
 
 **Backend Evolution**: The backend has been fully migrated from Node.js to pure C++17:
 
-- ✅ Removed all Node.js dependencies (Express.js, package.json, etc.)
-- ✅ Implemented custom HTTP server with socket programming
-- ✅ Created SQLite integration with RAII patterns
-- ✅ Added bcrypt password hashing and JWT authentication
-- ✅ Built comprehensive REST API
-- ✅ Set up CMake build system
-- ✅ Created full test suite
+- [COMPLETE] Removed all Node.js dependencies (Express.js, package.json, etc.)
+- [COMPLETE] Implemented custom HTTP server with socket programming
+- [COMPLETE] Created SQLite integration with RAII patterns
+- [COMPLETE] Added bcrypt password hashing and JWT authentication
+- [COMPLETE] Built comprehensive REST API
+- [COMPLETE] Set up CMake build system
+- [COMPLETE] Created full test suite
 
 The frontend remains React+TypeScript and communicates with the C++ backend via REST API.
 
@@ -709,61 +711,61 @@ The frontend remains React+TypeScript and communicates with the C++ backend via 
 
 ## Roadmap - Implementation Status
 
-**⚠️ Important**: See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for critical issues requiring attention before production deployment.
+**[WARNING] Important**: See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for critical issues requiring attention before production deployment.
 
-### Phase 1: Foundation & Authentication ✅ COMPLETE (100%)
+### Phase 1: Foundation & Authentication [COMPLETE] COMPLETE (100%)
 
-- ✅ User registration with validation and uniqueness checks
-- ✅ Secure password hashing (bcrypt, 12 rounds)
-- ✅ User authentication with JWT token generation
-- ✅ SQLite database integration with RAII wrapper
-- ✅ Academic profile fields (username, email, university, department, year, language)
-- ✅ Profile photos and media upload
-- ✅ Role-based access control (Students, Professors, Admins)
+- [COMPLETE] User registration with validation and uniqueness checks
+- [COMPLETE] Secure password hashing (bcrypt, 12 rounds)
+- [COMPLETE] User authentication with JWT token generation
+- [COMPLETE] SQLite database integration with RAII wrapper
+- [COMPLETE] Academic profile fields (username, email, university, department, year, language)
+- [COMPLETE] Profile photos and media upload
+- [COMPLETE] Role-based access control (Students, Professors, Admins)
 
-### Phase 2: Academic Networking ✅ COMPLETE (100%)
+### Phase 2: Academic Networking [COMPLETE] COMPLETE (100%)
 
-- ✅ Friend request system (send, accept, reject, unfriend)
-- ✅ Friends list and management
-- ✅ Post creation with visibility controls
-- ✅ Post feed (personalized and global)
-- ✅ Reaction system (like, love, insightful)
-- ✅ Comments and threaded replies
-- ✅ Student-to-student connections
+- [COMPLETE] Friend request system (send, accept, reject, unfriend)
+- [COMPLETE] Friends list and management
+- [COMPLETE] Post creation with visibility controls
+- [COMPLETE] Post feed (personalized and global)
+- [COMPLETE] Reaction system (like, love, insightful)
+- [COMPLETE] Comments and threaded replies
+- [COMPLETE] Student-to-student connections
 
-### Phase 3: Groups & Organizations ✅ COMPLETE (100%)
+### Phase 3: Groups & Organizations [COMPLETE] COMPLETE (100%)
 
-- ✅ Study group creation (professor-only feature)
-- ✅ Group membership management
-- ✅ Group browsing and discovery
-- ✅ Organization/club creation
-- ✅ Organization directory and profiles
-- ✅ Organization account management
+- [COMPLETE] Study group creation (professor-only feature)
+- [COMPLETE] Group membership management
+- [COMPLETE] Group browsing and discovery
+- [COMPLETE] Organization/club creation
+- [COMPLETE] Organization directory and profiles
+- [COMPLETE] Organization account management
 
-### Phase 4: Real-Time Communication ✅ COMPLETE (95%)
+### Phase 4: Real-Time Communication [COMPLETE] COMPLETE (95%)
 
 **Current Status**: Phase 4A complete, Phase 4C API complete. See [PHASE4A_COMPLETION_REPORT.md](PHASE4A_COMPLETION_REPORT.md) and [PHASE4C_COMPLETION_REPORT.md](PHASE4C_COMPLETION_REPORT.md) for details.
 
-#### Phase 4A: Real-Time Chat ✅ COMPLETE (100%)
-- ✅ WebSocket infrastructure for real-time communication (port 8081)
-- ✅ Conversation creation and management
-- ✅ Real-time message delivery
-- ✅ Typing indicators ("yazıyor...")
-- ✅ Online/offline presence tracking (green dots)
-- ✅ Message history with pagination
-- ✅ Automatic reconnection handling
+#### Phase 4A: Real-Time Chat [COMPLETE] COMPLETE (100%)
+- [COMPLETE] WebSocket infrastructure for real-time communication (port 8081)
+- [COMPLETE] Conversation creation and management
+- [COMPLETE] Real-time message delivery
+- [COMPLETE] Typing indicators ("yazıyor...")
+- [COMPLETE] Online/offline presence tracking (green dots)
+- [COMPLETE] Message history with pagination
+- [COMPLETE] Automatic reconnection handling
 
-#### Phase 4C: Voice Channels ✅ API COMPLETE (90%)
-- ✅ Voice channel database models
-- ✅ Voice channel REST API endpoints (6 endpoints)
-- ✅ VoiceChannelRepository with CRUD operations
-- ✅ Channel creation and management
-- ✅ Session tracking (join/leave)
-- ✅ Active user counting
-- ✅ Khave UI using real API
-- ⚠️ Murmur server integration (pending)
-- ⚠️ WebRTC voice streaming (pending)
-- ⚠️ Full voice functionality (pending)
+#### Phase 4C: Voice Channels [COMPLETE] COMPLETE (95%)
+- [COMPLETE] Voice channel database models
+- [COMPLETE] Voice channel REST API endpoints (6 endpoints)
+- [COMPLETE] VoiceChannelRepository with CRUD operations
+- [COMPLETE] Channel creation and management
+- [COMPLETE] Session tracking (join/leave)
+- [COMPLETE] Active user counting
+- [COMPLETE] Khave UI using real API
+- [COMPLETE] WebRTC peer-to-peer communication
+- [COMPLETE] WebRTC signaling via WebSocket
+- [COMPLETE] Full voice & video functionality
 
 **See [WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md) for detailed WebSocket documentation.**
 **See [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for complete implementation details.**
@@ -771,28 +773,28 @@ The frontend remains React+TypeScript and communicates with the C++ backend via 
 
 ### Future Enhancements (Planned)
 
-**⚠️ Critical Issues to Address First** (see [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)):
-- 🔴 **P0**: Fix JWT security vulnerability (hardcoded secret)
-- 🔴 **P0**: Fix frontend build failures (missing UI components)
-- 🔴 **P0**: Fix import path inconsistencies
+**[WARNING] Critical Issues to Address First** (see [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)):
+- [CRITICAL] **P0**: Fix JWT security vulnerability (hardcoded secret)
+- [CRITICAL] **P0**: Fix frontend build failures (missing UI components)
+- [CRITICAL] **P0**: Fix import path inconsistencies
 
 **High Priority**:
-- 🟠 Fix TypeScript `any` types (11 instances)
-- 🟠 Implement rate limiting
-- 🟠 Standardize import patterns
-- 🟠 Fix React performance issues
+- [HIGH] Fix TypeScript `any` types (11 instances)
+- [HIGH] Implement rate limiting
+- [HIGH] Standardize import patterns
+- [HIGH] Fix React performance issues
 
 **Feature Enhancements**:
 
-- 📝 Email verification for accounts
-- 📝 Rate limiting and enhanced security
-- 📝 File sharing in messages and posts
-- 📝 Advanced search and filtering
-- 📝 Analytics and insights dashboard
-- 📝 Course enrollment management
-- 📝 Q&A system for academic help
-- 📝 Screen sharing in voice channels
-- 📝 Video calling support
+- [DOCUMENT] Email verification for accounts
+- [DOCUMENT] Rate limiting and enhanced security
+- [DOCUMENT] File sharing in messages and posts
+- [DOCUMENT] Advanced search and filtering
+- [DOCUMENT] Analytics and insights dashboard
+- [DOCUMENT] Course enrollment management
+- [DOCUMENT] Q&A system for academic help
+- [DOCUMENT] Screen sharing in voice channels
+- [DOCUMENT] Video calling support
 
 ---
 
@@ -821,10 +823,10 @@ Sohbet is an **academic project** designed for learning C++ backend development 
 This project is intended for educational and learning purposes. It demonstrates modern software development practices but is **not production-ready** without additional security auditing and hardening.
 
 **Key Points:**
-- ✅ Free to use for learning and educational projects
-- ✅ Feel free to study and modify the code
-- ⚠️ Not recommended for production deployment without security review
-- ⚠️ Use at your own risk
+- [COMPLETE] Free to use for learning and educational projects
+- [COMPLETE] Feel free to study and modify the code
+- [WARNING] Not recommended for production deployment without security review
+- [WARNING] Use at your own risk
 
 ---
 
@@ -833,9 +835,9 @@ This project is intended for educational and learning purposes. It demonstrates 
 ### Documentation Files
 
 #### Security & Code Quality
-- **[CODE_REVIEW_REPORT.md](CODE_REVIEW_REPORT.md)** - ✅ **NEW**: Comprehensive security and code quality analysis (Nov 2025)
-- **[IDENTIFIED_PROBLEMS.md](IDENTIFIED_PROBLEMS.md)** - ✅ **NEW**: Detailed catalog of all identified issues and solutions
-- **[FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)** - **⚠️ CRITICAL**: Issues requiring immediate attention
+- **[CODE_REVIEW_REPORT.md](CODE_REVIEW_REPORT.md)** - [COMPLETE] **NEW**: Comprehensive security and code quality analysis (Nov 2025)
+- **[IDENTIFIED_PROBLEMS.md](IDENTIFIED_PROBLEMS.md)** - [COMPLETE] **NEW**: Detailed catalog of all identified issues and solutions
+- **[FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)** - **[WARNING] CRITICAL**: Issues requiring immediate attention
 - **[Issues.md](Issues.md)** - Comprehensive checkup report with security assessment
 
 #### Implementation Status
@@ -850,8 +852,8 @@ This project is intended for educational and learning purposes. It demonstrates 
 
 #### Technical Documentation
 - **[WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md)** - WebSocket real-time communication documentation
-- **[3rd-Party Service Integration.md](3rd-Party Service Integration.md)** - Information about voice/video integration with Murmur
-- **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Summary of the Murmur integration implementation
+- **[3rd-Party Service Integration.md](3rd-Party Service Integration.md)** - Voice architecture with WebRTC and third-party service options
+- **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Summary of the WebRTC voice integration implementation
 - **[docs/ACADEMIC_FEATURES.md](docs/ACADEMIC_FEATURES.md)** - Details about academic features and future enhancements
 - **[docs/VOICE_INTEGRATION.md](docs/VOICE_INTEGRATION.md)** - Developer guide for voice integration
 - **[docs/DEMO_ACCOUNT_FIX.md](docs/DEMO_ACCOUNT_FIX.md)** - Fix for demo account "Unauthorized" errors
@@ -879,4 +881,4 @@ This is an open-source educational project. For questions or collaboration:
 
 ---
 
-**Thank you for your interest in Sohbet!** 🎓
+**Thank you for your interest in Sohbet!** [ACADEMIC]

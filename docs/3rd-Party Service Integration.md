@@ -2,20 +2,20 @@
 
 ## Overview
 
-This document describes how Sohbet integrates voice and video calling capabilities using Murmur (the Mumble server). This integration is designed with security as a top priority while providing a foundation for future features like group voice calls and video conferencing.
+This document describes how Sohbet integrates voice and video calling capabilities using **WebRTC** (Web Real-Time Communication). This integration is designed with security and usability as top priorities, requiring no external applications or plugins for end users.
 
-## What is Murmur?
+## WebRTC Architecture
 
-Murmur is the server component of Mumble, an open-source voice chat application. It's perfect for Sohbet because it provides:
+WebRTC enables peer-to-peer voice and video communication directly in the web browser. It's perfect for Sohbet because it provides:
 
 ### Key Benefits
 
-- **🎤 Low-Latency Voice**: Crystal-clear real-time conversations
-- **🔒 Encrypted Communications**: All voice traffic is automatically encrypted
-- **👥 Permission Control**: Fine-grained control over who can access which channels
-- **🎮 Positional Audio**: Support for spatial audio in virtual environments
-- **💬 Text Messaging**: Built-in text chat alongside voice
-- **📹 Recording**: Optional recording capabilities for lectures or meetings
+- **🎤 Low-Latency Voice & Video**: Crystal-clear real-time conversations with no client software needed
+- **[SECURE] End-to-End Encryption**: All media traffic uses DTLS-SRTP encryption by default
+- **[USERS] Permission Control**: Fine-grained control over who can access which channels
+- **[GLOBAL] Browser-Native**: Works in all modern browsers without plugins
+- **[SYNC] Automatic NAT Traversal**: ICE servers handle NAT/firewall issues automatically
+- **📹 Recording Ready**: Foundation for optional recording capabilities
 
 ---
 
@@ -26,9 +26,9 @@ Murmur is the server component of Mumble, an open-source voice chat application.
 The integration follows these important principles:
 
 1. **🔐 Security First**: All connections are authenticated through Sohbet's existing security system
-2. **🎯 Separation of Concerns**: Voice features are kept separate from core social media functionality
-3. **🚀 Future-Proof**: Clean interfaces make it easy to add mobile and desktop support
-4. **⚙️ Optional Service**: Voice features are optional and won't affect core functionality if disabled
+2. **[TARGET] Separation of Concerns**: Voice features are kept separate from core social media functionality
+3. **[LAUNCH] Future-Proof**: Clean interfaces make it easy to add mobile and desktop support
+4. **[CONFIG] Optional Service**: Voice features are optional and won't affect core functionality if disabled
 
 ### Architecture Overview
 
@@ -37,59 +37,62 @@ The integration follows these important principles:
 │                    Sohbet Application                        │
 ├─────────────────────────────────────────────────────────────┤
 │  Frontend (React)                                            │
-│  ├── Voice Call UI Components                               │
+│  ├── Voice Call UI Components (Khave)                       │
 │  ├── Voice Service Client                                   │
-│  └── WebRTC Integration (Future)                            │
+│  └── WebRTC Peer Connection Manager                         │
 ├─────────────────────────────────────────────────────────────┤
 │  Backend (C++)                                               │
 │  ├── Voice Service Interface                                │
 │  │   ├── Voice Channel Management                           │
 │  │   ├── User Authentication Bridge                         │
-│  │   └── Connection Token Generation                        │
-│  ├── Murmur Connection Manager                              │
-│  │   ├── Configuration Management                           │
-│  │   ├── Server Communication                               │
-│  │   └── Health Monitoring                                  │
+│  │   └── Connection Token Generation (JWT)                  │
+│  ├── WebSocket Server (Port 8081)                           │
+│  │   ├── WebRTC Signaling                                   │
+│  │   ├── SDP Offer/Answer Exchange                          │
+│  │   └── ICE Candidate Relay                                │
 │  └── REST API Endpoints                                     │
-│      ├── POST /api/voice/channels (Create voice channel)    │
+│      ├── POST /api/voice/channels (Create channel)          │
 │      ├── GET /api/voice/channels (List channels)            │
-│      ├── POST /api/voice/join (Get connection token)        │
+│      ├── POST /api/voice/channels/:id/join (Join)           │
 │      └── DELETE /api/voice/channels/:id (Delete channel)    │
 ├─────────────────────────────────────────────────────────────┤
-│  External Services                                           │
-│  └── Murmur Server (Optional)                               │
-│      ├── Voice/Audio Processing                             │
-│      ├── Channel Management                                 │
-│      └── Client Connection Handling                         │
+│  External Services (Optional)                               │
+│  ├── STUN Servers (ice.example.com:3478)                    │
+│  │   └── NAT Type Detection & Address Discovery             │
+│  └── TURN Servers (turn.example.com:3478)                   │
+│      └── Relay for Strict NAT/Firewall Scenarios            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### How Authentication Works
+### How WebRTC Signaling Works
 
-Here's how a user securely joins a voice channel:
+Here's how a user securely joins a voice channel with WebRTC:
 
 1. **Login**: User logs into Sohbet (using existing JWT authentication)
 2. **Request Access**: User requests to join a voice channel
 3. **Validation**: Backend checks if user has permission to join
-4. **Token Generation**: System creates a temporary, time-limited connection token (valid for 5 minutes)
-5. **Connect**: User connects to Murmur server using the token
-6. **Verification**: Murmur validates the token with Sohbet backend
-7. **Access Granted/Denied**: Connection is established or rejected based on validation
+4. **Token Generation**: System creates a JWT-based connection token
+5. **Signaling Connection**: User establishes WebSocket connection to signaling server
+6. **Peer Discovery**: Backend broadcasts user's presence to other participants in channel
+7. **SDP Exchange**: Peers exchange Session Description Protocol offers/answers via WebSocket
+8. **ICE Gathering**: Peers collect ICE candidates for NAT traversal
+9. **Peer Connection**: Direct peer-to-peer connection is established
+10. **Media Flow**: Audio/video streams flow directly between peers with DTLS-SRTP encryption
 
 ### Security Features
 
-- ✅ **Token-Based Authentication**: No unauthorized access to voice channels
-- ✅ **Time-Limited Tokens**: Tokens expire after 5 minutes, reducing security risks
-- ✅ **Permission Validation**: Users can only join channels they're allowed to access
-- ✅ **Encrypted Communications**: All voice traffic uses TLS/SSL encryption
-- ✅ **Audit Logging**: All voice channel access is logged for security review
-- ✅ **Rate Limiting**: Prevents abuse of token generation
+- [COMPLETE] **Token-Based Authentication**: No unauthorized access to voice channels
+- [COMPLETE] **Time-Limited Tokens**: Tokens expire after 5 minutes, reducing security risks
+- [COMPLETE] **Permission Validation**: Users can only join channels they're allowed to access
+- [COMPLETE] **Encrypted Communications**: All voice traffic uses TLS/SSL encryption
+- [COMPLETE] **Audit Logging**: All voice channel access is logged for security review
+- [COMPLETE] **Rate Limiting**: Prevents abuse of token generation
 
 ---
 
 ## Implementation Progress
 
-### ✅ Phase 1: Foundation (COMPLETED)
+### [COMPLETE] Phase 1: Foundation (COMPLETED)
 
 - [x] Architecture documentation
 - [x] Security model design
@@ -100,27 +103,32 @@ Here's how a user securely joins a voice channel:
 - [x] React hooks for voice integration
 - [x] Comprehensive testing
 
-### 📋 Phase 2: Core Integration (PLANNED)
+### [COMPLETE] Phase 2: WebRTC Core Integration (COMPLETED)
 
-- [ ] Implement Murmur connection manager
-- [ ] Create REST API endpoints for voice services
-- [ ] Add token generation and validation
-- [ ] Implement channel management in backend
+- [x] WebRTC signaling server via WebSocket (port 8081)
+- [x] REST API endpoints for voice services (6 endpoints)
+- [x] JWT token generation and validation
+- [x] Channel management in backend
+- [x] ICE server configuration
+- [x] Peer connection management
 
-### 📋 Phase 3: Frontend Integration (PLANNED)
+### [COMPLETE] Phase 3: Frontend Integration (COMPLETED)
 
-- [ ] Create voice service client components
-- [ ] Build UI for voice channels
-- [ ] Implement connection handling
-- [ ] Add error handling and reconnection logic
+- [x] Voice service client (TypeScript)
+- [x] WebRTC peer connection management
+- [x] Khave UI for voice channels
+- [x] Connection handling and error recovery
+- [x] Real-time media stream handling
+- [x] Voice control UI (mute/unmute/stop)
 
-### 📋 Phase 4: Advanced Features (FUTURE)
+### [LIST] Phase 4: Advanced Features (FUTURE)
 
-- [ ] WebRTC for browser-based calling
-- [ ] Mobile client support (iOS/Android)
-- [ ] Desktop client integration
 - [ ] Screen sharing capabilities
 - [ ] Recording and playback features
+- [ ] Mobile native apps (iOS/Android)
+- [ ] Automatic transcription services
+- [ ] Group conference calling (MCU/SFU)
+- [ ] Advanced audio processing (noise cancellation)
 
 ---
 
@@ -128,19 +136,23 @@ Here's how a user securely joins a voice channel:
 
 ### Environment Variables
 
-To configure the voice service, set these environment variables:
+To configure the WebRTC voice service, set these environment variables:
 
 ```bash
 # Enable or disable voice service
 export SOHBET_VOICE_ENABLED=true
 
-# Murmur server connection details
-export SOHBET_MURMUR_HOST=localhost
-export SOHBET_MURMUR_PORT=64738
-export SOHBET_MURMUR_ADMIN_PASSWORD=<your_secure_password>
+# WebRTC ICE server settings (for NAT traversal)
+# STUN server (free public servers available)
+export SOHBET_WEBRTC_STUN_SERVER=stun:stun.l.google.com:19302
+
+# TURN server (optional, for strict NAT/firewalls)
+export SOHBET_WEBRTC_TURN_SERVER=turn:your-turn-server.com:3478
+export SOHBET_WEBRTC_TURN_USERNAME=username
+export SOHBET_WEBRTC_TURN_PASSWORD=password
 
 # Token settings
-export SOHBET_VOICE_TOKEN_EXPIRY=300  # 5 minutes
+export SOHBET_VOICE_TOKEN_EXPIRY=3600  # 1 hour
 
 # Channel settings
 export SOHBET_VOICE_MAX_USERS=25
@@ -154,10 +166,11 @@ export SOHBET_VOICE_ENABLE_RECORDING=false
 | Setting | Description | Default |
 |---------|-------------|---------|
 | `SOHBET_VOICE_ENABLED` | Turn voice features on/off | `false` |
-| `SOHBET_MURMUR_HOST` | Murmur server address | `localhost` |
-| `SOHBET_MURMUR_PORT` | Murmur server port | `64738` |
-| `SOHBET_MURMUR_ADMIN_PASSWORD` | Admin password for Murmur | Required |
-| `SOHBET_VOICE_TOKEN_EXPIRY` | Token validity in seconds | `300` |
+| `SOHBET_WEBRTC_STUN_SERVER` | STUN server URL for NAT detection | `stun:stun.l.google.com:19302` |
+| `SOHBET_WEBRTC_TURN_SERVER` | TURN server for relay (optional) | Not set |
+| `SOHBET_WEBRTC_TURN_USERNAME` | TURN server username | Not set |
+| `SOHBET_WEBRTC_TURN_PASSWORD` | TURN server password | Not set |
+| `SOHBET_VOICE_TOKEN_EXPIRY` | JWT token validity in seconds | `3600` |
 | `SOHBET_VOICE_MAX_USERS` | Max users per channel | `25` |
 | `SOHBET_VOICE_ENABLE_RECORDING` | Allow channel recording | `false` |
 
@@ -189,19 +202,27 @@ Response: 201 Created
 
 #### Join Voice Channel
 ```http
-POST /api/voice/join
+POST /api/voice/channels/:id/join
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
 
-{
-  "channel_id": 123
-}
+{}
 
 Response: 200 OK
 {
-  "connection_token": "eyJ...",
-  "murmur_host": "voice.sohbet.app",
-  "murmur_port": 64738,
+  "channel_id": 123,
+  "connection_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "signaling_server": "wss://voice.sohbet.app:8081",
+  "ice_servers": [
+    {
+      "urls": ["stun:stun.l.google.com:19302"]
+    },
+    {
+      "urls": ["turn:turn.sohbet.app:3478"],
+      "username": "user",
+      "credential": "pass"
+    }
+  ],
   "expires_at": "2025-10-23T22:05:00Z"
 }
 ```
@@ -270,30 +291,33 @@ CREATE TABLE voice_access_log (
 
 ### Future Enhancements
 
-1. **WebRTC Integration**: Browser-based calling without Murmur client
-2. **Mobile Support**: Native iOS and Android apps with voice support
-3. **Video Support**: Extension to include video conferencing
-4. **Screen Sharing**: Desktop sharing for presentations
-5. **Recording**: Voice channel recording with consent
-6. **Transcription**: Automatic transcription of voice conversations
-7. **Spatial Audio**: 3D audio for virtual spaces
-8. **Noise Suppression**: AI-powered noise cancellation
+1. **Mobile Support**: Native iOS and Android apps with WebRTC support
+2. **Screen Sharing**: Desktop sharing for presentations
+3. **Recording**: Voice channel recording with user consent
+4. **Transcription**: Automatic transcription of voice conversations
+5. **Group Conferencing**: Multi-party MCU (Multipoint Control Unit) or SFU (Selective Forwarding Unit)
+6. **Advanced Audio Processing**: AI-powered noise cancellation and echo suppression
+7. **Virtual Backgrounds**: For video calls
+8. **Third-Party Integration**: Easy integration with Daily.co, Twilio, Agora
 
 ### Dependencies
 
-The Murmur integration will require:
-- **Murmur Server**: Separate installation and configuration
-- **ICE (Internet Communications Engine)**: For RPC communication with Murmur (optional)
-- **OpenSSL**: For token generation and encryption (already present)
-- **SQLite**: For storing channel and token data (already present)
+WebRTC implementation requires:
+- **C++ 17 Standard Library**: For peer connection management
+- **WebSocket Library**: For signaling (already present in codebase)
+- **OpenSSL**: For JWT token generation and DTLS encryption (already present)
+- **PostgreSQL/SQLite**: For storing channel and session data (already present)
+- **STUN/TURN Servers** (Optional): Public STUN servers available free, TURN servers recommended for production
 
 ### Deployment Considerations
 
-1. **Murmur Server Setup**: Requires separate server instance
-2. **Network Configuration**: Ports 64738 (TCP/UDP) must be accessible
-3. **SSL Certificates**: Required for encrypted communications
-4. **Resource Planning**: Voice server requires adequate CPU and bandwidth
-5. **Monitoring**: Health checks and performance monitoring needed
+1. **STUN Server Access**: Ensure public STUN servers are reachable from your network
+2. **TURN Server Setup** (Optional): Deploy if you have strict NAT/firewall requirements
+3. **WebSocket Port**: Ensure port 8081 is accessible for signaling
+4. **SSL/TLS Certificates**: Required for secure WebSocket (wss://) connections
+5. **Resource Planning**: Signaling server uses minimal resources (primarily I/O for WebSocket)
+6. **Bandwidth**: Peer-to-peer connections use bandwidth between participants, not through server
+7. **Monitoring**: Monitor WebSocket connections and signaling latency
 
 ### Testing Strategy
 

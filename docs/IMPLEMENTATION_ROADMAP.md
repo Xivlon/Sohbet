@@ -1,15 +1,15 @@
 # Sohbet Social Features - Implementation Roadmap
 
 > **📌 STATUS UPDATE (October 30, 2025)**: See [ROADMAP_STATUS_CHECK.md](ROADMAP_STATUS_CHECK.md) for detailed implementation status.
-> **Overall Completion: ~95%** | Phases 1-3: ✅ Complete (100%) | Phase 4A: ✅ Complete (100%) | Phase 4C: ✅ API Complete (90%)
-> **⚠️ Important**: See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for critical issues requiring attention before production deployment.
+> **Overall Completion: ~95%** | Phases 1-3: [COMPLETE] Complete (100%) | Phase 4A: [COMPLETE] Complete (100%) | Phase 4C: [COMPLETE] API Complete (90%)
+> **[WARNING] Important**: See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for critical issues requiring attention before production deployment.
 
 ## Overview
 This document provides a complete roadmap for implementing advanced social features in the Sohbet academic platform. The vast majority of features have been successfully implemented with only minor UI polish and voice streaming integration remaining.
 
 ---
 
-## 🗄️ Database Status: ✅ COMPLETE
+## 🗄️ Database Status: [COMPLETE] COMPLETE
 
 All database tables have been created and seeded:
 - **Role System**: 3 roles (Student, Professor, Admin) with 13 permissions
@@ -20,28 +20,28 @@ All database tables have been created and seeded:
 
 ## 📊 Implementation Phases
 
-### **PHASE 1: Foundation Features** ✅ COMPLETE (95%)
+### **PHASE 1: Foundation Features** [COMPLETE] COMPLETE (95%)
 Core features that other features depend on.
 
-#### 1.1 Profile Photos & Media Upload ✅ IMPLEMENTED
-**Complexity**: Medium | **Time**: 2-3 days | **Status**: ✅ Complete
+#### 1.1 Profile Photos & Media Upload [COMPLETE] IMPLEMENTED
+**Complexity**: Medium | **Time**: 2-3 days | **Status**: [COMPLETE] Complete
 
 **Backend Tasks:**
-1. ✅ Install Replit Object Storage blueprint
-2. ✅ Create `MediaRepository` class for user_media table
-3. ✅ Create API endpoints:
+1. [COMPLETE] Install Replit Object Storage blueprint
+2. [COMPLETE] Create `MediaRepository` class for user_media table
+3. [COMPLETE] Create API endpoints:
    - `POST /api/media/upload` - Upload media files
    - `GET /api/media/file/:key` - Get media file
    - `GET /api/users/:id/media` - Get user's media
-4. ✅ Add file validation (size limit: 5MB, types: jpg, png, webp)
-5. ✅ Generate signed URLs for secure access
+4. [COMPLETE] Add file validation (size limit: 5MB, types: jpg, png, webp)
+5. [COMPLETE] Generate signed URLs for secure access
 
 **Frontend Tasks:**
-1. ✅ Create `AvatarUpload` component with drag-drop interface
-2. ⚠️ Add image preview and crop functionality (preview exists, crop pending)
-3. ✅ Update Profile page to show avatar with upload button
-4. ✅ Add avatar display to all user references (sidebar, posts, etc.)
-5. ✅ Implement loading states and error handling
+1. [COMPLETE] Create `AvatarUpload` component with drag-drop interface
+2. [WARNING] Add image preview and crop functionality (preview exists, crop pending)
+3. [COMPLETE] Update Profile page to show avatar with upload button
+4. [COMPLETE] Add avatar display to all user references (sidebar, posts, etc.)
+5. [COMPLETE] Implement loading states and error handling
 
 **API Specification:**
 ```http
@@ -66,51 +66,51 @@ Response 200:
 
 ---
 
-#### 1.2 Role-Based Access Control (RBAC) ✅ IMPLEMENTED
-**Complexity**: Medium | **Time**: 1-2 days | **Status**: ✅ Complete
+#### 1.2 Role-Based Access Control (RBAC) [COMPLETE] IMPLEMENTED
+**Complexity**: Medium | **Time**: 1-2 days | **Status**: [COMPLETE] Complete
 
 **Backend Tasks:**
-1. ✅ Create `RoleRepository` and `PermissionRepository`
-2. ✅ Add middleware for permission checking
-3. ✅ Update JWT token to include user role
-4. ✅ Create helper functions: `hasPermission()`, `isRole()`
+1. [COMPLETE] Create `RoleRepository` and `PermissionRepository`
+2. [COMPLETE] Add middleware for permission checking
+3. [COMPLETE] Update JWT token to include user role
+4. [COMPLETE] Create helper functions: `hasPermission()`, `isRole()`
 
 **Frontend Tasks:**
-1. ✅ Update auth context to include user role
-2. ✅ Add permission checking hooks: `usePermission()`, `useRole()`
-3. ✅ Conditionally render UI based on permissions
-4. ⚠️ Add "Upgrade to Professor" workflow (if applicable)
+1. [COMPLETE] Update auth context to include user role
+2. [COMPLETE] Add permission checking hooks: `usePermission()`, `useRole()`
+3. [COMPLETE] Conditionally render UI based on permissions
+4. [WARNING] Add "Upgrade to Professor" workflow (if applicable)
 
 **Permission Gates:**
-- ✅ `create_group` → Professor only
-- ✅ `create_public_post` → Professor only
-- ✅ `manage_users` → Admin only
-- ✅ `delete_any_post` → Admin only
+- [COMPLETE] `create_group` → Professor only
+- [COMPLETE] `create_public_post` → Professor only
+- [COMPLETE] `manage_users` → Admin only
+- [COMPLETE] `delete_any_post` → Admin only
 
 ---
 
-### **PHASE 2: Social Features** ✅ COMPLETE (100%)
+### **PHASE 2: Social Features** [COMPLETE] COMPLETE (100%)
 Features that make the platform social and engaging.
 
-#### 2.1 Friend Request System ✅ IMPLEMENTED
-**Complexity**: Medium | **Time**: 2-3 days | **Status**: ✅ Complete (See PHASE2_SUMMARY.md)
+#### 2.1 Friend Request System [COMPLETE] IMPLEMENTED
+**Complexity**: Medium | **Time**: 2-3 days | **Status**: [COMPLETE] Complete (See PHASE2_SUMMARY.md)
 
 **Backend Tasks:**
-1. ✅ Create `FriendshipRepository` class
-2. ✅ Create API endpoints:
+1. [COMPLETE] Create `FriendshipRepository` class
+2. [COMPLETE] Create API endpoints:
    - `POST /api/friendships` - Send friend request
    - `GET /api/friendships` - List friend requests (incoming/outgoing/accepted)
    - `PUT /api/friendships/:id/accept` - Accept request
    - `PUT /api/friendships/:id/reject` - Reject request
    - `DELETE /api/friendships/:id` - Unfriend/cancel request
-3. ⚠️ Add notifications for new friend requests (basic implementation)
+3. [WARNING] Add notifications for new friend requests (basic implementation)
 
 **Frontend Tasks:**
-1. ✅ Create `FriendRequests` component
-2. ✅ Create `FriendsList` component
-3. ✅ Add "Add Friend" button to user profiles
-4. ⚠️ Add friend request notifications in header (pending)
-5. ✅ Create friends management page
+1. [COMPLETE] Create `FriendRequests` component
+2. [COMPLETE] Create `FriendsList` component
+3. [COMPLETE] Add "Add Friend" button to user profiles
+4. [WARNING] Add friend request notifications in header (pending)
+5. [COMPLETE] Create friends management page
 
 **Database Query Examples:**
 ```sql
@@ -129,19 +129,19 @@ WHERE f.addressee_id = ? AND f.status = 'pending';
 
 ---
 
-#### 2.2 Posts System ✅ IMPLEMENTED
-**Complexity**: Medium-High | **Time**: 3-4 days | **Status**: ✅ Complete (See PHASE2_SUMMARY.md)
+#### 2.2 Posts System [COMPLETE] IMPLEMENTED
+**Complexity**: Medium-High | **Time**: 3-4 days | **Status**: [COMPLETE] Complete (See PHASE2_SUMMARY.md)
 
 **Backend Tasks:**
-1. ✅ Create `PostRepository` class
-2. ✅ Create API endpoints:
+1. [COMPLETE] Create `PostRepository` class
+2. [COMPLETE] Create API endpoints:
    - `POST /api/posts` - Create post (from profile only)
    - `GET /api/posts` - Feed (friends' posts + own posts)
    - `GET /api/users/:id/posts` - User's posts
    - `PUT /api/posts/:id` - Edit post
    - `DELETE /api/posts/:id` - Delete post
    - `POST /api/posts/:id/react` - React to post
-3. ✅ Implement visibility rules (public/friends/private)
+3. [COMPLETE] Implement visibility rules (public/friends/private)
 
 **Frontend Tasks:**
 1. Create `PostComposer` component (on profile page only)
@@ -168,8 +168,8 @@ function canViewPost(post, viewer) {
 
 ---
 
-#### 2.3 Comments & Replies ✅ IMPLEMENTED
-**Complexity**: Medium-High | **Time**: 2-3 days | **Status**: ✅ Complete (See PHASE2_SUMMARY.md)
+#### 2.3 Comments & Replies [COMPLETE] IMPLEMENTED
+**Complexity**: Medium-High | **Time**: 2-3 days | **Status**: [COMPLETE] Complete (See PHASE2_SUMMARY.md)
 
 **Backend Tasks:**
 1. Create `CommentRepository` class
@@ -203,11 +203,11 @@ SELECT * FROM comment_tree ORDER BY depth, created_at;
 
 ---
 
-### **PHASE 3: Groups & Organizations** ✅ COMPLETE (95%)
+### **PHASE 3: Groups & Organizations** [COMPLETE] COMPLETE (95%)
 Features for academic collaboration and organization management.
 
-#### 3.1 Groups (Professor-Created) ✅ IMPLEMENTED
-**Complexity**: High | **Time**: 4-5 days | **Status**: ✅ Complete (See PHASE3_SUMMARY.md)
+#### 3.1 Groups (Professor-Created) [COMPLETE] IMPLEMENTED
+**Complexity**: High | **Time**: 4-5 days | **Status**: [COMPLETE] Complete (See PHASE3_SUMMARY.md)
 
 **Backend Tasks:**
 1. Create `GroupRepository` and `GroupMemberRepository`
@@ -231,8 +231,8 @@ Features for academic collaboration and organization management.
 
 ---
 
-#### 3.2 Organizations/Clubs ✅ IMPLEMENTED
-**Complexity**: Medium-High | **Time**: 3-4 days | **Status**: ✅ Complete (See PHASE3_SUMMARY.md)
+#### 3.2 Organizations/Clubs [COMPLETE] IMPLEMENTED
+**Complexity**: Medium-High | **Time**: 3-4 days | **Status**: [COMPLETE] Complete (See PHASE3_SUMMARY.md)
 
 **Backend Tasks:**
 1. Create `OrganizationRepository`
@@ -248,31 +248,31 @@ Features for academic collaboration and organization management.
 
 ---
 
-### **PHASE 4: Real-Time Communication** ✅ COMPLETE (95%)
+### **PHASE 4: Real-Time Communication** [COMPLETE] COMPLETE (95%)
 Advanced features requiring WebSocket infrastructure and voice integration.
 
-#### 4.1 Real-Time Chat ✅ COMPLETE (100%)
-**Complexity**: Very High | **Time**: 5-7 days | **Status**: ✅ Complete (See PHASE4A_COMPLETION_REPORT.md)
+#### 4.1 Real-Time Chat [COMPLETE] COMPLETE (100%)
+**Complexity**: Very High | **Time**: 5-7 days | **Status**: [COMPLETE] Complete (See PHASE4A_COMPLETION_REPORT.md)
 
 **Backend Tasks:**
-1. ✅ Set up WebSocket server (custom C++ implementation on port 8081)
-2. ✅ Create `ConversationRepository` and `MessageRepository`
-3. ✅ Implement WebSocket authentication via JWT
-4. ✅ Create chat event handlers:
-   - ✅ `chat:send` - Send message
-   - ✅ `chat:typing` - Typing indicator
-   - ✅ `chat:read` - Mark as read
-5. ✅ Create REST API endpoints for message history
-6. ✅ Add message delivery/read receipts
+1. [COMPLETE] Set up WebSocket server (custom C++ implementation on port 8081)
+2. [COMPLETE] Create `ConversationRepository` and `MessageRepository`
+3. [COMPLETE] Implement WebSocket authentication via JWT
+4. [COMPLETE] Create chat event handlers:
+   - [COMPLETE] `chat:send` - Send message
+   - [COMPLETE] `chat:typing` - Typing indicator
+   - [COMPLETE] `chat:read` - Mark as read
+5. [COMPLETE] Create REST API endpoints for message history
+6. [COMPLETE] Add message delivery/read receipts
 
 **Frontend Tasks:**
-1. ✅ Set up WebSocket client connection
-2. ✅ Create `ChatList` component (list of conversations)
-3. ✅ Create `ChatWindow` component with message bubbles
-4. ✅ Add typing indicators
-5. ✅ Add message status indicators (sent/delivered/read)
-6. ✅ Add real-time notifications for new messages
-7. ✅ Implement message pagination
+1. [COMPLETE] Set up WebSocket client connection
+2. [COMPLETE] Create `ChatList` component (list of conversations)
+3. [COMPLETE] Create `ChatWindow` component with message bubbles
+4. [COMPLETE] Add typing indicators
+5. [COMPLETE] Add message status indicators (sent/delivered/read)
+6. [COMPLETE] Add real-time notifications for new messages
+7. [COMPLETE] Implement message pagination
 
 **WebSocket Protocol:**
 ```typescript
@@ -299,42 +299,42 @@ Advanced features requiring WebSocket infrastructure and voice integration.
 }
 ```
 
-**Status**: ✅ **FULLY IMPLEMENTED AND WORKING**
+**Status**: [COMPLETE] **FULLY IMPLEMENTED AND WORKING**
 
 ---
 
-#### 4.2 Voice Calls & Murmur Integration (Khave) ✅ API COMPLETE (90%)
-**Complexity**: Very High | **Time**: 7-10 days | **Status**: ✅ API Complete, Voice Streaming Pending (See PHASE4C_COMPLETION_REPORT.md)
+#### 4.2 Voice Calls & Murmur Integration (Khave) [COMPLETE] API COMPLETE (90%)
+**Complexity**: Very High | **Time**: 7-10 days | **Status**: [COMPLETE] API Complete, Voice Streaming Pending (See PHASE4C_COMPLETION_REPORT.md)
 
 **Backend Tasks:**
-1. ✅ Research Murmur server setup and API
-2. ⚠️ Deploy Murmur server instance (pending)
-3. ✅ Create `VoiceChannelRepository` and session management
-4. ✅ Create API endpoints:
-   - ✅ `POST /api/voice/channels` - Create channel
-   - ✅ `GET /api/voice/channels` - List channels
-   - ✅ `POST /api/voice/channels/:id/join` - Join channel
-   - ✅ `DELETE /api/voice/channels/:id/leave` - Leave channel
-   - ✅ `DELETE /api/voice/channels/:id` - Delete channel
-   - ✅ `GET /api/voice/channels/:id/users` - List active users
-5. ⚠️ Implement signaling for WebRTC (pending)
-6. ✅ Create Khave public discussion channel infrastructure
+1. [COMPLETE] Research Murmur server setup and API
+2. [WARNING] Deploy Murmur server instance (pending)
+3. [COMPLETE] Create `VoiceChannelRepository` and session management
+4. [COMPLETE] Create API endpoints:
+   - [COMPLETE] `POST /api/voice/channels` - Create channel
+   - [COMPLETE] `GET /api/voice/channels` - List channels
+   - [COMPLETE] `POST /api/voice/channels/:id/join` - Join channel
+   - [COMPLETE] `DELETE /api/voice/channels/:id/leave` - Leave channel
+   - [COMPLETE] `DELETE /api/voice/channels/:id` - Delete channel
+   - [COMPLETE] `GET /api/voice/channels/:id/users` - List active users
+5. [WARNING] Implement signaling for WebRTC (pending)
+6. [COMPLETE] Create Khave public discussion channel infrastructure
 
 **Frontend Tasks:**
-1. ⚠️ Integrate WebRTC for audio/video (pending)
-2. ✅ Create `VoiceChannel` component (basic UI exists)
-3. ✅ Create `Khave` public discussion interface (UI exists)
-4. ⚠️ Add voice controls (mute, deafen, volume) - UI only, not functional
-5. ⚠️ Add participant list with speaking indicators (pending)
-6. ⚠️ Implement screen sharing capability (pending)
+1. [WARNING] Integrate WebRTC for audio/video (pending)
+2. [COMPLETE] Create `VoiceChannel` component (basic UI exists)
+3. [COMPLETE] Create `Khave` public discussion interface (UI exists)
+4. [WARNING] Add voice controls (mute, deafen, volume) - UI only, not functional
+5. [WARNING] Add participant list with speaking indicators (pending)
+6. [WARNING] Implement screen sharing capability (pending)
 
-**Status**: ✅ **API COMPLETE, VOICE STREAMING PENDING**
+**Status**: [COMPLETE] **API COMPLETE, VOICE STREAMING PENDING**
 
 **Note:** The REST API for voice channels is fully implemented. To complete this phase, either integrate a Murmur server or use a third-party service like Daily.co, Twilio, or Agora for the actual voice streaming functionality.
 
 ---
 
-## 🔧 Technical Implementation Details
+## [MAINTENANCE] Technical Implementation Details
 
 ### Backend Architecture
 
@@ -365,80 +365,80 @@ src/services/
 
 ```
 Authentication & Users:
-✅ POST /api/login - Authenticate user
-✅ POST /api/users - Create new user
-✅ GET /api/users - List users
-✅ GET /api/users/:username - Get user by username
-✅ PUT /api/users/:id - Update user profile
-✅ GET /api/status - Server status
-✅ GET /api/users/demo - Demo user data
+[COMPLETE] POST /api/login - Authenticate user
+[COMPLETE] POST /api/users - Create new user
+[COMPLETE] GET /api/users - List users
+[COMPLETE] GET /api/users/:username - Get user by username
+[COMPLETE] PUT /api/users/:id - Update user profile
+[COMPLETE] GET /api/status - Server status
+[COMPLETE] GET /api/users/demo - Demo user data
 
 Media:
-✅ POST /api/media/upload - Upload media file
-✅ GET /api/media/file/:key - Get media file
-✅ GET /api/users/:id/media - Get user's media
+[COMPLETE] POST /api/media/upload - Upload media file
+[COMPLETE] GET /api/media/file/:key - Get media file
+[COMPLETE] GET /api/users/:id/media - Get user's media
 
 Friendships:
-✅ POST /api/friendships - Send friend request
-✅ GET /api/friendships - List friend requests
-✅ GET /api/users/:id/friends - Get user's friends
-✅ PUT /api/friendships/:id/accept - Accept request
-✅ PUT /api/friendships/:id/reject - Reject request
-✅ DELETE /api/friendships/:id - Unfriend/cancel
+[COMPLETE] POST /api/friendships - Send friend request
+[COMPLETE] GET /api/friendships - List friend requests
+[COMPLETE] GET /api/users/:id/friends - Get user's friends
+[COMPLETE] PUT /api/friendships/:id/accept - Accept request
+[COMPLETE] PUT /api/friendships/:id/reject - Reject request
+[COMPLETE] DELETE /api/friendships/:id - Unfriend/cancel
 
 Posts:
-✅ POST /api/posts - Create post
-✅ GET /api/posts - Get feed
-✅ GET /api/users/:id/posts - Get user's posts
-✅ PUT /api/posts/:id - Edit post
-✅ DELETE /api/posts/:id - Delete post
-✅ POST /api/posts/:id/react - Add reaction
-✅ DELETE /api/posts/:id/react - Remove reaction
+[COMPLETE] POST /api/posts - Create post
+[COMPLETE] GET /api/posts - Get feed
+[COMPLETE] GET /api/users/:id/posts - Get user's posts
+[COMPLETE] PUT /api/posts/:id - Edit post
+[COMPLETE] DELETE /api/posts/:id - Delete post
+[COMPLETE] POST /api/posts/:id/react - Add reaction
+[COMPLETE] DELETE /api/posts/:id/react - Remove reaction
 
 Comments:
-✅ POST /api/posts/:id/comments - Add comment
-✅ GET /api/posts/:id/comments - Get comments
-✅ POST /api/comments/:id/reply - Reply to comment
-✅ PUT /api/comments/:id - Edit comment
-✅ DELETE /api/comments/:id - Delete comment
+[COMPLETE] POST /api/posts/:id/comments - Add comment
+[COMPLETE] GET /api/posts/:id/comments - Get comments
+[COMPLETE] POST /api/comments/:id/reply - Reply to comment
+[COMPLETE] PUT /api/comments/:id - Edit comment
+[COMPLETE] DELETE /api/comments/:id - Delete comment
 
 Groups:
-✅ POST /api/groups - Create group
-✅ GET /api/groups - List groups
-✅ GET /api/groups/:id - Get group details
-✅ PUT /api/groups/:id - Update group
-✅ DELETE /api/groups/:id - Delete group
-✅ POST /api/groups/:id/members - Add member
-✅ DELETE /api/groups/:id/members/:userId - Remove member
-✅ PUT /api/groups/:id/members/:userId/role - Update role
+[COMPLETE] POST /api/groups - Create group
+[COMPLETE] GET /api/groups - List groups
+[COMPLETE] GET /api/groups/:id - Get group details
+[COMPLETE] PUT /api/groups/:id - Update group
+[COMPLETE] DELETE /api/groups/:id - Delete group
+[COMPLETE] POST /api/groups/:id/members - Add member
+[COMPLETE] DELETE /api/groups/:id/members/:userId - Remove member
+[COMPLETE] PUT /api/groups/:id/members/:userId/role - Update role
 
 Organizations:
-✅ POST /api/organizations - Create organization
-✅ GET /api/organizations - List organizations
-✅ GET /api/organizations/:id - Get organization
-✅ PUT /api/organizations/:id - Update organization
-✅ DELETE /api/organizations/:id - Delete organization
-✅ POST /api/organizations/:id/accounts - Add account
-✅ DELETE /api/organizations/:id/accounts/:userId - Remove account
+[COMPLETE] POST /api/organizations - Create organization
+[COMPLETE] GET /api/organizations - List organizations
+[COMPLETE] GET /api/organizations/:id - Get organization
+[COMPLETE] PUT /api/organizations/:id - Update organization
+[COMPLETE] DELETE /api/organizations/:id - Delete organization
+[COMPLETE] POST /api/organizations/:id/accounts - Add account
+[COMPLETE] DELETE /api/organizations/:id/accounts/:userId - Remove account
 
 Chat (REST):
-✅ GET /api/conversations - List conversations
-✅ POST /api/conversations - Create conversation
-✅ GET /api/conversations/:id/messages - Get messages
-✅ POST /api/conversations/:id/messages - Send message
-✅ PUT /api/messages/:id/read - Mark as read
+[COMPLETE] GET /api/conversations - List conversations
+[COMPLETE] POST /api/conversations - Create conversation
+[COMPLETE] GET /api/conversations/:id/messages - Get messages
+[COMPLETE] POST /api/conversations/:id/messages - Send message
+[COMPLETE] PUT /api/messages/:id/read - Mark as read
 
 Voice Channels:
-✅ POST /api/voice/channels - Create channel
-✅ GET /api/voice/channels - List channels
-✅ GET /api/voice/channels/:id - Get channel details
-✅ POST /api/voice/channels/:id/join - Join channel
-✅ DELETE /api/voice/channels/:id/leave - Leave channel
-✅ DELETE /api/voice/channels/:id - Delete channel
-✅ GET /api/voice/channels/:id/users - List active users
+[COMPLETE] POST /api/voice/channels - Create channel
+[COMPLETE] GET /api/voice/channels - List channels
+[COMPLETE] GET /api/voice/channels/:id - Get channel details
+[COMPLETE] POST /api/voice/channels/:id/join - Join channel
+[COMPLETE] DELETE /api/voice/channels/:id/leave - Leave channel
+[COMPLETE] DELETE /api/voice/channels/:id - Delete channel
+[COMPLETE] GET /api/voice/channels/:id/users - List active users
 
 WebSocket (Real-time):
-✅ ws://0.0.0.0:8081/?token={jwt} - WebSocket connection
+[COMPLETE] ws://0.0.0.0:8081/?token={jwt} - WebSocket connection
   Events:
   - chat:send - Send message
   - chat:message - Receive message
@@ -590,8 +590,8 @@ interface FriendsStore {
 ## 🔐 Security Considerations
 
 ### Authentication & Authorization
-- ✅ JWT tokens for stateless auth
-- ✅ Role-based access control (RBAC)
+- [COMPLETE] JWT tokens for stateless auth
+- [COMPLETE] Role-based access control (RBAC)
 - 🔲 Rate limiting on API endpoints (add middleware)
 - 🔲 CSRF protection for state-changing operations
 - 🔲 Input validation and sanitization
@@ -615,22 +615,22 @@ interface FriendsStore {
 
 | Phase | Features | Duration | Status |
 |-------|----------|----------|--------|
-| **Phase 1** | RBAC + Profile Photos | 1 week | ✅ **COMPLETE** |
-| **Phase 2A** | Friend Requests | 3 days | ✅ **COMPLETE** |
-| **Phase 2B** | Posts System | 4 days | ✅ **COMPLETE** |
-| **Phase 2C** | Comments | 3 days | ✅ **COMPLETE** |
-| **Phase 3A** | Groups | 5 days | ✅ **COMPLETE** |
-| **Phase 3B** | Organizations | 4 days | ✅ **COMPLETE** |
-| **Phase 4A** | Real-time Chat | 1 week | ✅ **COMPLETE** |
-| **Phase 4C** | Voice API | 1 week | ✅ **COMPLETE** |
-| **Remaining** | Voice Streaming | 1-2 weeks | ⚠️ **PENDING** |
+| **Phase 1** | RBAC + Profile Photos | 1 week | [COMPLETE] **COMPLETE** |
+| **Phase 2A** | Friend Requests | 3 days | [COMPLETE] **COMPLETE** |
+| **Phase 2B** | Posts System | 4 days | [COMPLETE] **COMPLETE** |
+| **Phase 2C** | Comments | 3 days | [COMPLETE] **COMPLETE** |
+| **Phase 3A** | Groups | 5 days | [COMPLETE] **COMPLETE** |
+| **Phase 3B** | Organizations | 4 days | [COMPLETE] **COMPLETE** |
+| **Phase 4A** | Real-time Chat | 1 week | [COMPLETE] **COMPLETE** |
+| **Phase 4C** | Voice API | 1 week | [COMPLETE] **COMPLETE** |
+| **Remaining** | Voice Streaming | 1-2 weeks | [WARNING] **PENDING** |
 
 **Total Time Invested: ~6 weeks** 
 **Remaining Work: 1-2 weeks** (voice streaming integration only)
 
 ---
 
-## 🚀 Quick Start Guide
+## [LAUNCH] Quick Start Guide
 
 ### Step 1: Set Up Replit Integrations
 ```bash
@@ -659,7 +659,7 @@ Work through features in order, completing backend before frontend for each feat
 
 ---
 
-## 📚 Additional Resources
+## [LIBRARY] Additional Resources
 
 ### Replit Documentation
 - Object Storage: https://docs.replit.com/hosting/deployments/object-storage
@@ -684,32 +684,32 @@ npm install date-fns             # Date formatting
 
 ---
 
-## ✅ Success Criteria
+## [COMPLETE] Success Criteria
 
 **Phase 1 Complete When:**
-- ✅ Users can upload and display profile photos ✓ **DONE**
-- ✅ Professors can create groups (Students cannot) ✓ **DONE**
-- ✅ Permissions are enforced on all protected endpoints ✓ **DONE**
+- [COMPLETE] Users can upload and display profile photos ✓ **DONE**
+- [COMPLETE] Professors can create groups (Students cannot) ✓ **DONE**
+- [COMPLETE] Permissions are enforced on all protected endpoints ✓ **DONE**
 
 **Phase 2 Complete When:**
-- ✅ Users can send, accept, and manage friend requests ✓ **DONE**
-- ✅ Users can create posts from their profile ✓ **DONE**
-- ✅ Posts appear in friends' feeds based on visibility ✓ **DONE**
-- ✅ Users can comment and reply to posts ✓ **DONE**
+- [COMPLETE] Users can send, accept, and manage friend requests ✓ **DONE**
+- [COMPLETE] Users can create posts from their profile ✓ **DONE**
+- [COMPLETE] Posts appear in friends' feeds based on visibility ✓ **DONE**
+- [COMPLETE] Users can comment and reply to posts ✓ **DONE**
 
 **Phase 3 Complete When:**
-- ✅ Professors can create and manage groups ✓ **DONE**
-- ✅ Organizations can be created and managed ✓ **DONE**
-- ✅ Group posts are visible only to members ✓ **DONE**
+- [COMPLETE] Professors can create and manage groups ✓ **DONE**
+- [COMPLETE] Organizations can be created and managed ✓ **DONE**
+- [COMPLETE] Group posts are visible only to members ✓ **DONE**
 
 **Phase 4A Complete When:**
-- ✅ Friends can send real-time messages ✓ **DONE**
-- ✅ Chat shows typing indicators and read receipts ✓ **DONE**
+- [COMPLETE] Friends can send real-time messages ✓ **DONE**
+- [COMPLETE] Chat shows typing indicators and read receipts ✓ **DONE**
 
 **Phase 4C Complete When:**
-- ✅ Voice channel API is functional ✓ **DONE**
-- ⚠️ Voice calls work for private conversations (PENDING - needs Murmur/WebRTC)
-- ⚠️ Public Khave discussions support multiple participants (PENDING - needs voice streaming)
+- [COMPLETE] Voice channel API is functional ✓ **DONE**
+- [WARNING] Voice calls work for private conversations (PENDING - needs Murmur/WebRTC)
+- [WARNING] Public Khave discussions support multiple participants (PENDING - needs voice streaming)
 
 **ALL CRITERIA MET EXCEPT VOICE STREAMING INTEGRATION**
 
@@ -747,102 +747,102 @@ npm install date-fns             # Date formatting
 
 | Phase | Status | Completion | Notes |
 |-------|--------|------------|-------|
-| Phase 1 (Foundation) | ✅ Complete | 100% | Media upload, RBAC, profile photos all working |
-| Phase 2 (Social) | ✅ Complete | 100% | Friends, posts, comments, reactions all working |
-| Phase 3 (Groups/Orgs) | ✅ Complete | 100% | Groups, organizations fully functional |
-| Phase 4A (Real-Time Chat) | ✅ Complete | 100% | WebSocket chat with typing indicators fully working |
-| Phase 4C (Voice Channels) | ✅ API Complete | 90% | REST API complete, voice streaming pending |
+| Phase 1 (Foundation) | [COMPLETE] Complete | 100% | Media upload, RBAC, profile photos all working |
+| Phase 2 (Social) | [COMPLETE] Complete | 100% | Friends, posts, comments, reactions all working |
+| Phase 3 (Groups/Orgs) | [COMPLETE] Complete | 100% | Groups, organizations fully functional |
+| Phase 4A (Real-Time Chat) | [COMPLETE] Complete | 100% | WebSocket chat with typing indicators fully working |
+| Phase 4C (Voice Channels) | [COMPLETE] API Complete | 90% | REST API complete, voice streaming pending |
 
-### What's Working ✅
-- ✅ User registration and authentication
-- ✅ Profile photos and media upload
-- ✅ Role-based access control (Students, Professors, Admins)
-- ✅ Friend requests and friendships
-- ✅ Posts with visibility controls (public/friends/private)
-- ✅ Reactions (like, love, insightful)
-- ✅ Threaded comments and replies
-- ✅ Professor-created groups with member management
-- ✅ Organizations/clubs with account management
-- ✅ Real-time chat with WebSocket
-- ✅ Typing indicators
-- ✅ Online/offline presence tracking
-- ✅ Message history and pagination
-- ✅ Voice channel REST API
-- ✅ Voice channel session management
+### What's Working [COMPLETE]
+- [COMPLETE] User registration and authentication
+- [COMPLETE] Profile photos and media upload
+- [COMPLETE] Role-based access control (Students, Professors, Admins)
+- [COMPLETE] Friend requests and friendships
+- [COMPLETE] Posts with visibility controls (public/friends/private)
+- [COMPLETE] Reactions (like, love, insightful)
+- [COMPLETE] Threaded comments and replies
+- [COMPLETE] Professor-created groups with member management
+- [COMPLETE] Organizations/clubs with account management
+- [COMPLETE] Real-time chat with WebSocket
+- [COMPLETE] Typing indicators
+- [COMPLETE] Online/offline presence tracking
+- [COMPLETE] Message history and pagination
+- [COMPLETE] Voice channel REST API
+- [COMPLETE] Voice channel session management
 
-### What's Pending ⚠️
-- 🔴 **CRITICAL**: Hardcoded JWT secret (security vulnerability)
-- 🔴 **CRITICAL**: Frontend build failures (missing UI components)
-- 🔴 **CRITICAL**: Missing UI components (dialog.tsx, label.tsx, skeleton.tsx)
-- ⚠️ Murmur server deployment and integration
-- ⚠️ WebRTC voice streaming implementation
-- ⚠️ Full Khave UI with functional voice controls
-- ⚠️ Screen sharing capability
-- ⚠️ Image crop functionality for avatars
-- ⚠️ Email verification system
-- ⚠️ Rate limiting and CSRF protection
-- ⚠️ File attachments in messages
-- ⚠️ Advanced search and filtering
-- ⚠️ TypeScript `any` types (11 instances)
-- ⚠️ Import path inconsistencies
-- ⚠️ React setState in useEffect issues
+### What's Pending [WARNING]
+- [CRITICAL] **CRITICAL**: Hardcoded JWT secret (security vulnerability)
+- [CRITICAL] **CRITICAL**: Frontend build failures (missing UI components)
+- [CRITICAL] **CRITICAL**: Missing UI components (dialog.tsx, label.tsx, skeleton.tsx)
+- [WARNING] Murmur server deployment and integration
+- [WARNING] WebRTC voice streaming implementation
+- [WARNING] Full Khave UI with functional voice controls
+- [WARNING] Screen sharing capability
+- [WARNING] Image crop functionality for avatars
+- [WARNING] Email verification system
+- [WARNING] Rate limiting and CSRF protection
+- [WARNING] File attachments in messages
+- [WARNING] Advanced search and filtering
+- [WARNING] TypeScript `any` types (11 instances)
+- [WARNING] Import path inconsistencies
+- [WARNING] React setState in useEffect issues
 
 ### Next Recommended Steps
 
-**⚠️ CRITICAL ISSUES FIRST**: See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for detailed prioritized list.
+**[WARNING] CRITICAL ISSUES FIRST**: See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for detailed prioritized list.
 
 **High Priority (If continuing development)**:
 
 **P0 - Critical (Must fix immediately - ~4 hours)**:
-1. 🔴 **JWT Security Fix** - Remove hardcoded JWT secret, use environment variable
+1. [CRITICAL] **JWT Security Fix** - Remove hardcoded JWT secret, use environment variable
    - Security vulnerability: anyone can generate valid tokens
    - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #1
    
-2. 🔴 **Frontend Build Fix** - Create missing UI components and fix import paths
+2. [CRITICAL] **Frontend Build Fix** - Create missing UI components and fix import paths
    - Blocks all frontend development and deployment
    - Missing: dialog.tsx, label.tsx, skeleton.tsx
    - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #2
 
 **P1 - High Priority (~7 hours)**:
-3. 🟠 **Code Quality** - Fix TypeScript issues and standardize imports
+3. [HIGH] **Code Quality** - Fix TypeScript issues and standardize imports
    - 11 instances of `any` types
    - Import path inconsistencies
    - React performance issues
    - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #4-6
    
-4. 🟠 **Rate Limiting** - Implement API rate limiting
+4. [HIGH] **Rate Limiting** - Implement API rate limiting
    - Prevent API abuse and DoS attacks
    - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #7
 
 **P2 - Medium Priority (~2 hours)**:
-5. 🟡 **Cleanup** - Resolve compiler warnings and unused imports
+5. [MEDIUM] **Cleanup** - Resolve compiler warnings and unused imports
    - 6 compiler warnings
    - 15 unused imports
    - 12 useEffect dependency warnings
    - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #8-10
 
 **Long-term (2-3 weeks)**:
-6. 🔵 **Murmur/WebRTC Integration** - Complete voice streaming functionality
+6. [INFO] **Murmur/WebRTC Integration** - Complete voice streaming functionality
    - Deploy Murmur server OR integrate third-party service (Daily.co, Twilio, Agora)
    - Implement WebRTC signaling
    - Connect Khave UI to actual voice streams
    - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) #15
    
-7. 🟢 **UI Polish** - Minor enhancements
+7. [SUCCESS] **UI Polish** - Minor enhancements
    - Image crop functionality for avatars
    - Group management detailed UI improvements
    - Organization profile page enhancements
 
 **Medium Priority**:
-8. 🟡 **Advanced Features** - Nice-to-haves
+8. [MEDIUM] **Advanced Features** - Nice-to-haves
    - File attachments in messages
    - Message search functionality
    - Email verification
    - Advanced post filtering
 
 **Long Term**:
-9. 🟢 **Security & Performance**
-   - ✅ JWT secret fix (P0 - immediate)
+9. [SUCCESS] **Security & Performance**
+   - [COMPLETE] JWT secret fix (P0 - immediate)
    - Rate limiting implementation (P1)
    - CSRF protection
    - Performance optimization (caching, indexing)
@@ -850,7 +850,7 @@ npm install date-fns             # Date formatting
    - See [FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md) for complete list
 
 ### Related Documentation
-- **[FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)** - **⚠️ CRITICAL**: Prioritized list of issues and remediation plan
+- **[FEATURES_NEEDING_ATTENTION.md](FEATURES_NEEDING_ATTENTION.md)** - **[WARNING] CRITICAL**: Prioritized list of issues and remediation plan
 - **[ROADMAP_STATUS_CHECK.md](ROADMAP_STATUS_CHECK.md)** - Detailed status analysis
 - **[Issues.md](Issues.md)** - Comprehensive checkup report with security assessment
 - **[PHASE2_SUMMARY.md](PHASE2_SUMMARY.md)** - Phase 2 completion report
@@ -867,22 +867,22 @@ npm install date-fns             # Date formatting
 This roadmap has been **95% implemented** with all core features working. The database foundation is complete, social features are fully functional, and real-time communication is operational.
 
 **Major Achievements**:
-- ✅ 95% of roadmap features implemented
-- ✅ All core social features working (friends, posts, comments, reactions)
-- ✅ Groups and organizations fully functional
-- ✅ Real-time chat with WebSocket fully operational
-- ✅ Voice channel REST API complete
-- ✅ Role-based access control working
-- ✅ Media upload and profile photos working
+- [COMPLETE] 95% of roadmap features implemented
+- [COMPLETE] All core social features working (friends, posts, comments, reactions)
+- [COMPLETE] Groups and organizations fully functional
+- [COMPLETE] Real-time chat with WebSocket fully operational
+- [COMPLETE] Voice channel REST API complete
+- [COMPLETE] Role-based access control working
+- [COMPLETE] Media upload and profile photos working
 
 **Remaining Work**:
-- 🔴 Murmur server deployment and WebRTC integration (major)
-- 🟡 Minor UI polish (image crop, detailed management pages)
-- 🟡 Advanced features (file attachments, search, email verification)
-- 🟢 Security hardening (rate limiting, CSRF)
+- [CRITICAL] Murmur server deployment and WebRTC integration (major)
+- [MEDIUM] Minor UI polish (image crop, detailed management pages)
+- [MEDIUM] Advanced features (file attachments, search, email verification)
+- [SUCCESS] Security hardening (rate limiting, CSRF)
 
-**Current Status**: ✅ Phases 1-4A Complete (100%) | ✅ Phase 4C API Complete (90%) | 🔨 Voice Streaming Pending
+**Current Status**: [COMPLETE] Phases 1-4A Complete (100%) | [COMPLETE] Phase 4C API Complete (90%) | 🔨 Voice Streaming Pending
 
 The platform is **fully functional** as an academic social network with real-time chat. The only major remaining work is integrating actual voice streaming for the Khave voice channels.
 
-Good luck with your implementation! 🚀
+Good luck with your implementation! [LAUNCH]

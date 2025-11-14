@@ -676,12 +676,12 @@ sudo iptables -A INPUT -s <backend-2-ip> -j DROP
 **Matrix:**
 | Browser | Version | OS | Audio | Video | Migration | Status |
 |---------|---------|----|----|----|----|--------|
-| Chrome | 120+ | Windows | ✅ | ✅ | ✅ | Pass |
-| Chrome | 120+ | macOS | ✅ | ✅ | ✅ | Pass |
-| Safari | 17+ | macOS | ✅ | ✅ | ✅ | Pass |
-| Safari | 17+ | iOS | ✅ | ⚠️ | ✅ | Needs unlock |
-| Firefox | 121+ | Windows | ✅ | ✅ | ✅ | Pass |
-| Edge | 120+ | Windows | ✅ | ✅ | ✅ | Pass |
+| Chrome | 120+ | Windows | [COMPLETE] | [COMPLETE] | [COMPLETE] | Pass |
+| Chrome | 120+ | macOS | [COMPLETE] | [COMPLETE] | [COMPLETE] | Pass |
+| Safari | 17+ | macOS | [COMPLETE] | [COMPLETE] | [COMPLETE] | Pass |
+| Safari | 17+ | iOS | [COMPLETE] | [WARNING] | [COMPLETE] | Needs unlock |
+| Firefox | 121+ | Windows | [COMPLETE] | [COMPLETE] | [COMPLETE] | Pass |
+| Edge | 120+ | Windows | [COMPLETE] | [COMPLETE] | [COMPLETE] | Pass |
 
 **Mobile Specific:**
 - [ ] Low battery mode tested (reduces quality)
