@@ -42,7 +42,9 @@ inline int get_http_port() {
 inline int get_websocket_port() {
     const char* port = std::getenv("WS_PORT");
     if (!port) {
-        return 8081;
+        // WebSocket and HTTP must share the same port on cloud platforms
+        // WebSocket connections start as HTTP upgrade requests
+        return get_http_port();
     }
     return std::atoi(port);
 }
