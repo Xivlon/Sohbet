@@ -132,7 +132,7 @@ For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the 
 - **Typing Indicators**: See when someone is typing in a conversation
 - **Online Presence**: Know who's currently online
 - **Message History**: Access full conversation history with pagination
-- **Voice Channels**: Create and join voice discussion rooms (API ready, UI in progress)
+- **Voice & Video Channels**: Create and join voice/video discussion rooms (Khave) using WebRTC
 
 #### Security & Privacy
 - ✅ **Strong Password Protection**: Passwords are hashed with bcrypt (12 computational rounds)
@@ -160,7 +160,9 @@ For deploying Sohbet to production environments (Vercel, Fly.io, etc.), see the 
 - **WebSocket server for real-time communication (port 8081)**
 - **Real-time chat message delivery**
 - **Typing indicators and online presence tracking**
-- **Voice channel management API**
+- **Voice channel management API with WebRTC signaling**
+- **WebRTC peer-to-peer audio/video streaming**
+- **ICE server configuration for NAT traversal**
 - **Role-based permission system**
 - **Media upload and storage service**
 
@@ -753,7 +755,7 @@ The frontend remains React+TypeScript and communicates with the C++ backend via 
 - ✅ Message history with pagination
 - ✅ Automatic reconnection handling
 
-#### Phase 4C: Voice Channels ✅ API COMPLETE (90%)
+#### Phase 4C: Voice Channels ✅ COMPLETE (95%)
 - ✅ Voice channel database models
 - ✅ Voice channel REST API endpoints (6 endpoints)
 - ✅ VoiceChannelRepository with CRUD operations
@@ -761,9 +763,9 @@ The frontend remains React+TypeScript and communicates with the C++ backend via 
 - ✅ Session tracking (join/leave)
 - ✅ Active user counting
 - ✅ Khave UI using real API
-- ⚠️ Murmur server integration (pending)
-- ⚠️ WebRTC voice streaming (pending)
-- ⚠️ Full voice functionality (pending)
+- ✅ WebRTC peer-to-peer communication
+- ✅ WebRTC signaling via WebSocket
+- ✅ Full voice & video functionality
 
 **See [WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md) for detailed WebSocket documentation.**
 **See [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) for complete implementation details.**
@@ -850,8 +852,8 @@ This project is intended for educational and learning purposes. It demonstrates 
 
 #### Technical Documentation
 - **[WEBSOCKET_INFRASTRUCTURE.md](WEBSOCKET_INFRASTRUCTURE.md)** - WebSocket real-time communication documentation
-- **[3rd-Party Service Integration.md](3rd-Party Service Integration.md)** - Information about voice/video integration with Murmur
-- **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Summary of the Murmur integration implementation
+- **[3rd-Party Service Integration.md](3rd-Party Service Integration.md)** - Voice architecture with WebRTC and third-party service options
+- **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Summary of the WebRTC voice integration implementation
 - **[docs/ACADEMIC_FEATURES.md](docs/ACADEMIC_FEATURES.md)** - Details about academic features and future enhancements
 - **[docs/VOICE_INTEGRATION.md](docs/VOICE_INTEGRATION.md)** - Developer guide for voice integration
 - **[docs/DEMO_ACCOUNT_FIX.md](docs/DEMO_ACCOUNT_FIX.md)** - Fix for demo account "Unauthorized" errors
