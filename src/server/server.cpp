@@ -3279,23 +3279,29 @@ void AcademicSocialServer::handleVoiceOffer(int user_id, const WebSocketMessage&
         return;
     }
 
+    std::cout << "Voice offer from user " << user_id
+              << " to user " << target_user_id
+              << " in channel " << channel_id << std::endl;
+
     // Verify both users are in the same channel
     {
         std::lock_guard<std::mutex> lock(voice_channels_mutex_);
         auto it = voice_channel_participants_.find(channel_id);
-        if (it == voice_channel_participants_.end() ||
-            it->second.find(user_id) == it->second.end() ||
-            it->second.find(target_user_id) == it->second.end()) {
-            std::cerr << "Cannot forward offer: Users not in same voice channel" << std::endl;
-            std::cerr << "   Sender: " << user_id << ", Target: " << target_user_id
-                      << ", Channel: " << channel_id << std::endl;
+        if (it == voice_channel_participants_.end()) {
+            std::cout << "Channel " << channel_id << " not found" << std::endl;
+            return;
+        }
+        if (it->second.find(user_id) == it->second.end()) {
+            std::cout << "Sender user " << user_id << " not in channel " << channel_id << std::endl;
+            return;
+        }
+        if (it->second.find(target_user_id) == it->second.end()) {
+            std::cout << "Target user " << target_user_id << " not in channel " << channel_id << std::endl;
             return;
         }
     }
 
-    // Forward the offer to the target user, including sender info
-    std::cout << "Forwarding voice:offer from user " << user_id << " to user "
-              << target_user_id << " in channel " << channel_id << std::endl;
+    std::cout << "Forwarding offer from user " << user_id << " to user " << target_user_id << std::endl;
     WebSocketMessage offer_msg("voice:offer", payload);
     websocket_server_->sendToUser(target_user_id, offer_msg);
 }
