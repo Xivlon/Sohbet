@@ -268,8 +268,9 @@ bool OrganizationRepository::addAccount(int org_id, int user_id, const std::stri
     if (!database_ || !database_->isOpen()) return false;
 
     const std::string sql = R"(
-        INSERT OR IGNORE INTO organization_accounts (organization_id, user_id, role)
+        INSERT INTO organization_accounts (organization_id, user_id, role)
         VALUES (?, ?, ?)
+        ON CONFLICT (organization_id, user_id) DO NOTHING
     )";
 
     db::Statement stmt(*database_, sql);

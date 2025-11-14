@@ -176,8 +176,9 @@ bool RoleRepository::assignRoleToUser(int user_id, int role_id) {
     if (!database_ || !database_->isOpen()) return false;
 
     const std::string sql = R"(
-        INSERT OR IGNORE INTO user_roles (user_id, role_id)
+        INSERT INTO user_roles (user_id, role_id)
         VALUES (?, ?)
+        ON CONFLICT (user_id, role_id) DO NOTHING
     )";
 
     db::Statement stmt(*database_, sql);

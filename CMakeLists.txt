@@ -108,6 +108,7 @@ set(SOURCES
     src/utils/hash.cpp
     src/utils/multipart_parser.cpp
     src/utils/rate_limiter.cpp
+    src/utils/logger.cpp
     src/security/bcrypt_wrapper.cpp
     src/security/jwt.cpp
     src/server/server.cpp
