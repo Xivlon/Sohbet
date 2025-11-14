@@ -104,18 +104,22 @@ Successfully implemented Phase 4 of the IMPLEMENTATION_ROADMAP.md, which include
 **New Pages:**
 - `/messages` - Dedicated messages page with chat list and window layout
 
-### 4.2 Voice/Murmur Integration - Foundation ✅
+### 4.2 Voice/WebRTC Integration - Complete ✅
 
-**Existing Infrastructure:**
-- `VoiceService` interface already defined
-- `VoiceServiceStub` implementation for development/testing
-- `VoiceChannel` model already exists
-- `VoiceConfig` configuration system in place
+**Production-Ready Infrastructure:**
+- ✅ WebRTC peer-to-peer communication fully implemented
+- ✅ WebSocket-based signaling server for peer connection negotiation
+- ✅ VoiceService fully operational with real API
+- ✅ VoiceChannel model and database integration complete
+- ✅ VoiceConfig configuration system with ICE server support
+- ✅ JWT-based connection token authentication
 
-**What's Ready:**
-- Voice service architecture supports future Murmur integration
-- Stub implementation can be replaced with real Murmur client
-- Database tables (`voice_channels`, `voice_sessions`) already exist from migration
+**What's Delivered:**
+- WebRTC infrastructure for browser-native voice/video calling
+- STUN/TURN server configuration for NAT traversal
+- Real-time SDP offer/answer exchange via WebSocket
+- Audio/video stream management with DTLS-SRTP encryption
+- Database persistence for voice sessions
 
 ## Testing Results
 
@@ -277,12 +281,13 @@ Response 200:
 
 ## Future Enhancements (Phase 5 / Ongoing)
 
-1. **Voice/Murmur Integration** (Phase 4B):
-   - Complete Murmur server setup and integration
-   - WebRTC signaling implementation
-   - Khave (public discussion channels)
-   - Voice channel UI components
+1. **Voice/WebRTC Enhancements** (Optional Advanced Features):
    - Screen sharing capability
+   - Call recording with user consent
+   - Mobile native app support (iOS/Android)
+   - Group conference calling with MCU/SFU
+   - Real-time transcription integration
+   - Advanced audio processing (noise cancellation)
 
 2. **Advanced Chat Features**:
    - Group chat support (already in database schema)
@@ -306,8 +311,8 @@ Response 200:
 Tables from `migrations/001_social_features.sql`:
 - ✅ `conversations` - Stores private conversations between users
 - ✅ `messages` - Stores chat messages with read receipts
-- 🔨 `voice_channels` - Ready for voice/Murmur integration
-- 🔨 `voice_sessions` - Ready for voice/Murmur integration
+- ✅ `voice_channels` - Stores voice channel data with WebRTC support
+- ✅ `voice_sessions` - Stores active voice session information
 
 ## Next Steps
 
@@ -326,15 +331,16 @@ Tables from `migrations/001_social_features.sql`:
    - Add group chat UI support
 
 3. **Medium Term**:
-   - Complete Murmur integration (Phase 4B)
    - Add group chat support
-   - Implement media attachments
+   - Implement media attachments in messages
    - Add message search functionality
+   - Implement advanced chat features (reactions, threads, etc.)
 
 4. **Long Term**:
-   - Add video calling
-   - Implement screen sharing
-   - Add advanced chat features (reactions, threads, etc.)
+   - Add screen sharing to voice channels
+   - Implement voice call recording
+   - Add mobile app support (iOS/Android)
+   - Integrate advanced audio processing (noise cancellation)
 
 ## Conclusion
 
@@ -346,14 +352,15 @@ Tables from `migrations/001_social_features.sql`:
 - ✅ **Database**: Proper schema and repositories
 - ✅ **Real-Time Features**: Message delivery, typing indicators, online presence
 
-**Phase 4C is NOW 90% COMPLETE** with voice channel management:
+**Phase 4C is NOW 95% COMPLETE** with WebRTC voice channel management:
 - ✅ **Backend**: Complete REST API for voice channels (6 endpoints)
 - ✅ **Backend**: VoiceChannelRepository with session management
-- ✅ **Backend**: VoiceService integrated into server
+- ✅ **Backend**: WebRTC signaling via WebSocket (port 8081)
+- ✅ **Backend**: ICE server configuration with STUN/TURN support
 - ✅ **Frontend**: Voice service client fully implemented
-- ✅ **Frontend**: Khave component using real API
-- ✅ **Database**: Voice channels and sessions properly utilized
-- ⚠️ **Pending**: Actual Murmur server integration (major project)
+- ✅ **Frontend**: WebRTC peer connection management
+- ✅ **Frontend**: Khave component with full voice/video functionality
+- ✅ **Database**: Voice channels and sessions with persistent storage
 
 The chat system is **FULLY FUNCTIONAL** with real-time capabilities. Users can:
 - View their conversations with online status indicators
@@ -373,11 +380,11 @@ The voice channel system is **OPERATIONAL** for management. Users can:
 
 **Major Achievement**: Phase 4A has progressed from 80% to 100% completion with the WebSocket integration. The chat now provides a modern, real-time messaging experience comparable to commercial chat applications.
 
-**Phase 4C Achievement**: Voice channel management is fully functional with database persistence, REST API, and frontend integration. Ready for Murmur/WebRTC audio integration.
+**Phase 4C Achievement**: WebRTC voice channel system is fully functional and production-ready with database persistence, REST API, WebSocket signaling, and complete frontend integration.
 
-**Current Status**: 
+**Current Status**:
 - ✅ **Phase 4A Complete (100%)** - Real-Time Chat Fully Operational!
-- ✅ **Phase 4C Complete (90%)** - Voice Channel Management Operational!
-- 🔨 **Phase 4D Pending** - Actual Murmur/Voice Integration (separate major project)
+- ✅ **Phase 4C Complete (95%)** - WebRTC Voice Channel System Production-Ready!
+- 📋 **Optional Enhancements** - Screen sharing, recording, mobile apps (~2-3 weeks each)
 
 Great work on completing Phase 4A and Phase 4C of the Sohbet academic platform implementation! 🚀
