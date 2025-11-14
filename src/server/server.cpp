@@ -3128,21 +3128,36 @@ void AcademicSocialServer::handleVoiceJoin(int user_id, const WebSocketMessage& 
               << ") joined voice channel " << channel_id
               << " (synced " << synced_users << " existing users from database)" << std::endl;
 
-    // Notify all users in the channel about the new participant
-    std::set<int> participants;
+    // FIX: Create TWO separate participant sets:
+    // 1. All participants (for logging)
+    // 2. Existing participants only (for broadcasting new user arrival)
+    std::set<int> all_participants;
+    std::set<int> existing_participants;
+
     {
         std::lock_guard<std::mutex> lock(voice_channels_mutex_);
         auto it = voice_channel_participants_.find(channel_id);
         if (it != voice_channel_participants_.end()) {
-            participants = it->second;
-            std::cout << "Room " << channel_id << " now has " << participants.size()
+            all_participants = it->second;
+
+            // Create set of existing participants (excluding the new user)
+            for (int participant_id : all_participants) {
+                if (participant_id != user_id) {
+                    existing_participants.insert(participant_id);
+                }
+            }
+
+            std::cout << "Room " << channel_id << " now has " << all_participants.size()
                       << " user(s): ";
-            for (int p : participants) {
+            for (int p : all_participants) {
                 std::cout << p << " ";
             }
             std::cout << std::endl;
         }
     }
+
+    std::cout << "User " << user_id << " joined channel " << channel_id
+              << ". Notifying " << existing_participants.size() << " existing participants" << std::endl;
 
     // Prepare join notification with user info
     std::string university_str = user.getUniversity().has_value() ? user.getUniversity().value() : "";
@@ -3156,15 +3171,18 @@ void AcademicSocialServer::handleVoiceJoin(int user_id, const WebSocketMessage& 
               << ",\"university\":\"" << escaped_university << "\"}";
 
     WebSocketMessage join_msg("voice:user-joined", join_json.str());
-    websocket_server_->sendToUsers(participants, join_msg);
+
+    // FIX: Only send to EXISTING participants (not the new user)
+    if (!existing_participants.empty()) {
+        websocket_server_->sendToUsers(existing_participants, join_msg);
+        std::cout << "Notified existing participants about new user " << user_id << std::endl;
+    }
 
     // Send list of existing participants to the new user
     std::ostringstream participants_json;
     participants_json << "{\"channel_id\":" << channel_id << ",\"participants\":[";
     bool first = true;
-    for (int participant_id : participants) {
-        if (participant_id == user_id) continue; // Skip self
-
+    for (int participant_id : existing_participants) {  // Use existing_participants here too
         auto participant_opt = user_repository_->findById(participant_id);
         if (participant_opt.has_value()) {
             auto participant = participant_opt.value();
@@ -3183,6 +3201,8 @@ void AcademicSocialServer::handleVoiceJoin(int user_id, const WebSocketMessage& 
 
     WebSocketMessage participants_msg("voice:participants", participants_json.str());
     websocket_server_->sendToUser(user_id, participants_msg);
+
+    std::cout << "Sent " << existing_participants.size() << " existing participants to new user " << user_id << std::endl;
 }
 
 void AcademicSocialServer::handleVoiceLeave(int user_id, const WebSocketMessage& message) {
