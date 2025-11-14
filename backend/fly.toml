@@ -6,12 +6,12 @@ primary_region = 'iad'
 [build]
   dockerfile = "../Dockerfile"
 
-# HTTP API Service (port 8080)
+# Combined HTTP and WebSocket Service (single port 8080)
 [[services]]
   internal_port = 8080
   protocol = "tcp"
   processes = ["app"]
-  auto_stop_machines = "stop"
+  auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
 
@@ -23,36 +23,17 @@ primary_region = 'iad'
     port = 443
     handlers = ["tls", "http"]
 
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 800
+
   [services.http_checks]
     interval = 10000
     timeout = 5000
     grace_period = 5000
     method = "GET"
     path = "/api/status"
-
-# WebSocket Service (port 8081)
-[[services]]
-  internal_port = 8081
-  protocol = "tcp"
-  processes = ["app"]
-  auto_stop_machines = "off"
-  auto_start_machines = true
-  min_machines_running = 1
-
-  [[services.ports]]
-    port = 8081
-    handlers = ["tls", "http"]
-
-  [services.concurrency]
-    type = "connections"
-    hard_limit = 1000
-    soft_limit = 800
-
-  [services.tcp_checks]
-    interval = "15s"
-    timeout = "10s"
-    grace_period = "10s"
-    restart_limit = 0
 
 # Note: Database is now external (Neon PostgreSQL)
 # Set DATABASE_URL and SOHBET_JWT_SECRET as secrets using:
