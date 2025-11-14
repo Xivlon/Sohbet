@@ -375,7 +375,7 @@ bool WebSocketServer::performWebSocketHandshake(int client_socket, std::string& 
         error_response << "\r\n";
         std::string error_str = error_response.str();
         send(client_socket, error_str.c_str(), error_str.length(), 0);
-        std::cerr << "❌ WebSocket handshake failed: Invalid or missing Sec-WebSocket-Version header" << std::endl;
+        std::cerr << "WebSocket handshake failed: Invalid or missing Sec-WebSocket-Version header" << std::endl;
         return false;
     }
 

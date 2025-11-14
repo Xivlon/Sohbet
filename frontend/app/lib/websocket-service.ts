@@ -85,12 +85,12 @@ class WebSocketService {
    */
   connect(token: string): Promise<void> {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('🔌 WebSocket already connected');
+      console.log('WebSocket already connected');
       return Promise.resolve();
     }
 
     if (this.isConnecting) {
-      console.log('🔌 WebSocket connection already in progress');
+      console.log('WebSocket connection already in progress');
       return Promise.resolve();
     }
 
@@ -102,7 +102,7 @@ class WebSocketService {
         // Include token in URL as query parameter
         const wsUrl = `${this.url}/?token=${encodeURIComponent(token)}`;
 
-        console.log('🔌 Attempting WebSocket connection...');
+        console.log('Attempting WebSocket connection...');
         console.log('   URL:', this.url);
         console.log('   Full URL:', wsUrl.replace(/token=[\w\.\-]+/, 'token=***'));
         console.log('   Protocol:', typeof window !== 'undefined' ? window.location.protocol : 'N/A');
@@ -116,7 +116,7 @@ class WebSocketService {
             'Cannot establish insecure WebSocket connection (ws://) from secure page (https://). ' +
             'Please configure NEXT_PUBLIC_WS_URL environment variable with a secure WebSocket URL (wss://)'
           );
-          console.error('🔌 ❌', error.message);
+          console.error('Error:', error.message);
           reject(error);
           return;
         }
@@ -124,7 +124,7 @@ class WebSocketService {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log('🔌 ✅ WebSocket connected successfully');
+          console.log('WebSocket connected successfully');
           console.log('   Ready state:', this.ws!.readyState);
           this.isConnecting = false;
           this.reconnectAttempts = 0;
@@ -139,10 +139,10 @@ class WebSocketService {
             // Handle Blob data by converting to text first
             if (rawData instanceof Blob) {
               rawData.text().then((text: string) => {
-                console.log('📨 Received Blob message:', text.substring(0, 100));
+                console.log('Received Blob message:', text.substring(0, 100));
                 this.processWebSocketData(text);
               }).catch((err: unknown) => {
-                console.error('📨 ❌ Failed to convert Blob to text:', err);
+                console.error('Failed to convert Blob to text:', err);
               });
               return;
             }
@@ -150,26 +150,26 @@ class WebSocketService {
             // Handle ArrayBuffer data
             if (rawData instanceof ArrayBuffer) {
               const text = new TextDecoder().decode(rawData);
-              console.log('📨 Received ArrayBuffer message:', text.substring(0, 100));
+              console.log('Received ArrayBuffer message:', text.substring(0, 100));
               this.processWebSocketData(text);
               return;
             }
 
             // Handle string data (most common case)
             if (typeof rawData === 'string') {
-              console.log('📨 Received message:', rawData.substring(0, 100));
+              console.log('Received message:', rawData.substring(0, 100));
               this.processWebSocketData(rawData);
               return;
             }
 
-            console.error('📨 ❌ Unknown WebSocket data type:', typeof rawData);
+            console.error('Unknown WebSocket data type:', typeof rawData);
           } catch (error) {
-            console.error('📨 ❌ Error in WebSocket onmessage:', error);
+            console.error('Error in WebSocket onmessage:', error);
           }
         };
 
         this.ws.onerror = (error) => {
-          console.error('🔌 ❌ WebSocket error:', error);
+          console.error('WebSocket error:', error);
           console.error('   Event:', error);
           if (this.ws) {
             console.error('   Ready state:', this.ws.readyState);
@@ -179,7 +179,7 @@ class WebSocketService {
         };
 
         this.ws.onclose = (event) => {
-          console.log('🔌 ❌ WebSocket closed');
+          console.log('WebSocket closed');
           console.log('   Code:', event.code);
           console.log('   Reason:', event.reason);
           console.log('   Was clean:', event.wasClean);
@@ -188,7 +188,7 @@ class WebSocketService {
           this.attemptReconnect();
         };
       } catch (error) {
-        console.error('🔌 ❌ Failed to create WebSocket:', error);
+        console.error('Failed to create WebSocket:', error);
         this.isConnecting = false;
         reject(error);
       }
@@ -212,7 +212,7 @@ class WebSocketService {
    */
   send(type: WebSocketMessageType, payload: MessagePayload): boolean {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn('📤 ❌ WebSocket not connected, cannot send message');
+      console.warn('WebSocket not connected, cannot send message');
       console.warn('   Type:', type);
       console.warn('   Ready state:', this.ws?.readyState);
       return false;
@@ -220,12 +220,12 @@ class WebSocketService {
 
     try {
       const message: WebSocketMessage = { type, payload };
-      console.log('📤 Sending message:', type);
+      console.log('Sending message:', type);
       console.log('   Payload:', JSON.stringify(payload).substring(0, 100));
       this.ws.send(JSON.stringify(message));
       return true;
     } catch (error) {
-      console.error('📤 ❌ Failed to send WebSocket message:', error);
+      console.error('Failed to send WebSocket message:', error);
       console.error('   Type:', type);
       return false;
     }
@@ -291,11 +291,11 @@ class WebSocketService {
    * Handle incoming WebSocket message
    */
   private handleMessage(message: WebSocketMessage): void {
-    console.log('🔄 Processing message:', message.type);
+    console.log('Processing message:', message.type);
 
     // Log WebRTC signaling messages with more detail
     if (message.type.startsWith('voice:')) {
-      console.log('   🎤 WebRTC signaling -', message.type);
+      console.log('   WebRTC signaling -', message.type);
       if (message.type === 'voice:offer' || message.type === 'voice:answer') {
         console.log('      SDP received');
       } else if (message.type === 'voice:ice-candidate') {
@@ -316,11 +316,11 @@ class WebSocketService {
         try {
           handler(message);
         } catch (error) {
-          console.error(`🔄 ❌ Error in handler for ${message.type}:`, error);
+          console.error(`Error in handler for ${message.type}:`, error);
         }
       });
     } else {
-      console.warn(`🔄 ⚠️ No handlers registered for ${message.type}`);
+      console.warn(`No handlers registered for ${message.type}`);
     }
   }
 
