@@ -11,7 +11,7 @@ The email verification system ensures that users verify their email addresses du
 
 ## Implementation Status
 
-### ✅ Completed (Backend Infrastructure)
+### [COMPLETE] Completed (Backend Infrastructure)
 
 1. **Database Schema** - Migration `002_email_verification.sql`
    - `email_verification_tokens` table created
@@ -36,7 +36,7 @@ The email verification system ensures that users verify their email addresses du
    - Included in JSON serialization
    - UserRepository updated to read/write the field
 
-### ⚠️ Pending (API & Integration)
+### [WARNING] Pending (API & Integration)
 
 1. **Server Endpoints** - Add to `src/server/server.cpp`
    ```cpp
@@ -66,7 +66,7 @@ The email verification system ensures that users verify their email addresses du
      * Return success (without requiring immediate verification)
    - Add middleware to check `email_verified` status on protected routes
 
-### 📝 Not Started (Frontend)
+### [DOCUMENT] Not Started (Frontend)
 
 1. **React Components**
    - `EmailVerificationPrompt` - Show unverified banner
