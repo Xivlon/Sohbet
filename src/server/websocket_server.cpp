@@ -362,7 +362,23 @@ bool WebSocketServer::performWebSocketHandshake(int client_socket, std::string& 
     }
     
     std::string key = matches[1].str();
-    
+
+    // Extract and validate Sec-WebSocket-Version (must be 13 per RFC 6455)
+    std::regex version_regex("Sec-WebSocket-Version: ([^\r\n]+)");
+    std::smatch version_matches;
+    if (!std::regex_search(request, version_matches, version_regex) || version_matches[1].str() != "13") {
+        // Send 400 Bad Request with supported version
+        std::ostringstream error_response;
+        error_response << "HTTP/1.1 400 Bad Request\r\n";
+        error_response << "Sec-WebSocket-Version: 13\r\n";
+        error_response << "Content-Length: 0\r\n";
+        error_response << "\r\n";
+        std::string error_str = error_response.str();
+        send(client_socket, error_str.c_str(), error_str.length(), 0);
+        std::cerr << "❌ WebSocket handshake failed: Invalid or missing Sec-WebSocket-Version header" << std::endl;
+        return false;
+    }
+
     // Extract Origin header for CORS and validate it
     std::string cors_origin = "*";
     std::regex origin_regex("Origin: ([^\r\n]+)");
@@ -387,13 +403,14 @@ bool WebSocketServer::performWebSocketHandshake(int client_socket, std::string& 
     response << "Upgrade: websocket\r\n";
     response << "Connection: Upgrade\r\n";
     response << "Sec-WebSocket-Accept: " << accept_key << "\r\n";
+    response << "Sec-WebSocket-Extensions: \r\n";  // Empty extensions per RFC 6455
     response << "Access-Control-Allow-Origin: " << cors_origin << "\r\n";
-    
+
     // Only add credentials header if origin is not "*"
     if (cors_origin != "*") {
         response << "Access-Control-Allow-Credentials: true\r\n";
     }
-    
+
     response << "\r\n";
     
     std::string response_str = response.str();
