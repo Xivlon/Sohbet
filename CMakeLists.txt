@@ -8,7 +8,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Find packages
 find_package(PostgreSQL REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(CURL)
+find_package(CURL REQUIRED)
+
+# Try to find system libpqxx first
+find_package(libpqxx QUIET)
 
 # Download and build bcrypt library using FetchContent
 include(FetchContent)
@@ -27,14 +30,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
-# Download libpqxx library for PostgreSQL
-FetchContent_Declare(
-    libpqxx
-    GIT_REPOSITORY https://github.com/jtv/libpqxx.git
-    GIT_TAG 7.8.1
-)
-set(SKIP_BUILD_TEST ON)
-FetchContent_MakeAvailable(libpqxx)
+# If system libpqxx not found, download it
+if(NOT libpqxx_FOUND)
+    message(STATUS "System libpqxx not found, using system package")
+    # Use pkg-config to find libpqxx
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(PQXX REQUIRED libpqxx>=7.0)
+endif()
 
 # Bcrypt source files from downloaded content
 set(BCRYPT_DIR ${CMAKE_BINARY_DIR}/_deps/bcrypt-src)
@@ -125,12 +127,12 @@ endif()
 # Create library
 add_library(sohbet_lib ${SOURCES})
 if(CURL_FOUND)
-    target_link_libraries(sohbet_lib PostgreSQL::PostgreSQL pqxx bcrypt_lib OpenSSL::SSL OpenSSL::Crypto CURL::libcurl pthread nlohmann_json::nlohmann_json)
+    target_link_libraries(sohbet_lib PostgreSQL::PostgreSQL ${PQXX_LDFLAGS} bcrypt_lib OpenSSL::SSL OpenSSL::Crypto CURL::libcurl pthread nlohmann_json::nlohmann_json)
 else()
     message(WARNING "CURL not found. Email service will not be available.")
-    target_link_libraries(sohbet_lib PostgreSQL::PostgreSQL pqxx bcrypt_lib OpenSSL::SSL OpenSSL::Crypto pthread nlohmann_json::nlohmann_json)
+    target_link_libraries(sohbet_lib PostgreSQL::PostgreSQL ${PQXX_LDFLAGS} bcrypt_lib OpenSSL::SSL OpenSSL::Crypto pthread nlohmann_json::nlohmann_json)
 endif()
-target_include_directories(sohbet_lib PUBLIC include)
+target_include_directories(sohbet_lib PUBLIC include ${PQXX_INCLUDE_DIRS})
 
 # Main executable
 add_executable(sohbet src/main.cpp)
