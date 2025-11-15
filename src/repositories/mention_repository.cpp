@@ -11,8 +11,9 @@ bool MentionRepository::createMention(int post_id, int user_id) {
     if (!database_ || !database_->isOpen()) return false;
 
     const std::string sql = R"(
-        INSERT OR IGNORE INTO post_mentions (post_id, user_id)
+        INSERT INTO post_mentions (post_id, user_id)
         VALUES (?, ?)
+        ON CONFLICT (post_id, user_id) DO NOTHING
     )";
 
     db::Statement stmt(*database_, sql);

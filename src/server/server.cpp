@@ -174,16 +174,25 @@ bool AcademicSocialServer::start() {
     std::cout << "Academic Social Server starting on port " << port_ << std::endl;
     std::cout << "Database: PostgreSQL (connection configured)" << std::endl;
     std::cout << "Version: 0.3.0-academic" << std::endl;
-    
+
     if (!initializeSocket()) {
         std::cerr << "Failed to initialize server socket" << std::endl;
         return false;
     }
-    
-    // Start WebSocket server
-    if (!websocket_server_->start()) {
-        std::cerr << "Failed to start WebSocket server" << std::endl;
-        return false;
+
+    // Start WebSocket server only if on a different port
+    // When on the same port, WebSocket connections would need to be handled via HTTP upgrade
+    int ws_port = config::get_websocket_port();
+    if (ws_port != port_) {
+        std::cout << "[WebSocket] Starting on separate port: " << ws_port << std::endl;
+        if (!websocket_server_->start()) {
+            std::cerr << "Failed to start WebSocket server" << std::endl;
+            return false;
+        }
+    } else {
+        std::cout << "[WebSocket] Shared port mode detected (port " << port_ << ")" << std::endl;
+        std::cout << "[WebSocket] ⚠️  WebSocket functionality temporarily disabled in shared port mode" << std::endl;
+        std::cout << "[WebSocket] TODO: Implement WebSocket upgrade handling in HTTP server" << std::endl;
     }
 
     // Start voice channel cleanup task

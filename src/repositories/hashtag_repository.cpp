@@ -182,8 +182,9 @@ bool HashtagRepository::linkToPost(int hashtag_id, int post_id) {
     if (!database_ || !database_->isOpen()) return false;
 
     const std::string sql = R"(
-        INSERT OR IGNORE INTO post_hashtags (post_id, hashtag_id)
+        INSERT INTO post_hashtags (post_id, hashtag_id)
         VALUES (?, ?)
+        ON CONFLICT (post_id, hashtag_id) DO NOTHING
     )";
 
     db::Statement stmt(*database_, sql);

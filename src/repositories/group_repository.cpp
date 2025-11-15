@@ -216,8 +216,9 @@ bool GroupRepository::addMember(int group_id, int user_id, const std::string& ro
     if (!database_ || !database_->isOpen()) return false;
 
     const std::string sql = R"(
-        INSERT OR IGNORE INTO group_members (group_id, user_id, role)
+        INSERT INTO group_members (group_id, user_id, role)
         VALUES (?, ?, ?)
+        ON CONFLICT (group_id, user_id) DO NOTHING
     )";
 
     db::Statement stmt(*database_, sql);

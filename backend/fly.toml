@@ -35,6 +35,12 @@ primary_region = 'iad'
     method = "GET"
     path = "/api/status"
 
+# Environment variables for logging and monitoring
+[env]
+  LOG_LEVEL = "INFO"
+  # Set SENTRY_DSN as a secret for error monitoring:
+  #   fly secrets set SENTRY_DSN="https://your-dsn@sentry.io/project-id" -a sohbet-uezxqq
+
 # Note: Database is now external (Neon PostgreSQL)
 # Set DATABASE_URL and SOHBET_JWT_SECRET as secrets using:
 #   fly secrets set DATABASE_URL="postgresql://..." -a sohbet-uezxqq
